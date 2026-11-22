@@ -118,7 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text('Btt Music (BTmu)', style: Theme.of(context).textTheme.titleLarge),
                       Text(
-                        'Version 3.0.0 · com.ahmed.btmu',
+                        'Version 2.00 · com.ahmed.btmu',
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       Text(

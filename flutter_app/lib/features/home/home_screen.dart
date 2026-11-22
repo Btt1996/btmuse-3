@@ -38,7 +38,7 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Text('Btt Music', style: Theme.of(context).textTheme.titleLarge),
                   Text(
-                    'BTmu 3.0 · Offline Hi-Fi',
+                    'BTmu 2.00 · Offline Hi-Fi',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: BttColors.cyanAccent,
                         ),

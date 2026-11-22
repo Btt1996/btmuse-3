@@ -1,4 +1,4 @@
-# Btt Music 3.0 (`BTmu`) — iOS Build, Signing & Zero-Key Architecture Guide
+# Btt Music 2.00 (`BTmu`) — iOS Build, Signing & Zero-Key Architecture Guide
 
 - **Application Name:** Btt Music (`BTmu`)
 - **Developer:** Ahmed Taboubi
@@ -10,7 +10,7 @@
 
 ## 1. Zero User-Configured API Keys
 
-Btt Music 3.0 operates out of the box **without** requiring users to sign up for AudD, ACRCloud, YouTube Developer API, Spotify Developer API, SoundCloud API, or Jamendo keys:
+Btt Music 2.00 operates out of the box **without** requiring users to sign up for AudD, ACRCloud, YouTube Developer API, Spotify Developer API, SoundCloud API, or Jamendo keys:
 - **X1 Identification:** Matches offline library songs via native Swift `AVAudioFile` PCM decoding + pure-Dart Spectral Constellation Landmark hashing (`LocalFingerprintEngine`), and queries zero-key MusicBrainz, Deezer, and iTunes public endpoints with playable 30s confirmation previews.
 - **X2 Acquisition Priority:** VK public URL metadata + optional isolated user VK session, Telegram bot sync (token stored in iOS Keychain), YouTube zero-key oEmbed + optional self-hosted Piped/Invidious companion, SoundCloud public oEmbed, permissionless Audius Open Audio Protocol streams, Direct Audio streams, and Podcast/Music RSS XML enclosures.
 
@@ -39,7 +39,7 @@ Add these **Repository Secrets** in GitHub (`Settings → Secrets and variables 
 4. `KEYCHAIN_PASSWORD`: Random temporary string for CI keychain
 5. `APPLE_TEAM_ID`: Your 10-character Apple Developer Team ID
 
-Trigger **Actions → Btt Music 3.0 iOS Build & IPA → Run workflow** to download `btmu-signed-ipa` (or `btmu-unsigned-ipa` when signing secrets are omitted).
+Trigger **Actions → Btt Music 2.00 iOS Build & IPA → Run workflow** to download `btmu-signed-ipa` (or `btmu-unsigned-ipa` when signing secrets are omitted).
 
 ### Optional X2 Environment Variables (Repository Variables)
 

@@ -51,7 +51,7 @@ class X2AcquisitionEngine {
           followRedirects: true,
           maxRedirects: 5,
           headers: const {
-            'User-Agent': 'BttMusic/3.0 (iOS)',
+            'User-Agent': 'BttMusic/2.00 (iOS)',
             'Accept': 'audio/*,application/octet-stream;q=0.9,*/*;q=0.5',
           },
         ),

@@ -101,10 +101,10 @@ app.get('/api/version', (_req, res) => {
     shortName: 'BTmu',
     developer: 'Ahmed Taboubi',
     bundleId: 'com.ahmed.btmu',
-    version: '3.0.0',
+    version: '2.00',
     buildDate: '2026-11-14',
     releaseNotes:
-      'Btt Music 3.0: Zero-key Flutter iOS rebuild, independent X1 local/open acoustic fingerprinting, X2 VK/Telegram/YouTube/SoundCloud/Audius/RSS acquisition, Smart Remix, and 300% limited boost.',
+      'Btt Music 2.00: Zero-key Flutter iOS rebuild, independent X1 local/open acoustic fingerprinting, X2 VK/Telegram/YouTube/SoundCloud/Audius/RSS acquisition, Smart Remix, and 300% limited boost.',
     minSupportedVersion: '1.0.0',
   });
 });
@@ -576,7 +576,7 @@ app.get('/api/audio-verify', rateLimitMiddleware(60, 60_000), async (req, res) =
     let response = await fetch(safeUrl.toString(), {
       method: 'HEAD',
       headers: {
-        'User-Agent': 'BttMusic/3.0 (iOS)',
+        'User-Agent': 'BttMusic/2.00 (iOS)',
       },
       signal: AbortSignal.timeout(6000),
     });
@@ -585,7 +585,7 @@ app.get('/api/audio-verify', rateLimitMiddleware(60, 60_000), async (req, res) =
       response = await fetch(safeUrl.toString(), {
         method: 'GET',
         headers: {
-          'User-Agent': 'BttMusic/3.0 (iOS)',
+          'User-Agent': 'BttMusic/2.00 (iOS)',
           Range: 'bytes=0-1023',
         },
         signal: AbortSignal.timeout(6000),
@@ -655,7 +655,7 @@ app.get('/api/audio-proxy', rateLimitMiddleware(30, 60_000), optionalBackendAuth
   try {
     const remoteRes = await fetch(safeUrl.toString(), {
       headers: {
-        'User-Agent': 'BttMusic/3.0 (iOS)',
+        'User-Agent': 'BttMusic/2.00 (iOS)',
         Accept: 'audio/*,*/*;q=0.8',
       },
       signal: AbortSignal.timeout(25_000),
@@ -704,7 +704,7 @@ app.post('/api/x2/url-inspect', rateLimitMiddleware(45, 60_000), async (req, res
     if (host === 'vk.com' || host.endsWith('.vk.com') || host === 'vk.ru') {
       const vkRes = await fetch(safeUrl.toString(), {
         headers: {
-          'User-Agent': 'BttMusic/3.0 (iOS; Public Metadata)',
+          'User-Agent': 'BttMusic/2.00 (iOS; Public Metadata)',
           'Accept-Language': 'en-US,en;q=0.9',
         },
         signal: AbortSignal.timeout(6500),
@@ -782,7 +782,7 @@ app.post('/api/x2/url-inspect', rateLimitMiddleware(45, 60_000), async (req, res
     // D. Podcast / Music RSS XML Feed -> Parse audio <enclosure> items
     if (/\.(rss|xml)$/i.test(safeUrl.pathname) || safeUrl.pathname.toLowerCase().includes('/feed')) {
       const feedRes = await fetch(safeUrl.toString(), {
-        headers: { 'User-Agent': 'BttMusic/3.0 (iOS)' },
+        headers: { 'User-Agent': 'BttMusic/2.00 (iOS)' },
         signal: AbortSignal.timeout(7000),
       });
       const contentType = (feedRes.headers.get('content-type') || '').toLowerCase();
@@ -810,13 +810,13 @@ app.post('/api/x2/url-inspect', rateLimitMiddleware(45, 60_000), async (req, res
     // E. Direct Audio URL -> Verify MIME and Content-Length via HEAD with Range GET fallback
     let headRes = await fetch(safeUrl.toString(), {
       method: 'HEAD',
-      headers: { 'User-Agent': 'BttMusic/3.0 (iOS)' },
+      headers: { 'User-Agent': 'BttMusic/2.00 (iOS)' },
       signal: AbortSignal.timeout(6000),
     });
     if (!headRes.ok || !(headRes.headers.get('content-type') || '')) {
       headRes = await fetch(safeUrl.toString(), {
         method: 'GET',
-        headers: { 'User-Agent': 'BttMusic/3.0 (iOS)', Range: 'bytes=0-1023' },
+        headers: { 'User-Agent': 'BttMusic/2.00 (iOS)', Range: 'bytes=0-1023' },
         signal: AbortSignal.timeout(6000),
       });
     }

@@ -1,8 +1,8 @@
-# Btt Music 3.0 — Open-Source Feasibility, Licenses & Zero-API-Key Architecture
+# Btt Music 2.00 — Open-Source Feasibility, Licenses & Zero-API-Key Architecture
 
 ## 1. Open-Source Research & Licensing Audit
 
-| Component | Purpose | License | iOS Compatibility | Adopted Strategy in Btt Music 3.0 |
+| Component | Purpose | License | iOS Compatibility | Adopted Strategy in Btt Music 2.00 |
 | --- | --- | --- | --- | --- |
 | **Apple AVFoundation / Accelerate** | Native audio decoding & DSP | Apple SDK | Native iOS 18+ | `AudioEnginePlugin.swift` resamples imported MP3/M4A/FLAC/WAV to 11,025 Hz mono PCM with zero FFmpeg bloat. |
 | **Apple ShazamKit (`SHCustomCatalog`)** | Custom on-device catalog | Apple SDK | Native (no Cloud cap needed) | Eligible offline add-on; primary X1 relies on pure Dart `LocalFingerprintEngine` for cross-testability. |

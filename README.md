@@ -1,129 +1,177 @@
-# MyMusic — Personal Offline Music Player for iPhone (iOS 18)
+# Btt Music 2.00 — btmu by Ahmed
 
-MyMusic is a modern, privacy-first, offline music player Progressive Web App (PWA) designed specifically for iPhone (iOS 18) and modern mobile browsers. It enables seamless music synchronization from Telegram and local audio files, storing all audio blobs and metadata directly in persistent browser storage (IndexedDB) with zero external subscriptions, zero tracking, and complete offline playback.
+**Btt Music** (short name **btmu**) is an offline-first music player for iPhone.
+Bundle identifier: `com.ahmed.btmu` · Target: iOS 18+ · Primary device: iPhone XS Max ·
+Developer: Ahmed Taboubi · Target release: **2.00**.
 
----
+> **Version of truth: 2.00 everywhere.** The Flutter app previously called itself
+> "Btt Music 3.0" (`3.0.0+30`); that was an internal codename, now retired as a
+> release label. The repository is named `btmuse-3.0` for historical reasons — the
+> release it ships is **2.00**.
 
-## 🎵 Key Features
+## What this repo is
 
-- **True Offline Playback**: All downloaded audio files are stored locally in the browser's persistent IndexedDB storage. Playback, seeking, shuffle, and repeat work with no internet connection in Airplane mode.
-- **Telegram Music Synchronization**:
-  - Direct Telegram Bot API integration: connect a bot created with `@BotFather`.
-  - Discovers audio documents and tracks in Telegram channels, supergroups, topics, and direct messages.
-  - Live streaming download with byte-level progress bars.
-  - Automatic source playlist generation based on Telegram channel or topic names.
-  - Smart duplicate prevention: avoids re-downloading previously imported tracks.
-- **Manual Audio File Import**:
-  - Full support for `.mp3`, `.m4a`, `.aac`, `.wav`, `.flac`, and `.ogg` files via iPhone's native Files app, iCloud Drive, or desktop drag-and-drop.
-  - Pure client-side ID3 parser extracts Song Title, Artist, Album, Year, and embedded album artwork (`APIC` tags converted to high-quality thumbnails).
-  - Accurate audio duration detection using off-screen HTML5 Audio metadata decoding.
-- **Audio Player Engine**:
-  - Persistent **Mini-Player** with micro-scrubber bar and play/pause/skip controls.
-  - **Full-Screen Player** with high-resolution artwork, atmospheric glow, responsive seekbar, volume controls, shuffle, and 3-stage repeat modes (`off`, `all`, `one`).
-  - **Media Session API**: native iOS Lock Screen and Control Center playback controls, track metadata, and lock-screen seek support.
-  - Seamless background tab and screen-navigation audio continuity.
-- **Playlists & Library Management**:
-  - Organize songs into Telegram source playlists or custom manual playlists.
-  - Real-time instant search across titles, artists, albums, and topics.
-  - Filter by Favorites, Telegram tracks, or All.
-  - Multi-select batch deletion and single-track removal with safety confirmation modals.
-  - Song technical inspector: view bitrate, format, file size, download timestamp, and play counts.
-- **Storage & Backup Diagnostics**:
-  - Real-time storage estimation using `navigator.storage.estimate()`.
-  - Export library metadata backup as JSON.
-  - In-app **Offline Integrity Audit**: verifies IndexedDB blob persistence and off-network audio decoding directly on your iPhone.
+Seeded from [`Btt1996/Iosbtmus2`](https://github.com/Btt1996/Iosbtmus2) `main`
+@ `15f88213902680d82488208950658b2df48d0b6e` (2026-11-15, "feat: integrate X2
+backend and implement SSRF guards"), preserving the lineage. The original
+placeholder commit of this repo (`f61602a`, "Initial commit") is the root of
+this branch's history and remains recoverable.
 
----
+**Canonical app: `flutter_app/` (Flutter).** It is the 2.00 app: dark-only design,
+native audio engine, Riverpod state management, `just_audio` + `audio_service`,
+SQLite, microphone X1 identification, X2 acquisition from authorized sources,
+Telegram sync, Smart Remix, 5-band native EQ, and a native 300% volume boost
+(limiter-guarded, off by default).
 
-## 🛠️ Technology Stack
+**Reference / fallback: the React + Capacitor app** (`src/`, `ios/`, `server.ts`).
+It is the previous generation's web app kept in this repo as a reference
+implementation and a fallback web build — not a second app to ship. It is the
+only path that currently has lyrics (`lyricsService.ts` + `LyricsView.tsx`);
+porting lyrics into the Flutter app is planned work.
 
-- **Framework**: React 19 + TypeScript + Vite 8
-- **Styling**: Tailwind CSS v4 with dark charcoal theme, iOS safe area (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`), and responsive mobile touch targets
-- **Offline Storage**: IndexedDB (isolated stores for `tracks`, `audioBlobs`, `playlists`, `settings`, and `syncHistory`)
-- **PWA Integration**: `vite-plugin-pwa` with service worker precaching, Web App Manifest, maskable and Apple Touch icons
-- **Audio**: Web Audio API & HTMLAudioElement with object URL lifecycle cleanup to prevent memory leaks
+**Native reference (not in this repo):**
+[`Btt1996/BttMusic`](https://github.com/Btt1996/BttMusic) — the parallel SwiftUI
++ SwiftData + AVFoundation rebuild. Borrow ideas and verified code from it
+(AVAudioEngine graph, `BoosterTests`, Share Extension + `bttmu://` YouTube
+bridge, unsigned-IPA CI verification, backup/restore design); do not merge it.
 
----
+## Architecture
 
-## 📲 How to Install on iPhone (iOS 18)
+```
+flutter_app/            Flutter app — the canonical 2.00 app
+  lib/
+    app/                app shell, providers, theme (dark-only, obsidian #05070B)
+    core/               audio handler, iOS audio bridge, storage, networking
+    data/               models + repositories (library, playlist, history)
+    features/           home, library, player, playlists, search, settings,
+                        import_center, telegram, x1, x2, smart_remix,
+                        downloads, audio_settings
+  ios/Runner/           iOS shell — AudioEnginePlugin.swift (native AVAudioEngine:
+                        5-band EQ, DynamicsProcessor boost + limiter, crossfade,
+                        MPNowPlayingInfoCenter), Info.plist (UIBackgroundModes: audio)
+  test/                 9 Dart unit tests
+src/                    React 19 + TypeScript + Vite 8 + Capacitor 8 app (reference)
+ios/                    Capacitor iOS shell + AudioBridgePlugin.swift
+server.ts               Express proxy + X2 backend (Telegram, Spotify, SoundCloud,
+                        iTunes, YouTube metadata; SSRF guards; rate limits)
+server/                 X2 provider router
+scripts/                icon generation, full-audit + X2 connectivity verification
+.github/workflows/      flutter-ios-ipa.yml (analyze, test, unsigned IPA;
+                        signed IPA when signing secrets are present)
+```
 
-1. Open Safari on your iPhone and navigate to the application URL.
-2. Tap the **Share** button (the square with an arrow pointing up) at the bottom toolbar of Safari.
-3. Scroll down the action sheet and tap **Add to Home Screen**.
-4. Confirm the name **MyMusic** and tap **Add** in the top-right corner.
-5. Tap the new **MyMusic** icon on your iPhone Home Screen to launch the app in standalone fullscreen mode without browser URL bars.
+## Features
 
----
+| Feature | Status |
+|---|---|
+| Offline music library (import, metadata, artwork, search, sort, duplicates) | Implemented (Flutter + React) |
+| Playback (play/pause, prev/next, seek, shuffle, repeat one/all, queue) | Implemented |
+| Playlists (create/rename/delete, reorder, import/export) | Implemented |
+| Native background audio, lock-screen + Control Center controls, AirPods | Implemented, **not yet verified on a physical iPhone** |
+| Local file import (Files app, document browser, ID3 parsing, SHA-256 dedup) | Implemented |
+| Telegram import (bot token in Keychain; bot must receive forwards or be admin) | Implemented |
+| Spotify playlist import | Metadata only — the Spotify API returns no audio |
+| SoundCloud import (search + oEmbed; downloads only where creators enabled them) | Implemented (Flutter + React) |
+| X1 song identification (mic → local fingerprint + MusicBrainz/Deezer/iTunes) | Implemented (Flutter); no ShazamKit/ACRCloud/AudD keys needed |
+| X2 audio acquisition (Audius, Internet Archive, Jamendo, direct URL, RSS, Piped/Invidious via backend) | Implemented; needs a deployed `server.ts` for the relay paths |
+| Smart Remix (BPM/energy DSP, energy-arc sequences) | Implemented |
+| Lyrics (synced LRC + cache) | React only — port to Flutter planned |
+| EQ (5-band, native) | Flutter only |
+| 300% volume boost (native gain + limiter, +9.54 dB max, off by default) | Flutter only; **never** via Web Audio in the Capacitor path (it breaks iOS background audio — see commit `7627d41` in the lineage) |
+| Swipe-down to dismiss the fullscreen player | **Not yet implemented** — Phase 2 work |
+| Backup / restore | Planned (port the `BttMusic` JSON backup/restore design) |
 
-## 🚀 Setup & Build Instructions
+## What this app does NOT do (honest scope)
 
-### Prerequisites
-- Node.js 18+ (tested on Node.js 22)
-- npm or pnpm
+- **No "YouTube MP3" download button.** YouTube's Terms of Service prohibit
+  downloading; no YouTube API returns MP3s. YouTube is supported as
+  search/metadata only, plus an optional **self-hosted bridge** (run yt-dlp on
+  your own server; the app does nothing without one configured — see the
+  `BttMusic` Share Extension + `bttmu://` pattern). `spotify_to_mp3` is not
+  integrated: it chains an unauthorized Selenium scrape + yt-dlp download,
+  is Windows-only, and has been untouched since 2022.
+- **No fake identification results.** X1 reports a match only when the local
+  fingerprint index or a public catalog confirms it.
+- **No credentials in the repo.** Spotify client id/secret, SoundCloud/Jamendo
+  client ids, Telegram bot token, and the X2 backend URL live in environment
+  variables / the iOS Keychain, never in source. See `.env.example`.
 
-### Development
+## Build
+
+### Flutter app (canonical)
+
 ```bash
-# Install dependencies
+cd flutter_app
+flutter pub get
+flutter analyze --no-fatal-infos
+flutter test
+```
+
+CI (`.github/workflows/flutter-ios-ipa.yml`, macOS runner) runs `flutter
+analyze`, `flutter test`, verifies `PRODUCT_BUNDLE_IDENTIFIER =
+com.ahmed.btmu`, builds an **unsigned** IPA (`btmu-2.00-unsigned.ipa`), and —
+only when the signing secrets exist — a signed IPA. It runs on pushes and pull
+requests touching `flutter_app/**`.
+
+### React / Capacitor reference app
+
+```bash
 npm install
-
-# Start the local development server on port 3000
-npm run dev
+npm run dev        # web dev server
+npm run build      # production bundle -> dist/
+npx cap sync ios   # regenerate ios/App/App/public/
 ```
 
-### Production Build
-```bash
-# Compile and package for production
-npm run build
+`server.ts` needs a Node host (it is not a static site). Copy `.env.example`
+to `.env` and fill in the backend URLs; never invent a backend URL.
 
-# Preview production build locally
-npm run preview
+## Testing — what is verified and what is not
+
+- 9 Dart unit tests exist (`flutter_app/test/`). No test run has been recorded
+  yet in this repo; CI runs them on every PR.
+- `BttMusic` (SwiftUI) is the only sibling repo with any test evidence, and
+  even there audio output was never verified on a device.
+- **Nothing about background audio, lock-screen controls, AirPods, the 300%
+  boost, or Files import is verified on a physical iPhone yet.** The required
+  device pass (iPhone XS Max, iOS 18+): lock mid-song, skip from the lock
+  screen, let a track end while locked, AirPods play/pause/next/previous,
+  booster on and off. Do not mark these complete until that pass happens.
+
+## Blockers (need Ahmed)
+
+1. **Apple signing secrets** (`BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`,
+   `PROVISIONING_PROFILE_BASE64` for `com.ahmed.btmu`, `KEYCHAIN_PASSWORD`,
+   `APPLE_TEAM_ID`) — without them CI can only produce an unsigned IPA
+   (sideload via AltStore / Sideloadly / TrollStore).
+2. **Physical iPhone test** — the device pass above.
+3. **Credentials** (all optional, all server-side or Keychain-only): Spotify
+   developer app, SoundCloud client id, Jamendo client id, Telegram bot token.
+4. **X2 backend deployment** (`X2_BACKEND_URL`) — a Node host for `server.ts`.
+   Without it the Piped/Invidious relay and CORS-free proxy paths report
+   "Not Configured".
+5. **Logo check** — confirm the v5 Triforce mark (gold-to-cyan gradient,
+   "BTmu by Ahmed") is the artwork in `flutter_app/assets/images/app_logo.png`
+   and the app icons before release.
+
+## Lineage
+
 ```
-The production bundle will be generated in the `dist/` directory, including the Service Worker, Web App Manifest, and cached assets.
+Bt-music-  (Oct 25, 2026)   genesis PWA snapshot
+  └─ Btmus-3  (Oct 27–Nov 5)  shipped 1.8.0
+       └─ iOS-btmus  (Nov 5)  + Capacitor 8 + iOS shell + audio bridge
+            └─ Iosbtmus2  (Nov 7–15)  + flutter_app/ + X2 backend + SSRF guards
+                 └─ btmuse-3.0  (Nov 22)  this repo — Btt Music 2.00
 
----
+BttMusic (Nov 10–11) — parallel native SwiftUI rebuild (reference only)
+```
 
-## 🌐 Deploying to Free Static Hosting
+Historical repos (`Btmus-3`, `iOS-btmus`, `Bt-music-`) are references; do not
+build from them. `Btt1996/Btt-music` does not exist — do not reference that
+URL. `BttMusic-X2` is an empty placeholder.
 
-Because MyMusic is an offline-first client-side Progressive Web App with IndexedDB persistence, it can be hosted for free on any static host.
+## Workflow
 
-### Option 1: Cloudflare Pages (Recommended)
-1. Push your repository to GitHub or GitLab.
-2. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) > **Workers & Pages** > **Create application** > **Pages**.
-3. Connect your repository.
-4. Set Build Settings:
-   - **Framework preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-5. Click **Save and Deploy**. Cloudflare provides free SSL, global CDN, and unlimited bandwidth.
-
-### Option 2: Vercel
-1. Install the Vercel CLI (`npm i -g vercel`) or connect via [vercel.com](https://vercel.com).
-2. Run `vercel` in the project root.
-3. Select default settings (Framework: Vite, Output Directory: `dist`).
-
-### Option 3: Netlify
-1. Connect repository on [netlify.com](https://netlify.com).
-2. Set build command to `npm run build` and publish directory to `dist`.
-3. Add a `_redirects` file with `/*  /index.html  200` to support SPA routing.
-
----
-
-## ⚙️ Telegram Synchronization Guide
-
-1. Open Telegram and search for `@BotFather`.
-2. Send `/newbot` and follow the prompts to choose a bot name and username (e.g. `MyMusicSyncBot`).
-3. Copy the HTTP API token provided by BotFather (format `123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ`).
-4. In MyMusic, go to the **Sync** tab and enter your token.
-5. To sync music:
-   - **Direct Forwarding**: Forward any audio file or music message from any chat directly to your bot.
-   - **Channels / Groups**: Add your bot as an admin to your private music channel or group so it can receive audio posts.
-6. Tap **Check Updates** in MyMusic: the app will list all discovered audio files with titles, artists, and sizes.
-7. Tap **Download Selected**: the files will be downloaded directly into your iPhone's IndexedDB and categorized into playlists.
-
----
-
-## 📋 iOS Constraints & Technical Notes
-
-- **Background Audio**: Safari/iOS PWAs support background audio playback while the screen is locked as long as the HTML `<audio>` element maintains active playback. To ensure lock screen controls function, MyMusic hooks into the `navigator.mediaSession` API.
-- **Storage Limits**: iOS WebKit allocates storage quotas dynamically (typically up to 50% of free disk space). In the Settings tab, you can view your quota and run the **Offline Audio Test** to confirm file persistence.
-- **Audio Formats**: iOS Safari natively plays `.mp3`, `.m4a` (AAC/ALAC), `.wav`, and `.flac`. Non-standard or proprietary codecs should be converted to MP3/M4A before importing.
+Work happens on development branches with pull requests into `main`. Never
+force-push over `main`. Commits are logical groups with meaningful messages.
+Every PR lists architecture decisions, features completed, tests performed,
+known limitations, and build results.

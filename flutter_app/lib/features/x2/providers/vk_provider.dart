@@ -117,7 +117,7 @@ class VkProvider implements X2Provider {
           responseType: ResponseType.plain,
           followRedirects: true,
           headers: const {
-            'User-Agent': 'BttMusic/3.0 (iOS; Public Metadata)',
+            'User-Agent': 'BttMusic/2.00 (iOS; Public Metadata)',
             'Accept-Language': 'en-US,en;q=0.9',
           },
           validateStatus: (s) => s != null && s < 500,

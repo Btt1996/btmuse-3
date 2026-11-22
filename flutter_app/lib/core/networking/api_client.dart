@@ -26,7 +26,7 @@ class ApiClient {
                 receiveTimeout: const Duration(seconds: 20),
                 sendTimeout: const Duration(seconds: 12),
                 headers: const {
-                  'User-Agent': 'BttMusic/3.0 (iOS; Flutter)',
+                  'User-Agent': 'BttMusic/2.00 (iOS; Flutter)',
                   'Accept': 'application/json',
                 },
               ),

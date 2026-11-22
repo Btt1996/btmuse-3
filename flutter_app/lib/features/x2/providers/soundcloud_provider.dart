@@ -7,6 +7,10 @@ import 'package:btmu/features/x2/providers/x2_provider.dart';
 /// Priority 4: SoundCloud Public Content Adapter (Zero developer client_id required).
 /// Resolves SoundCloud track/playlist URLs directly via official SoundCloud oEmbed.
 /// Explicitly reports SoundCloud's closed API registration for keyword search.
+/// `supportsKeywordSearch` is false on purpose: search always throws the
+/// restriction failure below, so the X2 engine must not offer it as a
+/// searchable provider — URL paste is the only path, and no client-ID
+/// Settings field can change that (registration is closed).
 class SoundCloudProvider implements X2Provider {
   final ApiClient _apiClient;
 
@@ -19,7 +23,7 @@ class SoundCloudProvider implements X2Provider {
   String get displayName => 'SoundCloud';
 
   @override
-  bool get supportsKeywordSearch => true;
+  bool get supportsKeywordSearch => false;
 
   @override
   bool get supportsUrlResolution => true;

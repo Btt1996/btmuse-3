@@ -9,6 +9,13 @@ import 'package:btmu/features/x2/providers/x2_provider.dart';
 /// - Works standalone from iOS for public VK track/playlist URLs via direct OpenGraph inspection.
 /// - Also supports optional X2_BACKEND_URL `/api/x2/url-inspect` and optional user VK access token.
 /// - Honestly reports when VK keyword search / audio retrieval is blocked by VK API auth or encrypted HLS.
+/// `supportsKeywordSearch` is false on purpose: [searchTracks] always
+/// throws `vk_auth_required` (unauthenticated audio.search is
+/// permanently deprecated), so the X2 engine must not offer it as a
+/// searchable provider. The working keyword path is the separate
+/// [searchWithUserToken] (user token, called directly by the Import
+/// Center VK sheet — not via the search-providers list), and URL
+/// inspection via [resolveUrl] is unaffected.
 class VkProvider implements X2Provider {
   final ApiClient _apiClient;
 
@@ -21,7 +28,7 @@ class VkProvider implements X2Provider {
   String get displayName => 'VK Music';
 
   @override
-  bool get supportsKeywordSearch => true;
+  bool get supportsKeywordSearch => false;
 
   @override
   bool get supportsUrlResolution => true;

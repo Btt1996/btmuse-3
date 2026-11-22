@@ -64,4 +64,90 @@ class X2Result {
       matchScore: matchScore ?? this.matchScore,
     );
   }
+
+  /// JSON round-trip for persisting a download payload (Phase 4, F10).
+  /// Every field is a JSON-safe primitive (String / int / double /
+  /// bool / null), so the payload serializes cleanly with no custom
+  /// encoding. Keys mirror the field names.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'providerId': providerId,
+        'providerLabel': providerLabel,
+        'title': title,
+        'artist': artist,
+        'album': album,
+        'durationSeconds': durationSeconds,
+        'artworkUrl': artworkUrl,
+        'audioUrl': audioUrl,
+        'externalPageUrl': externalPageUrl,
+        'format': format,
+        'fileSizeBytes': fileSizeBytes,
+        'audioAvailable': audioAvailable,
+        'downloadAuthorized': downloadAuthorized,
+        'licenseName': licenseName,
+        'authorizationNote': authorizationNote,
+        'matchScore': matchScore,
+      };
+
+  /// Defensive decode of [toJson] output. Missing keys fall back to the
+  /// constructor defaults and wrong-typed values are ignored (never a
+  /// throw), so a partially-corrupt stored payload still retries with
+  /// best-effort data instead of crashing the retry path. Callers that
+  /// need a usable payload should check `audioUrl` / `externalPageUrl`
+  /// — see `DownloadTask.payload`, which does exactly that.
+  factory X2Result.fromJson(Map<String, dynamic> json) {
+    String s(String key, [String fallback = '']) {
+      final v = json[key];
+      return v is String ? v : fallback;
+    }
+
+    String? ns(String key) {
+      final v = json[key];
+      return v is String ? v : null;
+    }
+
+    int i(String key, [int fallback = 0]) {
+      final v = json[key];
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return fallback;
+    }
+
+    int? ni(String key) {
+      final v = json[key];
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return null;
+    }
+
+    bool b(String key, [bool fallback = false]) {
+      final v = json[key];
+      return v is bool ? v : fallback;
+    }
+
+    double d(String key, [double fallback = 0.0]) {
+      final v = json[key];
+      return v is num ? v.toDouble() : fallback;
+    }
+
+    return X2Result(
+      id: s('id'),
+      providerId: s('providerId'),
+      providerLabel: s('providerLabel'),
+      title: s('title'),
+      artist: s('artist'),
+      album: s('album'),
+      durationSeconds: i('durationSeconds'),
+      artworkUrl: ns('artworkUrl'),
+      audioUrl: ns('audioUrl'),
+      externalPageUrl: ns('externalPageUrl'),
+      format: ns('format'),
+      fileSizeBytes: ni('fileSizeBytes'),
+      audioAvailable: b('audioAvailable'),
+      downloadAuthorized: b('downloadAuthorized'),
+      licenseName: ns('licenseName'),
+      authorizationNote: s('authorizationNote'),
+      matchScore: d('matchScore'),
+    );
+  }
 }

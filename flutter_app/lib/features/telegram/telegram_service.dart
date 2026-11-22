@@ -22,6 +22,13 @@ class TelegramBotIdentity {
 
 class TelegramAudioEntry {
   final String fileId;
+
+  /// Telegram Bot API `file_unique_id`: stable for the same file across
+  /// bots and re-sends (unlike `file_id`). Null when the update payload
+  /// did not carry one; dedup then falls back to the post-download
+  /// SHA-256 check.
+  final String? fileUniqueId;
+
   final String title;
   final String performer;
   final String fileName;
@@ -30,8 +37,13 @@ class TelegramAudioEntry {
   final String chatTitle;
   final int messageDateEpoch;
 
+  /// True when a track imported from this exact Telegram file is
+  /// already in the library (matched by `fileUniqueId` at scan time).
+  final bool alreadyInLibrary;
+
   const TelegramAudioEntry({
     required this.fileId,
+    this.fileUniqueId,
     required this.title,
     required this.performer,
     required this.fileName,
@@ -39,7 +51,23 @@ class TelegramAudioEntry {
     required this.fileSizeBytes,
     required this.chatTitle,
     required this.messageDateEpoch,
+    this.alreadyInLibrary = false,
   });
+
+  TelegramAudioEntry copyWith({bool? alreadyInLibrary}) {
+    return TelegramAudioEntry(
+      fileId: fileId,
+      fileUniqueId: fileUniqueId,
+      title: title,
+      performer: performer,
+      fileName: fileName,
+      durationSeconds: durationSeconds,
+      fileSizeBytes: fileSizeBytes,
+      chatTitle: chatTitle,
+      messageDateEpoch: messageDateEpoch,
+      alreadyInLibrary: alreadyInLibrary ?? this.alreadyInLibrary,
+    );
+  }
 
   bool get exceedsBotApiLimit => fileSizeBytes > 20 * 1024 * 1024;
 }
@@ -122,6 +150,7 @@ class TelegramService {
         entries.add(
           TelegramAudioEntry(
             fileId: fileId,
+            fileUniqueId: audio['file_unique_id'] as String?,
             title: (audio['title'] as String?) ??
                 fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
             performer: (audio['performer'] as String?) ?? 'Telegram Audio',
@@ -145,6 +174,7 @@ class TelegramService {
         entries.add(
           TelegramAudioEntry(
             fileId: fileId,
+            fileUniqueId: document['file_unique_id'] as String?,
             title: fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
             performer: 'Telegram Document',
             fileName: fileName,
@@ -160,6 +190,7 @@ class TelegramService {
         entries.add(
           TelegramAudioEntry(
             fileId: fileId,
+            fileUniqueId: voice['file_unique_id'] as String?,
             title: 'Voice Note $date',
             performer: 'Telegram Voice',
             fileName: 'voice_$date.ogg',
@@ -172,6 +203,20 @@ class TelegramService {
       }
     }
 
+    // Pre-download dedup annotation: flag entries whose exact Telegram
+    // file is already in the library, so the screen can show
+    // "already in library" instead of offering a re-download. One
+    // indexed lookup per entry; entries without a `file_unique_id`
+    // stay unflagged and rely on the post-download SHA-256 check.
+    for (var i = 0; i < entries.length; i++) {
+      final uniqueId = entries[i].fileUniqueId;
+      if (uniqueId == null || uniqueId.isEmpty) continue;
+      final existing = await _libraryRepo.findByTelegramFileUniqueId(uniqueId);
+      if (existing != null) {
+        entries[i] = entries[i].copyWith(alreadyInLibrary: true);
+      }
+    }
+
     return entries;
   }
 
@@ -181,6 +226,19 @@ class TelegramService {
     required void Function(double progress, int received, int total) onProgress,
     CancelToken? cancelToken,
   }) async {
+    // Pre-download duplicate check: the same Telegram file re-sent (or
+    // still sitting in `getUpdates`) is skipped WITHOUT downloading.
+    // Throws [DuplicateTrackFailure] carrying the existing track, the
+    // same failure the post-download SHA-256 check throws — the screen
+    // reports it as "already in library", not as a download failure.
+    final uniqueId = entry.fileUniqueId;
+    if (uniqueId != null && uniqueId.isNotEmpty) {
+      final existing = await _libraryRepo.findByTelegramFileUniqueId(uniqueId);
+      if (existing != null) {
+        throw DuplicateTrackFailure(existing, existing.sha256);
+      }
+    }
+
     if (entry.exceedsBotApiLimit) {
       throw const ValidationFailure(
         'File exceeds Telegram Bot API 20 MB download limit for direct bots.',
@@ -240,6 +298,7 @@ class TelegramService {
         durationSeconds: entry.durationSeconds,
         sourceProvider: 'telegram',
         deleteSourceAfterCopy: true,
+        telegramFileUniqueId: entry.fileUniqueId,
       );
     } catch (e) {
       if (await tempFile.exists()) await tempFile.delete();

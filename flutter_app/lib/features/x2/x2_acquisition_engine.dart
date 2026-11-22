@@ -10,6 +10,24 @@ import 'package:btmu/data/models/track.dart';
 import 'package:btmu/data/models/x2_result.dart';
 import 'package:btmu/data/repositories/library_repository.dart';
 
+/// Downloads one authorized [X2Result] and imports it into the library.
+///
+/// Validation order (plan item 20) — every step runs BEFORE the import,
+/// and every failure throws instead of silently dropping the track:
+///   1. the result must be download-authorized;
+///   2. the audio URL must be a safe public URL — unless [allowPrivateHost]
+///      is set (see below);
+///   3. the HTTP content-type must not be HTML/JSON/text or video;
+///   4. the download must be (near-)complete per content-length;
+///   5. [AudioValidator.inspectFile] must accept the magic bytes and the
+///      file must be at least 4096 bytes;
+///   6. the file size must be plausible for the declared duration
+///      (below ~1 KB/s no real music codec produces audio);
+///   7. [LibraryRepository.importFileIntoLibrary] hashes the file
+///      (SHA-256) and rejects duplicates with [DuplicateTrackFailure].
+/// Progress is reported through [onStageUpdate] at every stage, and the
+/// temporary file is always deleted, on success (moved into the library)
+/// and on failure.
 class X2AcquisitionEngine {
   final ApiClient _apiClient;
   final LibraryRepository _libraryRepo;
@@ -21,13 +39,24 @@ class X2AcquisitionEngine {
     required CancelToken cancelToken,
     required void Function(DownloadStage stage, double progress, int received, int total)
         onStageUpdate,
+    // True ONLY when the caller has already verified the URL against a
+    // user-configured trusted host — i.e. the self-hosted YouTube bridge
+    // (YoutubeBridgeService), which allows the bridge's own host
+    // (often a LAN address) or a public URL. Never true for
+    // provider-supplied URLs: those always go through the SSRF guard.
+    bool allowPrivateHost = false,
   }) async {
     if (!result.downloadAuthorized) {
       throw AuthorizationFailure(result.authorizationNote);
     }
 
     final url = result.audioUrl;
-    if (url == null || !ApiClient.isSafeExternalUrl(url)) {
+    final parsedAudioUrl = url == null ? null : Uri.tryParse(url);
+    final urlIsUsable = parsedAudioUrl != null &&
+        (parsedAudioUrl.scheme == 'http' || parsedAudioUrl.scheme == 'https') &&
+        parsedAudioUrl.host.isNotEmpty &&
+        (allowPrivateHost || ApiClient.isSafeExternalUrl(url));
+    if (url == null || !urlIsUsable) {
       throw const ValidationFailure('Result does not expose a safe external audio URL.');
     }
 
@@ -65,7 +94,8 @@ class X2AcquisitionEngine {
       final contentType = (response.headers.value('content-type') ?? '').toLowerCase();
       if (contentType.contains('text/html') ||
           contentType.contains('application/json') ||
-          contentType.contains('text/plain')) {
+          contentType.contains('text/plain') ||
+          contentType.contains('video/')) {
         throw ValidationFailure(
           'Provider returned non-audio content ($contentType) instead of an audio stream.',
         );
@@ -82,6 +112,20 @@ class X2AcquisitionEngine {
       final inspect = await AudioValidator.inspectFile(tempFile, minBytes: 4096);
       if (!inspect.isValid) {
         throw ValidationFailure(inspect.reason ?? 'Downloaded payload is not a valid audio file.');
+      }
+
+      // Duration plausibility (plan item 20): a declared duration implies
+      // a minimum plausible payload. Below ~1 KB/s (about 8 kbps) no real
+      // music codec produces audio, so such a file is truncated or
+      // garbage even when its header bytes look valid. Results with an
+      // unknown duration (0) skip this check — it only fires on a
+      // provider-declared duration that the bytes cannot support.
+      final declaredSeconds = result.durationSeconds;
+      if (declaredSeconds > 0 && actualSize < declaredSeconds * 1000) {
+        throw ValidationFailure(
+          'Downloaded file is too small for its declared duration '
+          '($actualSize bytes for $declaredSeconds s).',
+        );
       }
 
       onStageUpdate(DownloadStage.processing, 0.92, actualSize, actualSize);

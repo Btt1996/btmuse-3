@@ -12,6 +12,13 @@ class Track {
   final int fileSizeBytes;
   final String sha256;
   final String sourceProvider;
+  /// Telegram Bot API `file_unique_id` of the source file, when this
+  /// track was imported from Telegram. Stable across bots and re-sends
+  /// of the same file, unlike `file_id`, so it is the pre-download
+  /// duplicate key (see `LibraryRepository.findByTelegramFileUniqueId`).
+  /// Null for every non-Telegram import and for Telegram rows imported
+  /// before schema v5, which fall back to SHA-256 dedup.
+  final String? telegramFileUniqueId;
   final bool isFavorite;
   final int playCount;
   final int? lastPlayedAtMs;
@@ -34,6 +41,7 @@ class Track {
     required this.fileSizeBytes,
     required this.sha256,
     required this.sourceProvider,
+    this.telegramFileUniqueId,
     this.isFavorite = false,
     this.playCount = 0,
     this.lastPlayedAtMs,
@@ -56,6 +64,7 @@ class Track {
     int? fileSizeBytes,
     String? sha256,
     String? sourceProvider,
+    String? telegramFileUniqueId,
     bool? isFavorite,
     int? playCount,
     int? lastPlayedAtMs,
@@ -78,6 +87,7 @@ class Track {
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
       sha256: sha256 ?? this.sha256,
       sourceProvider: sourceProvider ?? this.sourceProvider,
+      telegramFileUniqueId: telegramFileUniqueId ?? this.telegramFileUniqueId,
       isFavorite: isFavorite ?? this.isFavorite,
       playCount: playCount ?? this.playCount,
       lastPlayedAtMs: lastPlayedAtMs ?? this.lastPlayedAtMs,
@@ -102,6 +112,7 @@ class Track {
         'file_size_bytes': fileSizeBytes,
         'sha256': sha256,
         'source_provider': sourceProvider,
+        'telegram_file_unique_id': telegramFileUniqueId,
         'is_favorite': isFavorite ? 1 : 0,
         'play_count': playCount,
         'last_played_at_ms': lastPlayedAtMs,
@@ -125,6 +136,7 @@ class Track {
         fileSizeBytes: (map['file_size_bytes'] as int?) ?? 0,
         sha256: (map['sha256'] as String?) ?? '',
         sourceProvider: (map['source_provider'] as String?) ?? 'local',
+        telegramFileUniqueId: map['telegram_file_unique_id'] as String?,
         isFavorite: ((map['is_favorite'] as int?) ?? 0) == 1,
         playCount: (map['play_count'] as int?) ?? 0,
         lastPlayedAtMs: map['last_played_at_ms'] as int?,

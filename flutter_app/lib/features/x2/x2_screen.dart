@@ -196,7 +196,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Prioritizes VK public link inspection, Telegram audio import, authorized YouTube/SoundCloud URLs, permissionless Audius 320kbps streams, Deezer/iTunes 30s verification previews, and Podcast RSS / Direct MP3/M4A/FLAC URLs—with ZERO mandatory developer API keys.',
+                              'Prioritizes VK public link inspection, Telegram audio import, metadata-only YouTube/SoundCloud lookup, permissionless Audius 320kbps streams, Deezer/iTunes 30s verification previews, and Podcast RSS / Direct MP3/M4A/FLAC URLs—with ZERO mandatory developer API keys.',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                             const SizedBox(height: 14),

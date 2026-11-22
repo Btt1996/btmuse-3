@@ -114,6 +114,50 @@ class _StorageDashboardScreenState extends ConsumerState<StorageDashboardScreen>
     }
   }
 
+  Future<void> _confirmAndRemoveMissingEntries(int count) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove missing entries?'),
+        content: Text(
+          'This removes $count library ${count == 1 ? 'entry' : 'entries'} whose '
+          'audio file is no longer on disk. Only the library entries are '
+          'removed — there is no file left to delete. A track removed '
+          'this way must be re-imported to come back. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: BttColors.danger),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Remove entries'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final removed = await ref
+        .read(libraryRepositoryProvider)
+        .deleteMissingFileEntries();
+    ref.invalidate(libraryTracksProvider);
+    ref.invalidate(storageStatsProvider);
+    await _runScan();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Removed $removed missing ${removed == 1 ? 'entry' : 'entries'}.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(storageStatsProvider);
@@ -133,7 +177,12 @@ class _StorageDashboardScreenState extends ConsumerState<StorageDashboardScreen>
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
           statsAsync.when(
-            data: (stats) => _StorageSummaryCard(stats: stats),
+            data: (stats) => _StorageSummaryCard(
+              stats: stats,
+              onRemoveMissingEntries: stats.missingFilesCount > 0
+                  ? () => _confirmAndRemoveMissingEntries(stats.missingFilesCount)
+                  : null,
+            ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => _ErrorCard(message: 'Could not load storage stats: $err'),
           ),
@@ -172,7 +221,15 @@ class _StorageDashboardScreenState extends ConsumerState<StorageDashboardScreen>
 
 class _StorageSummaryCard extends StatelessWidget {
   final LibraryStorageStats stats;
-  const _StorageSummaryCard({required this.stats});
+
+  /// Null when there is nothing missing to remove; the button is only
+  /// shown when [stats].missingFilesCount > 0.
+  final VoidCallback? onRemoveMissingEntries;
+
+  const _StorageSummaryCard({
+    required this.stats,
+    required this.onRemoveMissingEntries,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +329,24 @@ class _StorageSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+            // Phase 4, item 16c: the flag above had no cleanup — the
+            // stale rows sat in the library forever. Confirmed-only
+            // removal of exactly those rows (the files are already
+            // gone); playback is unaffected, it already skips them.
+            if (onRemoveMissingEntries != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: onRemoveMissingEntries,
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: Text(
+                    'Remove ${stats.missingFilesCount} missing '
+                    '${stats.missingFilesCount == 1 ? 'entry' : 'entries'}',
+                  ),
+                ),
+              ),
+            ],
           ],
           if (stats.duplicateGroupsCount > 0) ...[
             const SizedBox(height: 8),

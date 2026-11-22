@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,9 @@ import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
+import 'package:btmu/core/config/x2_config.dart';
+import 'package:btmu/core/errors/app_failure.dart';
+import 'package:btmu/data/models/download_task.dart';
 import 'package:btmu/data/models/x2_result.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
 import 'package:btmu/features/search/search_screen.dart';
@@ -14,8 +18,10 @@ import 'package:btmu/features/settings/settings_screen.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
 import 'package:btmu/features/x2/providers/direct_url_provider.dart';
 import 'package:btmu/features/x2/providers/soundcloud_provider.dart';
+import 'package:btmu/features/x2/providers/spotify_metadata_provider.dart';
 import 'package:btmu/features/x2/providers/vk_provider.dart';
 import 'package:btmu/features/x2/providers/youtube_provider.dart';
+import 'package:btmu/features/x2/youtube_bridge_service.dart';
 
 class ImportCenterScreen extends ConsumerStatefulWidget {
   const ImportCenterScreen({super.key});
@@ -120,6 +126,15 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
       isScrollControlled: true,
       backgroundColor: BttColors.bgElevated,
       builder: (_) => const _SoundCloudImportSheet(),
+    );
+  }
+
+  void _openSpotifySheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BttColors.bgElevated,
+      builder: (_) => const _SpotifyImportSheet(),
     );
   }
 
@@ -276,10 +291,19 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           _ImportOptionTile(
             icon: Icons.cloud_queue_rounded,
             accent: BttColors.accentPink,
-            title: 'Search SoundCloud',
+            title: 'SoundCloud Track Lookup',
             subtitle: 'Resolve SoundCloud track URLs via zero-key oEmbed & view open-source alternatives',
             trailingLabel: 'oEmbed',
             onTap: _openSoundCloudSheet,
+          ),
+          const SizedBox(height: 10),
+          _ImportOptionTile(
+            icon: Icons.music_note_rounded,
+            accent: BttColors.accentViolet,
+            title: 'Import Spotify Playlist (Metadata)',
+            subtitle: 'Paste a public Spotify playlist or album link — metadata only, matched against your library',
+            trailingLabel: 'Spotify',
+            onTap: _openSpotifySheet,
           ),
           const SizedBox(height: 18),
           _SectionHeader('X1 & X2 INTELLIGENCE ENGINES'),
@@ -449,9 +473,32 @@ class _VkImportSheetState extends ConsumerState<_VkImportSheet> {
         }
       } else if (token.isNotEmpty) {
         final items = await vk.searchWithUserToken(input, vkAccessToken: token);
-        if (mounted) setState(() => _results = items);
+        if (mounted) {
+          setState(() {
+            _results = items;
+            if (items.isEmpty) {
+              _error = 'VK returned no tracks for "$input".';
+            }
+          });
+        }
       } else {
-        await vk.searchTracks(input);
+        // F4 (Phase 4): do NOT call vk.searchTracks here. It always
+        // throws AuthorizationFailure (vk_auth_required) — VK
+        // permanently deprecated unauthenticated audio.search — so the
+        // old `await vk.searchTracks(input);` could never show a
+        // result; it only surfaced the same message through the catch
+        // below. Keyword search without a token is a closed path, and
+        // the sheet header already says so: set the honest message
+        // directly instead of pretending a search ran. The working
+        // paths stay above: paste a VK URL, or search with a token.
+        if (mounted) {
+          setState(() {
+            _error =
+                'VK keyword search needs a VK user token — unauthenticated '
+                'audio.search was permanently deprecated by VK. Paste a '
+                'public VK audio URL above, or search open sources in X2 instead.';
+          });
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -547,9 +594,40 @@ class _YoutubeImportSheet extends ConsumerStatefulWidget {
 
 class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
   final TextEditingController _ctrl = TextEditingController();
+  final TextEditingController _bridgeCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
   List<X2Result> _results = [];
+
+  // Self-hosted bridge (optional, plan item 21). The bridge URL lives in
+  // SecureCredentialsStore; the app never downloads YouTube audio itself
+  // and does nothing here when no bridge is configured.
+  bool _bridgeLoaded = false;
+  String _bridgeUrl = '';
+  bool _bridgeSaving = false;
+  bool _bridgeTesting = false;
+  String? _bridgeStatus;
+  bool _bridgeBusy = false;
+  String? _bridgeError;
+  String _bridgeStage = '';
+  double _bridgeProgress = 0.0;
+  CancelToken? _bridgeCancelToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBridgeUrl();
+  }
+
+  Future<void> _loadBridgeUrl() async {
+    final saved = await ref.read(credentialsStoreProvider).getYoutubeBridgeUrl();
+    if (!mounted) return;
+    setState(() {
+      _bridgeUrl = saved;
+      _bridgeCtrl.text = saved;
+      _bridgeLoaded = true;
+    });
+  }
 
   Future<void> _search() async {
     final q = _ctrl.text.trim();
@@ -578,9 +656,179 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
     }
   }
 
+  /// The pasted input is a YouTube URL (not keywords) — the only input
+  /// the bridge can accept, since it extracts one URL at a time.
+  bool get _inputIsYoutubeUrl {
+    final uri = Uri.tryParse(_ctrl.text.trim());
+    return uri != null &&
+        uri.hasScheme &&
+        YoutubeProvider(ref.read(apiClientProvider)).canHandleUrl(uri);
+  }
+
+  Future<void> _saveBridgeUrl() async {
+    final raw = _bridgeCtrl.text.trim();
+    if (raw.isNotEmpty && !X2Config.isValidBackendUrl(raw)) {
+      setState(() => _bridgeStatus = 'That is not a valid http(s) bridge URL.');
+      return;
+    }
+    setState(() => _bridgeSaving = true);
+    try {
+      await ref.read(credentialsStoreProvider).setYoutubeBridgeUrl(raw);
+      if (mounted) {
+        setState(() {
+          _bridgeUrl = X2Config.normalizeSingleUrl(raw);
+          _bridgeStatus = _bridgeUrl.isEmpty
+              ? 'Bridge removed. YouTube audio import is unavailable.'
+              : 'Bridge saved: $_bridgeUrl';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _bridgeSaving = false);
+    }
+  }
+
+  Future<void> _testBridgeConnection() async {
+    final base =
+        _bridgeCtrl.text.trim().isNotEmpty ? _bridgeCtrl.text.trim() : _bridgeUrl;
+    if (base.isEmpty) {
+      setState(() => _bridgeStatus = 'Enter a bridge URL first.');
+      return;
+    }
+    setState(() {
+      _bridgeTesting = true;
+      _bridgeStatus = 'Contacting bridge…';
+    });
+    try {
+      final health =
+          await YoutubeBridgeService(ref.read(apiClientProvider)).testConnection(base);
+      if (mounted) setState(() => _bridgeStatus = health.detail);
+    } on AppFailure catch (e) {
+      if (mounted) setState(() => _bridgeStatus = e.message);
+    } finally {
+      if (mounted) setState(() => _bridgeTesting = false);
+    }
+  }
+
+  /// Sends the pasted YouTube URL to the user's OWN bridge server and
+  /// imports the returned audio through the SAME X2 validation pipeline
+  /// as any authorized download (content-type, magic bytes, size,
+  /// duration plausibility, SHA-256 dedup). Only reachable when a bridge
+  /// is configured and the input is a YouTube URL.
+  Future<void> _importViaBridge() async {
+    final raw = _ctrl.text.trim();
+    final uri = Uri.tryParse(raw);
+    if (uri == null || !_inputIsYoutubeUrl) return;
+
+    final api = ref.read(apiClientProvider);
+    final cancelToken = CancelToken();
+    _bridgeCancelToken = cancelToken;
+    setState(() {
+      _bridgeBusy = true;
+      _bridgeError = null;
+      _bridgeStatus = null;
+      _bridgeStage = 'Asking your bridge to extract audio…';
+      _bridgeProgress = 0.05;
+    });
+
+    try {
+      final base = await ref.read(credentialsStoreProvider).getYoutubeBridgeUrl();
+      if (base.isEmpty) {
+        throw const NetworkFailure(
+          'No YouTube bridge is configured.',
+          code: 'youtube_bridge_not_configured',
+        );
+      }
+
+      // Metadata first (oEmbed) so the imported track keeps the real
+      // title/artist/artwork. A metadata failure does not block the
+      // bridge — its own title is the fallback.
+      X2Result? meta;
+      try {
+        meta = await YoutubeProvider(api).resolveUrl(uri);
+      } catch (_) {
+        meta = null;
+      }
+
+      final extraction = await YoutubeBridgeService(api).extract(
+        bridgeBaseUrl: base,
+        youtubeUrl: uri,
+      );
+      final ext = p
+          .extension(Uri.parse(extraction.downloadUrl).path)
+          .toLowerCase()
+          .replaceFirst('.', '');
+      final result = X2Result(
+        id: 'ytbridge_${uri.toString().hashCode}',
+        providerId: 'youtube-bridge',
+        providerLabel: 'YouTube (self-hosted bridge)',
+        title: extraction.title,
+        artist: meta?.artist ?? 'YouTube Creator',
+        album: meta?.album ?? 'YouTube Reference',
+        durationSeconds: meta?.durationSeconds ?? 0,
+        artworkUrl: meta?.artworkUrl,
+        audioUrl: extraction.downloadUrl,
+        externalPageUrl: uri.toString(),
+        format: ext.isEmpty ? 'm4a' : ext,
+        audioAvailable: true,
+        downloadAuthorized: true,
+        authorizationNote:
+            'Extracted by your own bridge server; validated like any X2 download.',
+      );
+
+      final track = await ref.read(x2AcquisitionEngineProvider).acquireTrack(
+            result: result,
+            cancelToken: cancelToken,
+            // The URL was already checked against the user-configured
+            // bridge host by YoutubeBridgeService; allow it here even
+            // when the bridge is a LAN address.
+            allowPrivateHost: true,
+            onStageUpdate: (stage, progress, received, total) {
+              if (mounted) {
+                setState(() {
+                  _bridgeStage = _stageLabel(stage);
+                  _bridgeProgress = progress;
+                });
+              }
+            },
+          );
+
+      ref.invalidate(libraryTracksProvider);
+      ref.invalidate(storageStatsProvider);
+      if (mounted) {
+        setState(() {
+          _bridgeStage = 'Imported.';
+          _bridgeProgress = 1.0;
+          _bridgeStatus = 'Imported "${track.title}" into your library via your bridge.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Imported "${track.title}" via your bridge.')),
+        );
+      }
+    } on AppFailure catch (e) {
+      if (mounted) setState(() => _bridgeError = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _bridgeError = e.toString());
+    } finally {
+      _bridgeCancelToken = null;
+      if (mounted) setState(() => _bridgeBusy = false);
+    }
+  }
+
+  String _stageLabel(DownloadStage stage) {
+    return switch (stage) {
+      DownloadStage.resolving => 'Resolving bridge audio…',
+      DownloadStage.downloading => 'Downloading from your bridge…',
+      DownloadStage.processing => 'Validating audio…',
+      DownloadStage.importing => 'Importing into library…',
+      DownloadStage.completed => 'Imported.',
+      _ => 'Working…',
+    };
+  }
+
   @override
   void dispose() {
     _ctrl.dispose();
+    _bridgeCtrl.dispose();
     super.dispose();
   }
 
@@ -602,7 +850,7 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
               Text('YouTube Supported Providers', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 6),
               Text(
-                'Direct YouTube links resolve standalone via zero-key oEmbed. Keyword search routes through PIPED_API_URL, INVIDIOUS_API_URL, or X2_BACKEND_URL with automatic failover.',
+                'Direct YouTube links resolve standalone via zero-key oEmbed. Keyword search routes through PIPED_API_URL, INVIDIOUS_API_URL, or X2_BACKEND_URL with automatic failover. YouTube audio is never downloaded by the app itself — see the self-hosted bridge below.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
@@ -633,6 +881,112 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
                   },
                   icon: const Icon(Icons.tune_rounded),
                   label: const Text('Configure Piped / Invidious / Backend in Settings'),
+                ),
+              ],
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text('Self-hosted bridge (optional)',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              Text(
+                'Btt Music never downloads YouTube audio itself. If you run your own yt-dlp server (reference implementation: tools/ytdlp_server.py), paste its base URL below. Submitting a YouTube link sends it to YOUR server; the returned audio is imported through the same X2 validation (format, size, duration, duplicate check).',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _bridgeCtrl,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  hintText: 'http://your-server:8000',
+                  prefixIcon: Icon(Icons.dns_rounded),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _bridgeSaving || _bridgeBusy ? null : _saveBridgeUrl,
+                      icon: const Icon(Icons.save_rounded, size: 18),
+                      label: Text(_bridgeSaving ? 'Saving…' : 'Save bridge URL'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _bridgeTesting || _bridgeBusy ? null : _testBridgeConnection,
+                      icon: const Icon(Icons.wifi_tethering_rounded, size: 18),
+                      label: Text(_bridgeTesting ? 'Testing…' : 'Test connection'),
+                    ),
+                  ),
+                ],
+              ),
+              if (_bridgeStatus != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _bridgeStatus!,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: BttColors.textSecondary,
+                      ),
+                ),
+              ],
+              if (_bridgeLoaded && _bridgeUrl.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'No bridge configured — YouTube audio import is unavailable.',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: BttColors.textMuted,
+                      ),
+                ),
+              ],
+              if (_bridgeUrl.isNotEmpty && _inputIsYoutubeUrl) ...[
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _bridgeBusy ? null : _importViaBridge,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: BttColors.accentPink,
+                    foregroundColor: BttColors.bgObsidian,
+                  ),
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: Text(
+                    _bridgeBusy ? 'Importing via your bridge…' : 'Import via my bridge',
+                  ),
+                ),
+              ],
+              if (_bridgeUrl.isNotEmpty && !_inputIsYoutubeUrl) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Paste a YouTube link above to import it via your bridge.',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: BttColors.textMuted,
+                      ),
+                ),
+              ],
+              if (_bridgeBusy) ...[
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: _bridgeProgress),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _bridgeStage,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _bridgeCancelToken?.cancel('Cancelled by user'),
+                      child: const Text('Cancel'),
+                    ),
+                  ],
+                ),
+              ],
+              if (_bridgeError != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _bridgeError!,
+                  style: const TextStyle(color: BttColors.danger, fontSize: 12.5),
                 ),
               ],
               ..._results.map((r) => _SheetResultCard(result: r)),
@@ -672,9 +1026,33 @@ class _SoundCloudImportSheetState extends ConsumerState<_SoundCloudImportSheet> 
       final uri = Uri.tryParse(q);
       if (uri != null && uri.hasScheme && sc.canHandleUrl(uri)) {
         final item = await sc.resolveUrl(uri);
-        if (mounted) setState(() => _results = item != null ? [item] : []);
+        if (mounted) {
+          setState(() {
+            _results = item != null ? [item] : [];
+            if (item == null) {
+              _error =
+                  'SoundCloud could not resolve that URL — check it is a public track link.';
+            }
+          });
+        }
       } else {
-        await sc.searchTracks(q);
+        // F4 (Phase 4): do NOT call sc.searchTracks here. It always
+        // throws AuthorizationFailure (soundcloud_search_restricted) —
+        // SoundCloud closed public API key registrations for keyword
+        // search — so the old `await sc.searchTracks(q);` could never
+        // show a result; it only surfaced the same message through
+        // the catch below. Keyword search is a closed path (the sheet
+        // header already says so): set the provider's honest message
+        // directly and route the user to the URL-resolve path above,
+        // which already works via zero-key oEmbed.
+        if (mounted) {
+          setState(() {
+            _error =
+                'SoundCloud closed public API key registrations for keyword search. '
+                'Paste a SoundCloud track URL to inspect its metadata via zero-key '
+                'oEmbed, or use Audius / X2 open sources.';
+          });
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -743,6 +1121,148 @@ class _SoundCloudImportSheetState extends ConsumerState<_SoundCloudImportSheet> 
                 ),
               ],
               ..._results.map((r) => _SheetResultCard(result: r)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpotifyImportSheet extends ConsumerStatefulWidget {
+  const _SpotifyImportSheet();
+
+  @override
+  ConsumerState<_SpotifyImportSheet> createState() => _SpotifyImportSheetState();
+}
+
+class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
+  final TextEditingController _ctrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+  SpotifyPlaylist? _playlist;
+
+  Future<void> _lookup() async {
+    final q = _ctrl.text.trim();
+    if (q.isEmpty) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+      _playlist = null;
+    });
+
+    try {
+      final uri = Uri.tryParse(q);
+      if (uri == null || !uri.hasScheme) {
+        if (mounted) {
+          setState(() => _error =
+              'Paste a Spotify playlist or album link to fetch its tracklist.');
+        }
+        return;
+      }
+      final provider = SpotifyMetadataProvider(ref.read(apiClientProvider));
+      final playlist = await provider.fetchPlaylist(
+        uri,
+        libraryRepository: ref.read(libraryRepositoryProvider),
+      );
+      if (mounted) setState(() => _playlist = playlist);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final playlist = _playlist;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        20,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Spotify Playlist Import',
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 6),
+              Text(
+                'Metadata only — Spotify audio is DRM-protected and is never downloaded. '
+                'Tracklists come from your deployed Btt Music backend (set X2_BACKEND_URL in Settings). '
+                'Tracks already in your library are flagged; find the rest as authorized copies in X2.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _ctrl,
+                decoration: const InputDecoration(
+                  hintText: 'https://open.spotify.com/playlist/...',
+                  prefixIcon: Icon(Icons.music_note_rounded),
+                ),
+                onSubmitted: (_) => _lookup(),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _loading ? null : _lookup,
+                icon: const Icon(Icons.search_rounded),
+                label: Text(_loading ? 'Fetching playlist...' : 'Fetch Playlist'),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!,
+                    style: const TextStyle(
+                        color: BttColors.warning, fontSize: 12.5)),
+              ],
+              if (playlist != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  playlist.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${playlist.tracks.length} tracks · ${playlist.inLibraryCount} already in library',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                ...playlist.tracks.map(
+                  (t) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (t.isInLibrary) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded,
+                                color: BttColors.success, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Already in library',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(color: BttColors.success),
+                            ),
+                          ],
+                        ),
+                      ],
+                      _SheetResultCard(result: t.result),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

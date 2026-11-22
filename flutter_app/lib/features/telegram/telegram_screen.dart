@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
+import 'package:btmu/data/repositories/library_repository.dart';
 import 'package:btmu/features/telegram/telegram_service.dart';
 
 class TelegramScreen extends ConsumerStatefulWidget {
@@ -86,9 +87,29 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
       ref.invalidate(libraryTracksProvider);
       ref.invalidate(storageStatsProvider);
       if (mounted) {
-        setState(() => _progressByFileId.remove(entry.fileId));
+        setState(() {
+          _progressByFileId.remove(entry.fileId);
+          _entries = _entries
+              .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
+              .toList();
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Imported "${track.title}" from Telegram.')),
+        );
+      }
+    } on DuplicateTrackFailure catch (e) {
+      // Pre-download (or post-download hash) duplicate: report it as
+      // "already in library", never as a download failure, and mark the
+      // entry so the list stops offering a re-download.
+      if (mounted) {
+        setState(() {
+          _progressByFileId.remove(entry.fileId);
+          _entries = _entries
+              .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
+              .toList();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
         );
       }
     } catch (e) {
@@ -167,6 +188,38 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: BttColors.bgCard,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: BttColors.borderSubtle),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline_rounded, color: BttColors.accentViolet),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'What the bot can see',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'The bot only sees audio sent directly to it, or posted in channels where it is an admin. It cannot read arbitrary public channels. To import from your own channel, add the bot as an admin there — or forward the audio to the bot.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12.5),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (_error != null) ...[
             const SizedBox(height: 12),
             Text(_error!, style: const TextStyle(color: BttColors.danger)),
@@ -201,13 +254,16 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
                               Text(entry.title, style: Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 2),
                               Text(
-                                '${entry.performer} · ${entry.chatTitle} · $mb MB',
+                                '${entry.performer} · ${entry.chatTitle} · $mb MB'
+                                '${entry.alreadyInLibrary ? ' · Already in library' : ''}',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
                           ),
                         ),
-                        if (entry.exceedsBotApiLimit)
+                        if (entry.alreadyInLibrary)
+                          const Icon(Icons.check_circle_rounded, color: BttColors.success)
+                        else if (entry.exceedsBotApiLimit)
                           const Icon(Icons.block_rounded, color: BttColors.danger)
                         else if (progress == null)
                           IconButton(

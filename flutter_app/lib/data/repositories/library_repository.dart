@@ -203,6 +203,17 @@ class LibraryRepository {
     return Track.fromMap(rows.first);
   }
 
+  /// The track imported from the Telegram file with this
+  /// `file_unique_id`, if any. An empty id never matches: it means
+  /// "unknown", not "identical". Used for the pre-download duplicate
+  /// check so a re-sent Telegram file is skipped without downloading.
+  Future<Track?> findByTelegramFileUniqueId(String fileUniqueId) async {
+    if (fileUniqueId.isEmpty) return null;
+    final rows = await _db.findTracksByTelegramFileUniqueId(fileUniqueId);
+    if (rows.isEmpty) return null;
+    return Track.fromMap(rows.first);
+  }
+
   /// Every track with this exact content hash, oldest first. Empty when
   /// there is no match; an empty hash never matches (see
   /// [groupTracksBySha256]).
@@ -237,6 +248,10 @@ class LibraryRepository {
     int durationSeconds = 0,
     required String sourceProvider,
     bool deleteSourceAfterCopy = false,
+    // Telegram Bot API `file_unique_id` of the source file, recorded on
+    // the track row so a later re-send is caught pre-download.
+    // Null for every other source.
+    String? telegramFileUniqueId,
   }) async {
     final validation = await AudioValidator.inspectFile(sourceFile);
     if (!validation.isValid) {
@@ -312,6 +327,7 @@ class LibraryRepository {
       fileSizeBytes: sizeBytes,
       sha256: hash,
       sourceProvider: sourceProvider,
+      telegramFileUniqueId: telegramFileUniqueId,
       addedAtMs: now,
       isAnalysisEstimated: true,
     );
@@ -359,6 +375,7 @@ class LibraryRepository {
     int durationSeconds = 0,
     required String sourceProvider,
     bool deleteSourceAfterCopy = false,
+    String? telegramFileUniqueId,
   }) async {
     final result = await importFile(
       sourceFile: sourceFile,
@@ -369,6 +386,7 @@ class LibraryRepository {
       durationSeconds: durationSeconds,
       sourceProvider: sourceProvider,
       deleteSourceAfterCopy: deleteSourceAfterCopy,
+      telegramFileUniqueId: telegramFileUniqueId,
     );
     return switch (result) {
       Imported(:final track) => track,
@@ -522,6 +540,29 @@ class LibraryRepository {
       deleted++;
     }
     return deleted;
+  }
+
+  /// Deletes every library row whose audio file no longer exists on
+  /// disk (Phase 4, item 16c) — the rows the storage dashboard flags
+  /// via [LibraryStorageStats.missingFilesCount]. Row-only deletes:
+  /// the file is already gone, so there is nothing to unlink, and the
+  /// `tracks` foreign keys drop the row's fingerprints and queue
+  /// entries with it (ON DELETE CASCADE). Only ever called after the
+  /// user confirms in the dashboard; returns the number of stale
+  /// entries removed. A track whose file reappears later must be
+  /// re-imported — its row is gone. Playback never needs this: the
+  /// handler already skips missing files and reports them instead of
+  /// crashing (see `BttAudioHandler`).
+  Future<int> deleteMissingFileEntries() async {
+    final tracks = await getAllTracks();
+    final db = await _db.database;
+    var removed = 0;
+    for (final track in tracks) {
+      if (await File(track.localFilePath).exists()) continue;
+      await db.delete('tracks', where: 'id = ?', whereArgs: [track.id]);
+      removed++;
+    }
+    return removed;
   }
 
   /// Confirmed-only duplicate cleanup for one [DuplicateGroup]: deletes

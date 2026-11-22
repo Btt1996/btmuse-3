@@ -9,6 +9,7 @@ class SecureCredentialsStore {
   static const _vkTokenKey = 'btmu_vk_user_token';
   static const _backendTokenKey = 'btmu_backend_auth_token';
   static const _backendUrlKey = 'btmu_backend_url';
+  static const _youtubeBridgeUrlKey = 'btmu_youtube_bridge_url';
   static const _pipedUrlsKey = 'btmu_piped_api_urls';
   static const _invidiousUrlsKey = 'btmu_invidious_api_urls';
   static const _volumeMultKey = 'btmu_audio_volume_mult';
@@ -79,6 +80,31 @@ class SecureCredentialsStore {
       await prefs.remove(_backendUrlKey);
     } else {
       await prefs.setString(_backendUrlKey, cleaned);
+    }
+  }
+
+  // Self-hosted YouTube bridge base URL (Phase 4, item 21). Stored in
+  // SharedPreferences like the X2 backend URL: it is a server address
+  // the user typed, not a secret. Empty means "no bridge configured"
+  // and the app does nothing — the bridge URL is never invented.
+  // NOTE: this store has no generic get/set methods; each key gets a
+  // typed pair following getBackendUrl/setBackendUrl.
+  Future<String> getYoutubeBridgeUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_youtubeBridgeUrlKey);
+    if (saved != null && saved.trim().isNotEmpty) {
+      return X2Config.normalizeSingleUrl(saved);
+    }
+    return '';
+  }
+
+  Future<void> setYoutubeBridgeUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cleaned = X2Config.normalizeSingleUrl(url);
+    if (cleaned.isEmpty) {
+      await prefs.remove(_youtubeBridgeUrlKey);
+    } else {
+      await prefs.setString(_youtubeBridgeUrlKey, cleaned);
     }
   }
 

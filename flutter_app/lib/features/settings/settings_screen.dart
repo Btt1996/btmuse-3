@@ -209,7 +209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Audius, Telegram Sync, Direct/RSS URLs, X1 Local Matching, and YouTube/SoundCloud oEmbed work standalone with ZERO keys. Configure optional endpoints below:',
+            'Audius, Telegram Sync, Direct/RSS URLs, X1 Local Matching, and YouTube/SoundCloud oEmbed work standalone with ZERO keys. Spotify playlist tracklists need the deployed backend below; single Spotify track links resolve via oEmbed, and SoundCloud works by pasting a track URL (no keyword search, no client ID). Configure optional endpoints below:',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 10),

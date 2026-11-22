@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'x2_result.dart';
+
 enum DownloadStage {
   waiting,
   searching,
@@ -23,6 +27,14 @@ class DownloadTask {
   final int totalBytes;
   final String? errorMessage;
   final String? importedTrackId;
+
+  /// The original [X2Result] this download was queued from, as a JSON
+  /// string (Phase 4, F10 — schema v5 `payload_json`). Persisted so a
+  /// failed task can be retried after an app restart, when the
+  /// in-memory payload is gone. Null for tasks queued before payload
+  /// persistence existed.
+  final String? payloadJson;
+
   final int createdAtMs;
   final int updatedAtMs;
 
@@ -39,6 +51,7 @@ class DownloadTask {
     this.totalBytes = 0,
     this.errorMessage,
     this.importedTrackId,
+    this.payloadJson,
     required this.createdAtMs,
     required this.updatedAtMs,
   });
@@ -50,6 +63,29 @@ class DownloadTask {
       stage == DownloadStage.downloading ||
       stage == DownloadStage.processing ||
       stage == DownloadStage.importing;
+
+  /// The original [X2Result] this download was queued from, decoded
+  /// from [payloadJson]. Null when the task predates payload
+  /// persistence (schema v5), when the stored JSON is corrupt or not
+  /// an object, or when the decoded payload has no audio URL and no
+  /// page URL to retry from — never throws, so a bad row can never
+  /// crash the history screen or the retry path.
+  X2Result? get payload {
+    final raw = payloadJson;
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      final result = X2Result.fromJson(decoded);
+      if ((result.audioUrl == null || result.audioUrl!.isEmpty) &&
+          (result.externalPageUrl == null || result.externalPageUrl!.isEmpty)) {
+        return null;
+      }
+      return result;
+    } catch (_) {
+      return null;
+    }
+  }
 
   DownloadTask copyWith({
     DownloadStage? stage,
@@ -73,6 +109,7 @@ class DownloadTask {
       totalBytes: totalBytes ?? this.totalBytes,
       errorMessage: errorMessage ?? this.errorMessage,
       importedTrackId: importedTrackId ?? this.importedTrackId,
+      payloadJson: payloadJson,
       createdAtMs: createdAtMs,
       updatedAtMs: updatedAtMs ?? this.updatedAtMs,
     );
@@ -91,6 +128,7 @@ class DownloadTask {
         'total_bytes': totalBytes,
         'error_message': errorMessage,
         'imported_track_id': importedTrackId,
+        'payload_json': payloadJson,
         'created_at_ms': createdAtMs,
         'updated_at_ms': updatedAtMs,
       };
@@ -111,6 +149,9 @@ class DownloadTask {
         totalBytes: (map['total_bytes'] as int?) ?? 0,
         errorMessage: map['error_message'] as String?,
         importedTrackId: map['imported_track_id'] as String?,
+        // Absent on rows written before schema v5 (the column did not
+        // exist yet) — those tasks simply have no retryable payload.
+        payloadJson: map['payload_json'] as String?,
         createdAtMs: (map['created_at_ms'] as int?) ?? 0,
         updatedAtMs: (map['updated_at_ms'] as int?) ?? 0,
       );

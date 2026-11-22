@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -25,6 +27,16 @@ class DownloadManagerNotifier extends StateNotifier<List<DownloadTask>> {
 
   Future<void> loadHistory() async {
     state = await _historyRepo.getDownloadHistory();
+    // F10 (Phase 4): rehydrate the in-memory payloads from the
+    // persisted rows, so a failed task restored after a restart is
+    // retryable in this session too. Rows predating payload
+    // persistence (schema v5) have no payload and stay non-retryable
+    // — the UI keeps their Retry button disabled with an honest
+    // tooltip. Corrupt stored JSON decodes to null and is skipped.
+    for (final task in state) {
+      final payload = task.payload;
+      if (payload != null) _queuedPayloads[task.id] = payload;
+    }
   }
 
   Future<void> enqueueX2Download(X2Result result) async {
@@ -39,6 +51,10 @@ class DownloadManagerNotifier extends StateNotifier<List<DownloadTask>> {
       artworkUrl: result.artworkUrl,
       stage: DownloadStage.waiting,
       progress: 0.0,
+      // F10: persist the payload with the task row so retry survives
+      // a restart. _updateTask(persist: true) re-writes this row on
+      // every stage change via copyWith, which carries payloadJson.
+      payloadJson: jsonEncode(result.toJson()),
       createdAtMs: now,
       updatedAtMs: now,
     );
@@ -112,18 +128,42 @@ class DownloadManagerNotifier extends StateNotifier<List<DownloadTask>> {
     }
   }
 
+  /// Retries [taskId] from its payload — the in-memory copy when this
+  /// session queued it, otherwise the payload persisted on the task
+  /// row (schema v5, rehydrated by [loadHistory]). Throws [StateError]
+  /// when no payload exists at all: Retry is only enabled when
+  /// [canRetry] is true, so reaching this without a payload is a
+  /// programming error, and failing loudly beats the old silent no-op.
+  /// (A retry enqueues a fresh task, as before; the failed row stays
+  /// in history until the user clears it.)
   Future<void> retryTask(String taskId) async {
-    final payload = _queuedPayloads[taskId];
-    if (payload != null) {
-      await enqueueX2Download(payload);
+    var payload = _queuedPayloads[taskId];
+    if (payload == null) {
+      for (final task in state) {
+        if (task.id == taskId) {
+          payload = task.payload;
+          break;
+        }
+      }
     }
+    if (payload == null) {
+      throw StateError(
+        'Cannot retry download $taskId: its original request was not '
+        'saved (queued before payload persistence). Re-queue it from '
+        'its source instead.',
+      );
+    }
+    await enqueueX2Download(payload);
   }
 
-  /// True only when this task's download payload is still held in memory
-  /// (i.e. the download was queued in this app session). Tasks restored
-  /// from persisted history after a restart have no payload, so their
-  /// Retry button must be disabled — retrying them would silently do
-  /// nothing. The UI gates on this; [retryTask] stays a safe no-op.
+  /// True when this task's download payload is still held in memory
+  /// (i.e. the download was queued in this app session) or was
+  /// restored from its persisted task row by [loadHistory] (schema v5
+  /// `payload_json`). Tasks queued before payload persistence, or
+  /// whose stored JSON is corrupt, have no payload, so their Retry
+  /// button must be disabled — retrying them would silently do
+  /// nothing. The UI gates on this; [retryTask] throws instead of
+  /// silently doing nothing if it is ever called without a payload.
   bool canRetry(String taskId) => _queuedPayloads.containsKey(taskId);
 
   Future<void> clearFinished() async {

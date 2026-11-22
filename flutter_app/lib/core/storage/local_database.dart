@@ -25,7 +25,19 @@ class LocalDatabase {
   /// library (tracks, lyrics cache, fingerprints, playlists, downloads)
   /// upgrades without losing anything. An absent/empty queue means
   /// "no saved queue", never a crash.
-  static const int schemaVersion = 4;
+  /// v5: added `payload_json` TEXT to `download_tasks` (Phase 4, F10).
+  /// The original X2 request (title/artist/provider/URLs) is stored as
+  /// JSON next to the task row, so a failed download can be retried
+  /// after an app restart, when the in-memory payload is gone. Purely
+  /// additive: pre-v5 rows keep a NULL payload and stay
+  /// non-retryable, exactly as before.
+  /// v5 also added `telegram_file_unique_id` TEXT to `tracks` (Phase 4,
+  /// W2) as the pre-download duplicate key for Telegram imports, plus
+  /// index `idx_tracks_telegram_file_unique_id`. Purely additive
+  /// (nullable column + index); rows imported before v5 keep NULL and
+  /// fall back to SHA-256 dedup, because a `file_unique_id` cannot be
+  /// derived from the audio file after the fact.
+  static const int schemaVersion = 5;
 
   Database? _db;
   Directory? _audioDir;
@@ -63,6 +75,7 @@ class LocalDatabase {
             file_size_bytes INTEGER NOT NULL DEFAULT 0,
             sha256 TEXT NOT NULL,
             source_provider TEXT NOT NULL,
+            telegram_file_unique_id TEXT,
             is_favorite INTEGER NOT NULL DEFAULT 0,
             play_count INTEGER NOT NULL DEFAULT 0,
             last_played_at_ms INTEGER,
@@ -74,6 +87,9 @@ class LocalDatabase {
         ''');
 
         await db.execute('CREATE INDEX idx_tracks_sha256 ON tracks(sha256);');
+        await db.execute(
+          'CREATE INDEX idx_tracks_telegram_file_unique_id ON tracks(telegram_file_unique_id);',
+        );
         await db.execute('CREATE INDEX idx_tracks_added ON tracks(added_at_ms DESC);');
 
         await db.execute('''
@@ -111,6 +127,7 @@ class LocalDatabase {
             total_bytes INTEGER NOT NULL DEFAULT 0,
             error_message TEXT,
             imported_track_id TEXT,
+            payload_json TEXT,
             created_at_ms INTEGER NOT NULL,
             updated_at_ms INTEGER NOT NULL
           );
@@ -128,6 +145,12 @@ class LocalDatabase {
         }
         if (oldVersion < 4) {
           await _createQueueTables(db);
+        }
+        if (oldVersion < 5) {
+          await _ensurePayloadJsonColumn(db);
+        }
+        if (oldVersion < 5) {
+          await _ensureTelegramFileUniqueIdColumn(db);
         }
       },
     );
@@ -240,6 +263,42 @@ class LocalDatabase {
     ''');
   }
 
+  /// Phase 4, F10 — guarantees the `download_tasks.payload_json`
+  /// column exists on pre-v5 databases. Purely additive (NULL for all
+  /// existing rows): tasks queued before v5 keep no payload and stay
+  /// non-retryable, exactly as before. The PRAGMA guard mirrors
+  /// [_ensureSha256Column], so a half-finished upgrade can safely
+  /// re-run.
+  static Future<void> _ensurePayloadJsonColumn(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(download_tasks)');
+    final hasPayloadJson = columns.any((c) => c['name'] == 'payload_json');
+    if (!hasPayloadJson) {
+      await db.execute(
+        'ALTER TABLE download_tasks ADD COLUMN payload_json TEXT',
+      );
+    }
+  }
+
+  /// Guarantees the `tracks.telegram_file_unique_id` column and its
+  /// index exist (schema v5). No backfill is possible: a Telegram
+  /// `file_unique_id` is not derivable from the audio file, so rows
+  /// imported before v5 keep NULL and fall back to SHA-256 dedup.
+  /// Other tables are untouched.
+  static Future<void> _ensureTelegramFileUniqueIdColumn(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(tracks)');
+    final hasColumn =
+        columns.any((c) => c['name'] == 'telegram_file_unique_id');
+    if (!hasColumn) {
+      await db.execute(
+        'ALTER TABLE tracks ADD COLUMN telegram_file_unique_id TEXT',
+      );
+    }
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_tracks_telegram_file_unique_id '
+      'ON tracks(telegram_file_unique_id);',
+    );
+  }
+
   /// Low-level lookup of track rows by content hash. Returns every row
   /// with this exact hash (normally 0 or 1; more than 1 means duplicates
   /// imported before dedup was enforced). The repository layer
@@ -252,6 +311,23 @@ class LocalDatabase {
       'tracks',
       where: 'sha256 = ?',
       whereArgs: [sha256],
+      orderBy: 'added_at_ms ASC',
+    );
+  }
+
+  /// Low-level lookup of track rows by Telegram `file_unique_id`.
+  /// Returns every row with this exact id (normally 0 or 1). The
+  /// repository layer ([LibraryRepository.findByTelegramFileUniqueId])
+  /// is the typed API callers should use; this exists so the lookup
+  /// lives next to the schema that guarantees the column.
+  Future<List<Map<String, Object?>>> findTracksByTelegramFileUniqueId(
+    String fileUniqueId,
+  ) async {
+    final db = await database;
+    return db.query(
+      'tracks',
+      where: 'telegram_file_unique_id = ?',
+      whereArgs: [fileUniqueId],
       orderBy: 'added_at_ms ASC',
     );
   }

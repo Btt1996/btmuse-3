@@ -25,8 +25,13 @@ class _FakeLibraryRepository extends LibraryRepository {
 }
 
 class _FakePlaylistRepository extends PlaylistRepository {
+  // Owns a mutable copy of the injected playlists: callers may pass a
+  // const (unmodifiable) list — the `service()` helper defaults to one —
+  // and createPlaylist / addTrackToPlaylist mutate this list.
   final List<Playlist> stored;
-  _FakePlaylistRepository(this.stored) : super(LocalDatabase.instance);
+  _FakePlaylistRepository(List<Playlist> initial)
+      : stored = List<Playlist>.of(initial),
+        super(LocalDatabase.instance);
 
   @override
   Future<List<Playlist>> getAllPlaylists() async => List<Playlist>.of(stored);

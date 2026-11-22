@@ -43,6 +43,16 @@ class LocalFingerprintEngine {
   static const int fftSize = 1024;
   static const int hopSize = 512;
 
+  /// Minimum fraction of the sample's hashes that must align at one time
+  /// offset for a match (on top of [matchSampleAgainstIndex]'s absolute
+  /// `minAlignedHits`). A handful of aligned hashes occurs by chance —
+  /// pure white noise reaches 6–11 aligned hits on a ~1500-hash sample —
+  /// while true matches align 23%+ of their hashes (304/1311 for a
+  /// time-shifted clip, 67–77% for noisy catalog clips). The absolute
+  /// floor still governs short samples, where the fraction is smaller
+  /// than `minAlignedHits`.
+  static const double minAlignedFraction = 0.02;
+
   static const List<(int lowBin, int highBin)> _bands = [
     (12, 32), // ~130–345 Hz
     (32, 64), // ~345–690 Hz
@@ -190,7 +200,13 @@ class LocalFingerprintEngine {
       }
     }
 
-    if (bestTrackId == null || bestAlignedCount < minAlignedHits) {
+    // A handful of aligned hashes can occur by chance (pure white noise
+    // reaches 6–11 aligned hits on a ~1500-hash sample), so the absolute
+    // `minAlignedHits` floor alone admits false positives. Require the
+    // alignment to also clear the relative floor in [minAlignedFraction].
+    final relativeFloor = (sampleHashes.length * minAlignedFraction).ceil();
+    final requiredHits = math.max(minAlignedHits, relativeFloor);
+    if (bestTrackId == null || bestAlignedCount < requiredHits) {
       return null;
     }
 

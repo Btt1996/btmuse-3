@@ -100,12 +100,13 @@ enum LyricsFetchStatus {
 /// Cleans a raw track title for higher lyric-matching rates.
 ///
 /// Faithful port of `cleanSongTitle` in `src/services/lyricsService.ts`:
-/// strips "(Official Video / Audio / Lyrics / Visualizer / HQ / HD / Remix /
+/// strips "(Official Video / Official Audio / Official Music Video /
+/// Lyrics / Lyric Video / Official Visualizer / HQ / HD / Remix /
 /// feat. … / ft. …)" style suffixes and trailing audio-file extensions.
 String cleanSongTitle(String title) {
   final cleaned = title.replaceAll(
     RegExp(
-      r'''\s*[\(\[](official\s*(music\s*)?video|audio|lyrics?|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]''',
+      r'''\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]''',
       caseSensitive: false,
     ),
     '',

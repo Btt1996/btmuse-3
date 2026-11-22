@@ -20,7 +20,7 @@ const LYRICS_CACHE_PREFIX = 'btt_lyrics_cache_';
  */
 function cleanSongTitle(title: string): string {
   return title
-    .replace(/\s*[\(\[](official\s*(music\s*)?video|audio|lyrics?|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]/gi, '')
+    .replace(/\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]/gi, '')
     .replace(/\.mp3$|\.m4a$|\.wav$|\.flac$/i, '')
     .trim();
 }

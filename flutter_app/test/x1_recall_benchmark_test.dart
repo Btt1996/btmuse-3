@@ -12,8 +12,10 @@ import 'package:btmu/features/x1/local_fingerprint_engine.dart';
 // is fingerprinted once into an 8-track index; clips cut from the tracks
 // are then identified with the PRODUCTION matching defaults
 // (`matchSampleAgainstIndex` with its default `minAlignedHits: 6` and
-// `minAlignedFraction: 0.02` — no test-only loosening), and the number of
-// correctly identified clips is the recall.
+// `minAlignedFraction: 0.02` — no test-only loosening — plus the Phase 6
+// runner-up margin, `minRunnerUpMarginRatio: 1.5` with a gap of at least
+// the relative floor), and the number of correctly identified clips is
+// the recall.
 //
 // WHAT IT DOES NOT PROVE
 // Synthetic recall is NOT real-song recall. These signals are stationary
@@ -228,5 +230,25 @@ void main() {
       indexedTracks: indexed,
     );
     expect(noiseMatch, isNull, reason: 'white noise must not match');
+  });
+
+  test('margin: near-coincident partial chord is rejected', () {
+    // Phase 5 found this chord matches track_6: its 310 Hz partial
+    // shares an FFT bin with track_6's 311.13 Hz fundamental for the
+    // whole 3 s clip (bin width ~10.8 Hz, FM identical), aligning 30
+    // hashes against the 25-hash floor. Phase 6 adds the runner-up
+    // margin: the best (track_6, 30) beats the runner-up (track_2, 15)
+    // by a gap of 15, below the 25-hash relative floor, so the match is
+    // now rejected instead of returned. Port-measured with the faithful
+    // Python port of this engine; the 4 s version (best 38 vs runner-up
+    // 19, gap 19 < floor 42) is rejected the same way. See
+    // docs/x1-recall.md for the tradeoff and the thin margin on short,
+    // very noisy true clips.
+    final nearCoincident = _synthChord([180, 310, 590, 990], 3.0);
+    final match = LocalFingerprintEngine.matchSampleAgainstIndex(
+      sampleHashes: LocalFingerprintEngine.extractLandmarks(nearCoincident),
+      indexedTracks: indexed,
+    );
+    expect(match, isNull, reason: 'near-coincident chord must not match');
   });
 }

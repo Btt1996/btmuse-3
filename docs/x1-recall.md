@@ -20,8 +20,11 @@ can only be measured on-device (see "What still needs the device" below).
   index — the same code path the app uses against the SQLite index.
 - **Clips:** 4-second slices are cut from the tracks and identified with
   `matchSampleAgainstIndex` using the **production defaults**
-  (`minAlignedHits: 6`, `minAlignedFraction: 0.02`) — no test-only
-  loosening. Recall = clips correctly identified / clips attempted.
+  (`minAlignedHits: 6`, `minAlignedFraction: 0.02`, plus the Phase 6
+  runner-up margin: best track must beat the second-best by a gap of at
+  least the relative floor and a ratio of at least 1.5 — see "Runner-up
+  margin" below) — no test-only loosening. Recall = clips correctly
+  identified / clips attempted.
 - **Noise:** white noise is added at a stated SNR, where
   SNR = 20·log₁₀(rms(signal) / rms(noise)). Noise uses a fixed seed
   (Box–Muller Gaussian over `dart:math`), so the harness is deterministic.
@@ -48,6 +51,78 @@ index → null), which cross-checks the port against the Dart engine.
 | 2 s clips + white noise, SNR 10 dB | **8/8** | Not gated |
 | Rejection: unrelated chord [150, 275, 520, 1100], 3 s | **null** (no match) | Must be null |
 | Rejection: pure white noise, 3 s | **null** (no match) | Must be null |
+| Rejection: near-coincident chord [180, 310, 590, 990], 3 s (Phase 6 margin) | **null** — best 30 vs runner-up 15, gap 15 < floor 25 | Must be null (`margin: near-coincident partial chord is rejected`) |
+| Rejection: near-coincident chord [180, 310, 590, 990], 4 s (Phase 6 margin) | **null** — best 38 vs runner-up 19, gap 19 < floor 42 | Not gated — headroom only |
+
+## Runner-up margin (Phase 6)
+
+**The rule.** `matchSampleAgainstIndex` now tracks the best aligned-offset
+count per candidate track, not just the global best, and accepts a match
+only when the best track beats the runner-up by BOTH:
+
+- an absolute gap of at least the relative floor
+  (`ceil(sampleHashes * 0.02)`), AND
+- a ratio of at least `minRunnerUpMarginRatio = 1.5`.
+
+With a single candidate track there is no runner-up and the margin is
+vacuous (the floor alone decides). A close second-best is treated as
+ambiguous and returns no match rather than a possibly-wrong match.
+
+**Why.** The 2% relative floor was tuned when the index held one or a few
+tracks; taking the max over 8 tracks inflates chance alignments. The
+documented Phase 5 case — chord [180, 310, 590, 990] matching track_6
+with 30 aligned hashes against a 25-hash floor — cleared the floor while
+track_2 aligned 15. The margin rejects it (gap 15 < floor 25).
+
+**Measured (Python port of the engine, same method as the table above).**
+True matches have enormous headroom over the margin; the rejection cases
+fail it clearly:
+
+| Case | Best | Runner-up | Gap vs floor | Ratio | Verdict |
+|---|---|---|---|---|---|
+| Clean 4 s clips, worst (track_6) | 272 | 7 | 265 vs 37 | 38.9 | Accept |
+| Clean 4 s clips, best | 528 | 8 | 520 vs 39 | 66.0 | Accept |
+| SNR 0 dB 4 s clips, worst (track_6) | 71 | 6 | 65 vs 42 | 11.8 | Accept |
+| SNR 0 dB 4 s clips, best | 198 | 12 | 186 vs 42 | 16.5 | Accept |
+| Near-coincident [180, 310, 590, 990], 3 s | 30 | 15 | 15 vs 25 | 2.0 | **Reject** |
+| Near-coincident [180, 310, 590, 990], 4 s | 38 | 19 | 19 vs 42 | 2.0 | **Reject** |
+| Unrelated [150, 275, 520, 1100], 3 s | 22 | 8 | 14 vs 25 | 2.8 | Reject (floor) |
+| White noise, 3 s, seed 77 | 12 | 7 | 5 vs 31 | 1.7 | Reject (floor) |
+
+**Tradeoff, stated plainly.** The margin trades recall for precision at
+the ambiguous edge: a clip that genuinely matches a track but aligns
+nearly as well on another track now returns no match instead of a guess.
+That is the conservative direction — a missed identification is visible
+("no match, try a longer sample") while a wrong identification is
+silent. The cost is measurable on short, very noisy true clips, which
+are NOT gated: 2 s clips at SNR 0 dB measure worst gap 23 vs floor 21
+(track_6: best 28 vs runner-up 5) and gap 23 vs floor 21 (track_7: best
+26 vs runner-up 3) — a 2-hash margin that could flip to no-match under
+FFT floating-point differences between the port and Dart, or on real
+audio. The gated 4 s cases have 23+ hashes of headroom (worst gap 65 vs
+floor 42). If a future real-song test shows true 4 s matches landing
+near the margin, re-measure before touching the constants — do not lower
+them silently.
+
+**What the margin does NOT fix.** While measuring, a stronger
+near-coincidence was found: a chord sharing ONE sustained partial (plus
+its 1.5× harmonic, under the same ±40 Hz FM) with a track still
+false-positives confidently — [311, 500, 900, 1500] matches track_6 with
+71 aligned hashes vs a 25 floor (gap 63, ratio 8.9), and
+[220, 600, 900, 1500] matches track_1 with 49 vs 9. The shared
+fundamental and its harmonic follow identical bin trajectories for the
+whole clip, so the margin cannot separate them from a true match without
+also killing true recall. This is a limitation of landmark hashing on
+stationary tones with identical vibrato, not of the margin; real songs
+rarely hold one sustained note with identical vibrato against another
+song for 3 s, and real music has transients that break the symmetry —
+but that is an assumption, not a measurement. The device gate (real
+songs on Ahmed's iPhone XS Max) is the arbiter. See "Known limitations".
+
+**Synthetic recall is not real-song recall.** The margin was tuned and
+validated on the same synthetic chords as the rest of this harness. It
+says nothing about real songs in a room, and it does not change the
+device gate below.
 
 Every gate is set **below** the measured value, so ordinary floating-point
 differences between the port's FFT and Dart's radix-2 FFT cannot flip the
@@ -66,7 +141,9 @@ flutter test test/x1_recall_benchmark_test.dart
 Note: the Dart test was **not** executed while writing this change — the
 authoring environment has no Dart/Flutter toolchain. The numbers above are
 from the Python port; the first `flutter test` run is what promotes them
-from "measured in simulation" to "measured in Dart".
+from "measured in simulation" to "measured in Dart". The same applies to
+the Phase 6 changes (runner-up margin, tempo-estimator gates, and the new
+`smart_remix_telemetry_test.dart`): port-measured, Dart-unrun.
 
 ## Landmark counts behind the "try a longer sample" hint
 
@@ -107,20 +184,62 @@ on a no-match with a genuinely thin sample.
 
 ## Known limitations found while measuring
 
-- **Near-coincident sustained partials can false-positive.** A first
-  rejection candidate, chord [180, 310, 590, 990], matched track_6: its
-  310 Hz partial shares an FFT bin with track_6's 311.13 Hz fundamental for
-  the whole 3 s clip (bin width is ~10.8 Hz, FM is identical), aligning
-  30 hashes against the 25-hash floor (2% of ~1,236 sample landmarks).
-  The 2% relative floor was tuned when the index held one or a few tracks;
-  taking the max over 8 tracks inflates chance alignments. The harness
-  uses a chord that clears every track's partials instead, but the
-  underlying weakness is real and worth a follow-up: a louder floor, or a
-  minimum absolute margin over the runner-up track, for larger libraries.
+- **Near-coincident sustained partials can false-positive — partly
+  fixed by the Phase 6 runner-up margin.** A first rejection candidate,
+  chord [180, 310, 590, 990], matched track_6: its 310 Hz partial shares
+  an FFT bin with track_6's 311.13 Hz fundamental for the whole 3 s clip
+  (bin width is ~10.8 Hz, FM is identical), aligning 30 hashes against
+  the 25-hash floor (2% of ~1,236 sample landmarks). The 2% relative
+  floor was tuned when the index held one or a few tracks; taking the max
+  over 8 tracks inflates chance alignments. The Phase 6 margin rejects
+  this chord (best 30 vs runner-up 15, gap 15 < floor 25) — see "Runner-up
+  margin" above — but it does NOT fix the stronger case: a chord sharing
+  one sustained partial plus its 1.5× harmonic under identical FM still
+  false-positives confidently ([311, 500, 900, 1500] → track_6, 71
+  aligned vs floor 25; [220, 600, 900, 1500] → track_1, 49 vs 9),
+  because the shared trajectories are identical for the whole clip. No
+  margin separates those from true matches without also killing true
+  recall; real songs are assumed harder to confuse this way, but that is
+  unmeasured until the device gate.
 - **Time-reversal still matches.** A time-reversed 3 s clip of track_1
   matched track_1 with 320 aligned hashes. For stationary FM tones the
   hash set is largely time-symmetric; real music with transients should
   differ, but reversal is not a valid rejection case for this engine.
+
+## Tempo estimation (Phase 6, Smart Remix)
+
+The same engine file owns Smart Remix telemetry
+(`analyzeTelemetry` → `_estimateTempoBpm`), verified in Phase 6 with
+the same Python-port method. The pre-Phase-6 estimator ran a raw
+(non-mean-removed, un-normalised) autocorrelation over 25 ms mean-absolute
+envelope frames and returned the argmax lag unconditionally — so a steady
+440 Hz sine, white noise, and even silence all "measured" **171.4 BPM**
+(lag 14, the first argmax on a flat correlation), and that value was
+stored with `is_analysis_estimated = 0`. Phase 6 mean-removes the
+envelope, normalises each lag by the overlap count, and returns 0 ("no
+tempo") unless the envelope really modulates (CV ≥ 0.25) and the
+autocorrelation peak is real (normalised peak ≥ 0.30). Port-measured:
+
+| Signal (8 s, 11,025 Hz) | Old estimator | New estimator | Truth |
+|---|---|---|---|
+| Periodic bursts, 90 / 100 / 120 / 128 / 140 / 160 BPM | 88.9 / 100 / 120 / 126.3 / 141.2 / 160 | same | ±~2 BPM (40 fps quantisation) |
+| Periodic bursts + noise, 120 BPM | 120 | 120 | 120 |
+| Steady 440 Hz sine | **171.4** | **0 (no tempo)** | no beats |
+| Steady white noise | **171.4** | **0** | no beats |
+| Silence | **171.4** | **0** | no beats |
+| FM chord, no beats | 64.9 | **0** | no beats |
+| 60 BPM bursts (below the 65–171 range) | 64.9 | **0** | 60, out of range |
+| 180 BPM bursts (above range) | 88.9 | 88.9 | 180, folds to half-time |
+
+Remaining limits: the detector covers 65–171 BPM only; above-range tempi
+fold to half-time (180 → 88.9) because there is no octave
+disambiguation; 40 fps quantisation gives ±~2 BPM error. The React
+estimator (`src/services/audioAnalysis.ts`) uses onset-flux plus octave
+folding into 70–180 and is the model for a future fix. Energy is RMS
+× 2.2 clamped to [0.1, 1.0] — monotonic, so ordering is preserved, but
+the absolute score is not a calibrated loudness measure. Tests:
+`flutter_app/test/smart_remix_telemetry_test.dart`. Real-song BPM
+accuracy is unmeasured — same device gate as X1.
 
 ## What still needs the device
 

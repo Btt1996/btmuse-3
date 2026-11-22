@@ -16,6 +16,7 @@ class SmartRemixScreen extends ConsumerWidget {
         SmartRemixMode.chillMix => 'Chill Mix',
         SmartRemixMode.energyMix => 'Energy Mix',
         SmartRemixMode.randomSmartMix => 'Random Smart Mix',
+        SmartRemixMode.arcMix => 'Arc Mix',
       };
 
   String _modeDesc(SmartRemixMode mode) => switch (mode) {
@@ -24,6 +25,7 @@ class SmartRemixScreen extends ConsumerWidget {
         SmartRemixMode.chillMix => 'Sorts calmly from lowest acoustic intensity upward.',
         SmartRemixMode.energyMix => 'Drops highest energy tracks immediately up front.',
         SmartRemixMode.randomSmartMix => 'Shuffles cleanly with equal-power transitions.',
+        SmartRemixMode.arcMix => 'Warm-up, build, peak, then cooldown — the full energy arc.',
       };
 
   @override
@@ -36,6 +38,61 @@ class SmartRemixScreen extends ConsumerWidget {
     Future<void> updateConfig(SmartRemixConfig next) async {
       ref.read(smartRemixConfigProvider.notifier).state = next;
       await handler.updateRemixConfig(next);
+    }
+
+    Future<void> saveMixAsPlaylist() async {
+      if (plan.isEmpty) return;
+      final defaultName = 'Smart Mix — ${_modeLabel(config.mode)}';
+      final nameCtrl = TextEditingController(text: defaultName);
+      final name = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Save mix as playlist'),
+          content: TextField(
+            controller: nameCtrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Playlist name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(nameCtrl.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+      if (name == null || name.isEmpty) return;
+      try {
+        final repo = ref.read(playlistRepositoryProvider);
+        final playlist = await repo.createPlaylist(
+          name: name,
+          description:
+              'Smart Remix · ${_modeLabel(config.mode)} · ${plan.length} tracks',
+        );
+        // Sequential awaits: addTrackToPlaylist appends at
+        // MAX(position) + 1, so awaiting each insert in plan order
+        // preserves the computed energy-arc order in the playlist.
+        for (final entry in plan) {
+          await repo.addTrackToPlaylist(playlist.id, entry.track.id);
+        }
+        ref.invalidate(playlistsProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Saved "$name" with ${plan.length} tracks.')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save playlist: $e')),
+          );
+        }
+      }
     }
 
     return Scaffold(
@@ -124,6 +181,17 @@ class SmartRemixScreen extends ConsumerWidget {
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text('Launch ${_modeLabel(config.mode)} (${plan.length} tracks)'),
           ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: plan.isEmpty ? null : saveMixAsPlaylist,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: BttColors.accentPink,
+              side: const BorderSide(color: BttColors.accentPink),
+              minimumSize: const Size.fromHeight(50),
+            ),
+            icon: const Icon(Icons.playlist_add_rounded),
+            label: Text('Save mix as playlist (${plan.length} tracks)'),
+          ),
           if (plan.isNotEmpty) ...[
             const SizedBox(height: 22),
             Text(
@@ -133,11 +201,17 @@ class SmartRemixScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             ...plan.take(12).map((entry) {
               final tag = entry.usesHeuristicFallback ? 'Est.' : 'Measured';
+              // The "~" marks a heuristic estimate only: a measured BPM
+              // is shown bare, so estimates are never presented as
+              // measured values.
+              final bpmLabel = entry.usesHeuristicFallback
+                  ? '~${entry.effectiveBpm.round()} BPM'
+                  : '${entry.effectiveBpm.round()} BPM';
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(entry.track.title),
                 subtitle: Text(
-                  '${entry.track.artist} · ~${entry.effectiveBpm.round()} BPM ($tag) · Flow ${(entry.transitionScore * 100).round()}%',
+                  '${entry.track.artist} · $bpmLabel ($tag) · Flow ${(entry.transitionScore * 100).round()}%',
                 ),
               );
             }),

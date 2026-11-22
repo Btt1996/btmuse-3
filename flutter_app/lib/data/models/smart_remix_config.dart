@@ -4,6 +4,10 @@ enum SmartRemixMode {
   chillMix,
   energyMix,
   randomSmartMix,
+  // Phase 6: the full Λ arc — warm-up → build → peak → cooldown.
+  // Appended last; the mode is persisted by name with a smoothMix
+  // fallback (SecureCredentialsStore), so existing installs are safe.
+  arcMix,
 }
 
 class SmartRemixConfig {

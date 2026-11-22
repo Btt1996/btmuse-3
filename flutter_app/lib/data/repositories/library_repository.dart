@@ -407,20 +407,49 @@ class LibraryRepository {
     await db.insert('tracks', track.toMap());
   }
 
-  Future<void> indexTrackAudio(Track track) async {
+  /// Indexes [track]'s audio for X1 matching and Smart Remix telemetry:
+  /// extracts mono PCM (native resample to 11,025 Hz, WAV fallback below),
+  /// runs [LocalFingerprintEngine.analyzeTelemetry] (RMS energy +
+  /// estimated BPM) and [LocalFingerprintEngine.extractLandmarks], and
+  /// writes fingerprints plus `bpm` / `energy_score` /
+  /// `is_analysis_estimated = 0` in one transaction.
+  ///
+  /// Returns true only when the fingerprints and telemetry were written;
+  /// false on every skip — missing file, no PCM, no landmarks, a WAV
+  /// whose sample rate is not 11,025 Hz, or any exception. Failures are
+  /// silent by design (indexing must never block import: this is
+  /// fire-and-forget from [importFile] via `unawaited`), so callers that
+  /// need to report indexing health must check the return value instead
+  /// of assuming success. A track that returns false keeps
+  /// `is_analysis_estimated = 1`, and Smart Remix falls back to its
+  /// disclosed heuristic ("Est." in the plan preview) — it never presents
+  /// an estimate as measured. Also note the telemetry write is gated on
+  /// landmarks: a track with no landmarks (silence) writes nothing at
+  /// all, and a track whose tempo estimator returns 0 (no periodic onset
+  /// structure) keeps `bpm` NULL while its measured energy is stored.
+  Future<bool> indexTrackAudio(Track track) async {
     try {
       final file = File(track.localFilePath);
-      if (!await file.exists()) return;
+      if (!await file.exists()) return false;
 
       var pcm = await IosAudioBridge.extractMonoPcm(filePath: file.path, maxSeconds: 180);
       if (pcm.isEmpty && track.format.toUpperCase() == 'WAV') {
-        pcm = LocalFingerprintEngine.decodeWavBytesToMonoFloat(await file.readAsBytes());
+        // Native extraction is the only resampling path. The pure-Dart
+        // WAV decoder assumes 11,025 Hz samples, so a 44,100 Hz WAV
+        // decoded here would index landmarks at a 4x-wrong time scale and
+        // store a wrong tempo as measured. Only use the fallback at the
+        // target rate; otherwise leave the track estimated.
+        final bytes = await file.readAsBytes();
+        if (LocalFingerprintEngine.wavSampleRateHz(bytes) ==
+            LocalFingerprintEngine.targetSampleRate) {
+          pcm = LocalFingerprintEngine.decodeWavBytesToMonoFloat(bytes);
+        }
       }
-      if (pcm.isEmpty) return;
+      if (pcm.isEmpty) return false;
 
       final telemetry = LocalFingerprintEngine.analyzeTelemetry(pcm);
       final landmarks = LocalFingerprintEngine.extractLandmarks(pcm);
-      if (landmarks.isEmpty) return;
+      if (landmarks.isEmpty) return false;
 
       // Sample evenly across the track if landmarks exceed 2500 so later song sections remain matchable
       final selectedLandmarks = landmarks.length <= 2500
@@ -455,8 +484,10 @@ class LibraryRepository {
           whereArgs: [track.id],
         );
       });
+      return true;
     } catch (_) {
       // Never block library import if background DSP indexing is skipped
+      return false;
     }
   }
 
@@ -516,6 +547,17 @@ class LibraryRepository {
       'UPDATE tracks SET play_count = play_count + 1, last_played_at_ms = ? WHERE id = ?',
       [now, trackId],
     );
+  }
+
+  /// Clears playback history: nulls `last_played_at_ms` on every track.
+  /// Play counts are deliberately kept — they feed the duplicate scan's
+  /// suggested keeper (`DuplicateGroup.suggestedKeeper`: most-played wins)
+  /// and the library stats, so wiping them would silently change cleanup
+  /// suggestions. (Phase 6: moved here from PlaybackHistoryScreen, which
+  /// previously ran this SQL inline through the database provider.)
+  Future<void> clearPlaybackHistory() async {
+    final db = await _db.database;
+    await db.update('tracks', {'last_played_at_ms': null});
   }
 
   Future<void> deleteTrack(Track track) async {

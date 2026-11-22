@@ -53,6 +53,27 @@ class LocalFingerprintEngine {
   /// than `minAlignedHits`.
   static const double minAlignedFraction = 0.02;
 
+  /// Runner-up margin (Phase 6): the best-matching track must beat the
+  /// second-best candidate track's best offset count by BOTH an absolute
+  /// gap of at least the relative floor (see [matchSampleAgainstIndex])
+  /// AND this ratio. A near-coincident sustained partial can clear the
+  /// 2% floor on its own while a second track aligns nearly as well —
+  /// the documented Phase 5 case, chord [180, 310, 590, 990], aligned 30
+  /// hashes on track_6 against a 25-hash floor while track_2 aligned 15.
+  /// A real match out-aligns every other candidate by a wide margin, so
+  /// a close second-best means "ambiguous — no match" rather than a
+  /// possibly-wrong match. Measured with a faithful Python port of this
+  /// engine (see docs/x1-recall.md): worst true 4 s clip (SNR 0 dB)
+  /// scores best 71 vs runner-up 6 (gap 65, ratio 11.8), so 1.5 leaves
+  /// wide headroom on every gated recall case; the near-coincident chord
+  /// scores gap 15 < floor 25 and ratio 2.0 and is now rejected. With a
+  /// single candidate track there is no runner-up and the margin is
+  /// vacuous. Tradeoff: short, very noisy clips sit close to the margin
+  /// (2 s clips at SNR 0 dB measured worst gap 23 vs floor 21, not
+  /// gated) and may flip to no-match — a conservative failure, never a
+  /// wrong match. Synthetic recall is not real-song recall.
+  static const double minRunnerUpMarginRatio = 1.5;
+
   static const List<(int lowBin, int highBin)> _bands = [
     (12, 32), // ~130–345 Hz
     (32, 64), // ~345–690 Hz
@@ -104,7 +125,10 @@ class LocalFingerprintEngine {
     final avgBin = frameCount > 0 ? peakBinSum / frameCount : 0.0;
     final dominantHz = avgBin * (sampleRate / fftSize);
 
-    // Simple onset envelope autocorrelation for rough BPM estimation (60–180 BPM)
+    // Onset-envelope autocorrelation for rough BPM estimation (65–171 BPM:
+    // lags 14–37 at 40 fps). Returns 0 when no periodic onset structure is
+    // detected — see [_estimateTempoBpm]. Callers must treat 0 as "no
+    // tempo measured" and leave bpm unset, never as a real tempo.
     final bpm = _estimateTempoBpm(samples, sampleRate);
 
     return AcousticTelemetry(
@@ -180,11 +204,12 @@ class LocalFingerprintEngine {
       sampleByHash.putIfAbsent(l.hash, () => []).add(l.timeFrame);
     }
 
-    String? bestTrackId;
-    var bestAlignedCount = 0;
-
+    // Per-track best aligned-offset count. The runner-up margin needs the
+    // second-best track, not just the global best.
+    final bestPerTrack = <String, int>{};
     for (final entry in indexedTracks.entries) {
       final offsetHistogram = <int, int>{};
+      var trackBest = 0;
       for (final refLandmark in entry.value) {
         final sampleTimes = sampleByHash[refLandmark.hash];
         if (sampleTimes == null) continue;
@@ -192,13 +217,18 @@ class LocalFingerprintEngine {
           final delta = refLandmark.timeFrame - tSample;
           final count = (offsetHistogram[delta] ?? 0) + 1;
           offsetHistogram[delta] = count;
-          if (count > bestAlignedCount) {
-            bestAlignedCount = count;
-            bestTrackId = entry.key;
+          if (count > trackBest) {
+            trackBest = count;
           }
         }
       }
+      bestPerTrack[entry.key] = trackBest;
     }
+    final ranked = bestPerTrack.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final bestTrackId = ranked.first.key;
+    final bestAlignedCount = ranked.first.value;
+    final runnerUpAlignedCount = ranked.length > 1 ? ranked[1].value : 0;
 
     // A handful of aligned hashes can occur by chance (pure white noise
     // reaches 6–11 aligned hits on a ~1500-hash sample), so the absolute
@@ -206,8 +236,23 @@ class LocalFingerprintEngine {
     // alignment to also clear the relative floor in [minAlignedFraction].
     final relativeFloor = (sampleHashes.length * minAlignedFraction).ceil();
     final requiredHits = math.max(minAlignedHits, relativeFloor);
-    if (bestTrackId == null || bestAlignedCount < requiredHits) {
+    if (bestAlignedCount < requiredHits) {
       return null;
+    }
+
+    // Runner-up margin: a near-coincident partial can clear the floors
+    // above while a second track aligns nearly as well (Phase 5 case:
+    // best 30 vs runner-up 15). Demand BOTH an absolute gap of at least
+    // the relative floor AND a ratio of at least [minRunnerUpMarginRatio];
+    // a close second-best is ambiguous, so return no match rather than a
+    // possibly-wrong one. A single candidate track has no runner-up and
+    // skips this check.
+    if (runnerUpAlignedCount > 0) {
+      final gap = bestAlignedCount - runnerUpAlignedCount;
+      if (gap < relativeFloor ||
+          bestAlignedCount < minRunnerUpMarginRatio * runnerUpAlignedCount) {
+        return null;
+      }
     }
 
     final confidence = (bestAlignedCount / math.max(12, sampleHashes.length * 0.18)).clamp(0.45, 0.99);
@@ -216,6 +261,19 @@ class LocalFingerprintEngine {
       alignedHits: bestAlignedCount,
       confidence: confidence,
     );
+  }
+
+  /// Sample rate (Hz) declared in a WAV (RIFF) header, or null when the
+  /// bytes are not a parseable WAV header. [decodeWavBytesToMonoFloat]
+  /// assumes the samples are at [targetSampleRate]; callers must check
+  /// this first — a 44,100 Hz WAV decoded as 11,025 Hz would get a 4x-wrong
+  /// tempo, wrong landmark time scale, and fingerprints that can never
+  /// match mic audio. Byte 24, little-endian uint32, per the WAV spec.
+  static int? wavSampleRateHz(Uint8List bytes) {
+    if (bytes.length < 44) return null;
+    if (String.fromCharCodes(bytes.sublist(0, 4)) != 'RIFF') return null;
+    if (String.fromCharCodes(bytes.sublist(8, 12)) != 'WAVE') return null;
+    return ByteData.sublistView(bytes).getUint32(24, Endian.little);
   }
 
   /// Parses uncompressed PCM WAV bytes directly in pure Dart (useful for clips & tests).
@@ -313,6 +371,51 @@ class LocalFingerprintEngine {
     }
   }
 
+  /// Minimum envelope modulation depth (std / mean of the 40 fps
+  /// mean-absolute envelope) for a tempo estimate to be trusted. A steady
+  /// tone or drone has an almost flat envelope, so there is no onset
+  /// structure to measure; a real onset train modulates strongly.
+  /// Measured with a faithful Python port of this estimator
+  /// (see docs/x1-recall.md): steady 440 Hz sine CV 0.001, FM chord with
+  /// no beats CV 0.036, white noise CV 0.034 — all rejected — while
+  /// periodic burst trains measure CV 0.68+ even with added noise, and
+  /// 1.34+ clean. The 0.25 gate sits between those clusters.
+  static const double _minTempoEnvelopeCv = 0.25;
+
+  /// Minimum normalised autocorrelation peak (best lag's correlation
+  /// divided by the lag-0 energy of the mean-removed envelope) for a
+  /// tempo estimate to be trusted. Below-range tempi peak weakly at the
+  /// range edge (a 60 BPM burst train peaks at r = 0.254 on lag 37) while
+  /// in-range bursts peak at r >= 0.38 (worst measured: an accented
+  /// 120 BPM train with alternating strong/weak beats). The 0.30 gate
+  /// rejects the edge case and keeps every in-range burst measured.
+  static const double _minTempoAutocorrPeak = 0.30;
+
+  /// Onset-envelope autocorrelation tempo estimation, 65–171 BPM
+  /// (lags 14–37 at 40 fps). Returns 0 when no periodic onset structure
+  /// is detected — callers must treat 0 as "no tempo measured" and leave
+  /// bpm unset, never as a real tempo.
+  ///
+  /// Two guards keep steady signals from producing a bogus "measured"
+  /// tempo. The pre-Phase-6 version ran a raw (non-mean-removed,
+  /// un-normalised) autocorrelation and returned the argmax lag
+  /// unconditionally, so a steady 440 Hz sine, white noise, and even
+  /// silence all "measured" 171.4 BPM (lag 14, the first argmax on a flat
+  /// correlation) and that value was stored with is_analysis_estimated=0.
+  /// This version mean-removes the envelope (removing the DC bias) and
+  /// normalises each lag by the overlap count (removing the small-lag
+  /// term-count bias), then requires real modulation depth
+  /// ([_minTempoEnvelopeCv]) and a real correlation peak
+  /// ([_minTempoAutocorrPeak]).
+  ///
+  /// Known limits, measured on synthetic bursts (see docs/x1-recall.md):
+  /// 40 fps quantisation gives +/-~2 BPM error (90 -> 88.9, 128 ->
+  /// 126.3); tempi below 65 BPM have no in-range lag and read as no
+  /// tempo; tempi above 171 BPM fold to half-time (180 -> 88.9) because
+  /// there is no octave disambiguation — the React estimator in
+  /// src/services/audioAnalysis.ts does onset-flux + octave folding and
+  /// is the model for a future fix. Real-song accuracy is unmeasured:
+  /// the device gate (Ahmed's iPhone XS Max) is still open.
   static double _estimateTempoBpm(List<double> samples, int sampleRate) {
     if (samples.length < sampleRate * 2) return 0;
     final windowSize = math.max(1, sampleRate ~/ 40); // 25ms energy frames -> 40 fps
@@ -320,6 +423,7 @@ class LocalFingerprintEngine {
     if (envLen < 40) return 0;
 
     final env = Float64List(envLen);
+    var envSum = 0.0;
     for (var i = 0; i < envLen; i++) {
       var e = 0.0;
       final base = i * windowSize;
@@ -327,21 +431,39 @@ class LocalFingerprintEngine {
         e += samples[base + k].abs();
       }
       env[i] = e / windowSize;
+      envSum += env[i];
     }
+    final envMean = envSum / envLen;
 
-    // Autocorrelate over lags corresponding to 65–175 BPM at 40 Hz (~14 to 37 frames)
+    var envVarSum = 0.0;
+    for (var i = 0; i < envLen; i++) {
+      final d = env[i] - envMean;
+      envVarSum += d * d;
+    }
+    final envStd = math.sqrt(envVarSum / envLen);
+    // No modulation depth, no onsets: steady tone / drone / silence.
+    if (envMean <= 0 || envStd / envMean < _minTempoEnvelopeCv) return 0;
+    // Degenerate flat envelope guard (variance zero despite the CV check).
+    if (envVarSum <= 0) return 0;
+
+    // Mean-removed autocorrelation, normalised by the lag-0 energy so
+    // lags are comparable: r[lag] = sum(env[i]*env[i+lag]) / sum(env^2).
     var bestLag = 20;
-    var bestCorr = -1.0;
+    var bestR = -1.0;
     for (var lag = 14; lag <= 37 && lag < envLen ~/ 2; lag++) {
       var corr = 0.0;
       for (var i = 0; i < envLen - lag; i++) {
-        corr += env[i] * env[i + lag];
+        corr += (env[i] - envMean) * (env[i + lag] - envMean);
       }
-      if (corr > bestCorr) {
-        bestCorr = corr;
+      final r = corr / envVarSum;
+      if (r > bestR) {
+        bestR = r;
         bestLag = lag;
       }
     }
+    // Weak peak: no periodic onset structure (below-range tempo peaking
+    // at the range edge, noise, or an FM chord's slow beating).
+    if (bestR < _minTempoAutocorrPeak) return 0;
     return (40.0 * 60.0) / bestLag;
   }
 }

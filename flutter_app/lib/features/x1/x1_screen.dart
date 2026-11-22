@@ -359,7 +359,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                 border: Border.all(color: BttColors.borderSubtle),
               ),
               child: Text(
-                'DSP Telemetry: ${_telemetry!.durationSeconds.toStringAsFixed(1)}s · RMS ${(_telemetry!.rmsEnergy * 100).toStringAsFixed(0)}% · Peak ~${_telemetry!.dominantFrequencyHz.round()} Hz · Tempo ~${_telemetry!.estimatedBpm.round()} BPM · $_landmarkCount landmarks',
+                'DSP Telemetry: ${_telemetry!.durationSeconds.toStringAsFixed(1)}s · RMS ${(_telemetry!.rmsEnergy * 100).toStringAsFixed(0)}% · Peak ~${_telemetry!.dominantFrequencyHz.round()} Hz${_telemetry!.estimatedBpm > 0 ? ' · Tempo ~${_telemetry!.estimatedBpm.round()} BPM' : ''} · $_landmarkCount landmarks',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ),

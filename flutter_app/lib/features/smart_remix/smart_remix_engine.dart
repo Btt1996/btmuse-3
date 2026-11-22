@@ -18,6 +18,30 @@ class RemixPlanEntry {
   });
 }
 
+/// Smart Remix sequencing: orders a track list into a playback plan.
+///
+/// Energy-arc mapping, verified Phase 6 against the sorts in
+/// [buildMixOrder] (warm-up → build → peak → cooldown is the Λ arc):
+///
+/// * [SmartRemixMode.chillMix] — warm-up → build → peak. Ascending
+///   energy; ends at the peak, no cooldown.
+/// * [SmartRemixMode.energyMix] — peak → cooldown. Descending energy;
+///   starts at the peak, no warm-up.
+/// * [SmartRemixMode.partyMix] — peak first. Descending combined
+///   energy/BPM score; a peak block, not an arc.
+/// * [SmartRemixMode.smoothMix] — no global arc. Nearest-neighbour
+///   chaining minimises step-to-step BPM/energy jumps from the first
+///   track, so the overall shape follows wherever the library order
+///   starts; it is continuity, not a designed arc.
+/// * [SmartRemixMode.randomSmartMix] — no arc. Deterministic shuffle
+///   (seeded when [seed] is given).
+/// * [SmartRemixMode.arcMix] — the full Λ arc (added Phase 6).
+///   Ascending energy up to and including the peak track, then
+///   descending: warm-up → build → peak → cooldown.
+///
+/// The save-as-playlist action on `SmartRemixScreen` persists exactly
+/// the order the selected mode produced, so what is saved is what the
+/// mapping above describes.
 class SmartRemixEngine {
   static (double bpm, double energy, bool heuristic) resolveFeatures(Track track) {
     if (track.bpm != null && track.energyScore != null && !track.isAnalysisEstimated) {
@@ -75,6 +99,22 @@ class SmartRemixEngine {
       case SmartRemixMode.randomSmartMix:
         final rng = math.Random(seed);
         enriched.shuffle(rng);
+      case SmartRemixMode.arcMix:
+        // Full Λ arc: warm-up → build → peak → cooldown.
+        // Sort ascending by energy, lift the peak out, then run the
+        // lower half up to the peak and the upper half back down.
+        // (2 tracks degrade to peak-then-down; 1 track is just itself.)
+        enriched.sort((a, b) => a.energy.compareTo(b.energy));
+        final peak = enriched.removeLast();
+        final ascendingCount = enriched.length ~/ 2;
+        final arc = [
+          ...enriched.sublist(0, ascendingCount),
+          peak,
+          ...enriched.sublist(ascendingCount).reversed,
+        ];
+        enriched
+          ..clear()
+          ..addAll(arc);
       case SmartRemixMode.smoothMix:
         // Nearest-neighbor BPM & energy chaining for smoothest transitions
         final remaining = List.of(enriched);

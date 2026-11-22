@@ -52,7 +52,15 @@ export function parseSpotifyPlaylistId(input: string): string | null {
 
 /**
  * X1: Resolves Spotify playlist or album metadata without asking the user for API credentials.
- * Utilizes the public embed metadata resolver (inspired by Unstream's keyless architecture).
+ * Resolution runs exclusively through the btmu server-side keyless embed resolver
+ * (`POST /api/spotify/playlist`).
+ *
+ * There is intentionally NO client-side fallback: the previous fallback routed
+ * Spotify embed pages through the third-party `api.allorigins.win` CORS proxy,
+ * which sent user-supplied Spotify URLs (and the responses) to an unrelated
+ * third party. That proxy path was removed (Phase 0 item 5). When the server is
+ * unavailable this function throws an explicit "server unavailable" error
+ * instead of silently degrading to a proxy.
  *
  * Conforms to exact X1 normalized schema:
  * {
@@ -74,8 +82,9 @@ export async function fetchSpotifyPlaylist(
     );
   }
 
-  // Primary: Call the local server endpoint which runs the keyless embed resolver in web mode
+  // Server-side path only: the local server endpoint runs the keyless embed resolver.
   if (!isNativePlatform) {
+    let serverError: Error;
     try {
       const res = await fetch(`/api/spotify/playlist?id=${encodeURIComponent(target.id)}`, {
         method: 'POST',
@@ -103,72 +112,31 @@ export async function fetchSpotifyPlaylist(
       }
 
       if (data.details || data.error) {
-        throw new Error(data.details || data.error);
+        serverError = new Error(data.details || data.error);
+      } else {
+        serverError = new Error(
+          `Spotify resolution server unavailable (HTTP ${res.status}). Check that the btmu server is running and try again.`
+        );
       }
     } catch (err: unknown) {
-      if (err instanceof Error && !err.message.includes('Failed to fetch')) {
-        throw err;
+      if (err instanceof Error && err.message.includes('Failed to fetch')) {
+        serverError = new Error(
+          'Spotify resolution server unavailable (network error). Check that the btmu server is running and try again.'
+        );
+      } else if (err instanceof Error) {
+        serverError = err;
+      } else {
+        serverError = new Error(
+          'Spotify resolution server unavailable. Check that the btmu server is running and try again.'
+        );
       }
     }
+    throw serverError;
   }
 
-  // Client-side fallback: In case the local server is temporarily rebooting,
-  // attempt public CORS proxy to open.spotify.com/embed/...
-  try {
-    const embedUrl = `https://open.spotify.com/embed/${target.type}/${target.id}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(embedUrl)}`;
-    const clientRes = await fetch(proxyUrl);
-
-    if (clientRes.ok) {
-      const html = await clientRes.text();
-      const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-
-      if (match) {
-        const parsed = JSON.parse(match[1]);
-        const entity = parsed.props?.pageProps?.state?.data?.entity;
-
-        if (entity && Array.isArray(entity.trackList) && entity.trackList.length > 0) {
-          const playlistTitle = entity.title || entity.name || 'Spotify Playlist';
-          const coverUrl =
-            entity.visualIdentity?.image?.[entity.visualIdentity.image.length - 1]?.url ||
-            entity.coverArt?.sources?.[0]?.url ||
-            null;
-
-          const tracks: NormalizedTrackMetadata[] = entity.trackList.map(
-            (item: any, index: number) => {
-              const artists = item.subtitle
-                ? item.subtitle.split(/,\s*|\s*,\s*/).map((a: string) => a.trim()).filter(Boolean)
-                : ['Unknown Artist'];
-
-              return {
-                title: item.title || 'Unknown Title',
-                artists: artists.length > 0 ? artists : ['Unknown Artist'],
-                album: playlistTitle,
-                durationMs: typeof item.duration === 'number' ? item.duration : 0,
-                isrc: null,
-                artworkUrl: coverUrl,
-                position: index,
-              };
-            }
-          );
-
-          return {
-            source: 'spotify',
-            playlistTitle,
-            playlistDescription: entity.subtitle || '',
-            playlistCoverUrl: coverUrl || undefined,
-            externalUrl: `https://open.spotify.com/${target.type}/${target.id}`,
-            totalTracks: tracks.length,
-            tracks,
-          };
-        }
-      }
-    }
-  } catch {
-    // ignore client fallback error and throw main descriptive error below
-  }
-
+  // Native builds have no local server to call, and there is no client-side
+  // fallback: never route Spotify embed pages through a third-party CORS proxy.
   throw new Error(
-    'Unable to resolve Spotify playlist. Ensure the playlist is Public and not Private or Deleted on Spotify.'
+    'Spotify playlist resolution requires the btmu server, which is unavailable in this build. Import the playlist while the server is reachable, or use a direct audio URL or Telegram import instead.'
   );
 }

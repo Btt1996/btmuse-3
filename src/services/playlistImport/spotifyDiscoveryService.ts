@@ -2,6 +2,14 @@
  * Spotify Public Discovery & User Profile Explorer
  * Enables browsing public Spotify user profiles (e.g. /user/{userId}),
  * retrieving public playlists, exploring curated playlists, and one-click import.
+ *
+ * Discovery runs exclusively through the btmu server (`/api/spotify/user`).
+ * There is intentionally NO client-side fallback: the previous fallback routed
+ * Spotify embed pages through the third-party `api.allorigins.win` CORS proxy,
+ * which sent user-supplied Spotify profile URLs (and the responses) to an
+ * unrelated third party. That proxy path was removed (Phase 0 item 5). When the
+ * server is unavailable this module throws an explicit "server unavailable"
+ * error instead of silently degrading to a proxy or returning an empty result.
  */
 
 import { NormalizedPlaylist, NormalizedTrackMetadata } from '../../types/playlistImport';
@@ -52,7 +60,8 @@ export function parseSpotifyUserId(input: string): string | null {
 }
 
 /**
- * Discover public playlists for a Spotify user
+ * Discover public playlists for a Spotify user.
+ * Server-side path only — throws an explicit error when the server is unavailable.
  */
 export async function discoverUserPlaylists(
   usernameOrUrl: string
@@ -62,71 +71,50 @@ export async function discoverUserPlaylists(
     throw new Error('Please enter a valid Spotify username or profile URL.');
   }
 
-  // 1. If not native, call backend proxy if available
   if (!isNativePlatform) {
+    let serverError: Error;
     try {
       const res = await fetch(`/api/spotify/user?userId=${encodeURIComponent(userId)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.playlists && Array.isArray(data.playlists)) {
-          return {
-            id: userId,
-            displayName: data.displayName || userId,
-            profileUrl: `https://open.spotify.com/user/${userId}`,
-            avatarUrl: data.avatarUrl,
-            playlists: data.playlists,
-          };
-        }
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.playlists && Array.isArray(data.playlists)) {
+        return {
+          id: userId,
+          displayName: data.displayName || userId,
+          profileUrl: `https://open.spotify.com/user/${userId}`,
+          avatarUrl: data.avatarUrl,
+          playlists: data.playlists,
+        };
       }
-    } catch {
-      // fallback to public embed resolution
-    }
-  }
 
-  // 2. Open public embed discovery
-  try {
-    const embedUrl = `https://open.spotify.com/embed/user/${userId}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(embedUrl)}`;
-    const res = await fetch(proxyUrl);
-
-    if (res.ok) {
-      const html = await res.text();
-      const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
-      if (match) {
-        const parsed = JSON.parse(match[1]);
-        const entity = parsed.props?.pageProps?.state?.data?.entity;
-        if (entity) {
-          const playlists: SpotifyPublicPlaylistSummary[] = (entity.publicPlaylists || []).map((pl: any) => ({
-            id: pl.id || String(pl.uri || '').replace('spotify:playlist:', ''),
-            name: pl.name || 'Untitled Playlist',
-            description: pl.description || '',
-            trackCount: pl.trackCount || (pl.tracks && pl.tracks.total) || 0,
-            coverUrl: pl.images?.[0]?.url || pl.coverArt?.sources?.[0]?.url,
-            ownerName: pl.owner?.displayName || userId,
-            externalUrl: `https://open.spotify.com/playlist/${pl.id}`,
-          }));
-
-          return {
-            id: userId,
-            displayName: entity.name || entity.displayName || userId,
-            profileUrl: `https://open.spotify.com/user/${userId}`,
-            avatarUrl: entity.visualIdentity?.image?.[0]?.url,
-            playlists,
-          };
-        }
+      if (data.details || data.error) {
+        serverError = new Error(data.details || data.error);
+      } else {
+        serverError = new Error(
+          `Spotify discovery server unavailable (HTTP ${res.status}). Check that the btmu server is running and try again.`
+        );
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('Failed to fetch')) {
+        serverError = new Error(
+          'Spotify discovery server unavailable (network error). Check that the btmu server is running and try again.'
+        );
+      } else if (err instanceof Error) {
+        serverError = err;
+      } else {
+        serverError = new Error(
+          'Spotify discovery server unavailable. Check that the btmu server is running and try again.'
+        );
       }
     }
-  } catch (err) {
-    console.warn('Embed discovery fallback failed:', err);
+    throw serverError;
   }
 
-  // Return formatted user container with direct link
-  return {
-    id: userId,
-    displayName: userId,
-    profileUrl: `https://open.spotify.com/user/${userId}`,
-    playlists: [],
-  };
+  // Native builds have no local server to call, and there is no client-side
+  // fallback: never route Spotify embed pages through a third-party CORS proxy.
+  throw new Error(
+    'Spotify user discovery requires the btmu server, which is unavailable in this build.'
+  );
 }
 
 /**

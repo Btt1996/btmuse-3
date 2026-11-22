@@ -163,7 +163,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
                   <strong>Commercial Copyright Barrier:</strong> Major label commercial music (e.g. The Weeknd, Miley Cyrus) is legally protected and absent from open catalogs (Jamendo, Archive.org). In compliance with copyright law, X2 does not fabricate fake streams.
                 </p>
                 <p className="leading-relaxed">
-                  To retrieve commercial tracks, use your <strong>Telegram Audio Hub</strong> (Musics Hunter model) or connect a <strong>self-hosted spotDL microservice</strong> in Settings.
+                  To retrieve commercial tracks, use your <strong>Telegram Audio Hub</strong> (Musics Hunter model) or import audio files you own. The spotDL bridge is unavailable while under legal review.
                 </p>
               </div>
 

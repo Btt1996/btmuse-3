@@ -13,6 +13,10 @@ class X2ConnectivityReport {
   final List<InstanceProbeResult> invidiousProbes;
   final bool audiusReachable;
   final String audiusMessage;
+  final bool archiveOrgReachable;
+  final String archiveOrgMessage;
+  final bool jamendoReachable;
+  final String jamendoMessage;
 
   const X2ConnectivityReport({
     required this.backendConfigured,
@@ -23,6 +27,10 @@ class X2ConnectivityReport {
     required this.invidiousProbes,
     required this.audiusReachable,
     required this.audiusMessage,
+    required this.archiveOrgReachable,
+    required this.archiveOrgMessage,
+    required this.jamendoReachable,
+    required this.jamendoMessage,
   });
 }
 
@@ -33,7 +41,12 @@ class X2ConnectivityTester {
   final PipedClient _pipedClient;
   final InvidiousClient _invidiousClient;
 
-  X2ConnectivityTester(this._apiClient)
+  /// Jamendo client ID from X2Config (wired in app_providers.dart).
+  /// Null/empty means "not configured": the Jamendo probe reports that
+  /// instead of failing.
+  final String? jamendoClientId;
+
+  X2ConnectivityTester(this._apiClient, {this.jamendoClientId})
       : _pipedClient = PipedClient(_apiClient),
         _invidiousClient = InvidiousClient(_apiClient);
 
@@ -100,6 +113,64 @@ class X2ConnectivityTester {
       audiusMessage = 'Audius probe failed: $e';
     }
 
+    // Internet Archive: lightweight keyless advancedsearch (one audio row).
+    bool archiveOrgReachable = false;
+    String archiveOrgMessage;
+    try {
+      final res = await _apiClient.dio.get<Map<String, dynamic>>(
+        'https://archive.org/advancedsearch.php',
+        queryParameters: const {
+          'q': 'mediatype:(audio)',
+          'fl[]': ['identifier'],
+          'rows': 1,
+          'output': 'json',
+        },
+        options: Options(
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+      if (res.statusCode == 200 && res.data?['response'] != null) {
+        archiveOrgReachable = true;
+        archiveOrgMessage = 'Reachable (public library search responded, zero keys)';
+      } else {
+        archiveOrgMessage = 'Internet Archive returned HTTP ${res.statusCode}';
+      }
+    } catch (e) {
+      archiveOrgMessage = 'Internet Archive probe failed: $e';
+    }
+
+    // Jamendo: cheap tracks ping (limit=1). With no client ID configured
+    // this is reported as "not configured", never as a failure.
+    bool jamendoReachable = false;
+    String jamendoMessage;
+    final jamendoId = jamendoClientId?.trim() ?? '';
+    if (jamendoId.isEmpty) {
+      jamendoMessage =
+          'Jamendo client ID not configured — set the Jamendo client ID in Settings to enable Jamendo search.';
+    } else {
+      try {
+        final res = await _apiClient.dio.get<Map<String, dynamic>>(
+          'https://api.jamendo.com/v3.0/tracks/',
+          queryParameters: {'client_id': jamendoId, 'format': 'json', 'limit': 1},
+          options: Options(
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        );
+        final status = res.data?['headers']?['status'] as String?;
+        if (res.statusCode == 200 && status == 'success') {
+          jamendoReachable = true;
+          jamendoMessage = 'Reachable (Jamendo API responded with client ID)';
+        } else {
+          jamendoMessage =
+              'Jamendo returned HTTP ${res.statusCode}${status != null ? ' ($status)' : ''}';
+        }
+      } catch (e) {
+        jamendoMessage = 'Jamendo probe failed: $e';
+      }
+    }
+
     return X2ConnectivityReport(
       backendConfigured: backendConfigured,
       backendReachable: backendReachable,
@@ -109,6 +180,10 @@ class X2ConnectivityTester {
       invidiousProbes: invidiousProbes,
       audiusReachable: audiusReachable,
       audiusMessage: audiusMessage,
+      archiveOrgReachable: archiveOrgReachable,
+      archiveOrgMessage: archiveOrgMessage,
+      jamendoReachable: jamendoReachable,
+      jamendoMessage: jamendoMessage,
     );
   }
 }

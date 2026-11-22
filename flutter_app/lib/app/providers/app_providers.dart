@@ -16,10 +16,12 @@ import 'package:btmu/features/downloads/download_manager_provider.dart';
 import 'package:btmu/features/telegram/telegram_service.dart';
 import 'package:btmu/features/x1/x1_service.dart';
 import 'package:btmu/features/x2/clients/x2_connectivity_tester.dart';
+import 'package:btmu/features/x2/providers/archive_org_provider.dart';
 import 'package:btmu/features/x2/providers/audius_provider.dart';
 import 'package:btmu/features/x2/providers/deezer_provider.dart';
 import 'package:btmu/features/x2/providers/direct_url_provider.dart';
 import 'package:btmu/features/x2/providers/itunes_metadata_provider.dart';
+import 'package:btmu/features/x2/providers/jamendo_provider.dart';
 import 'package:btmu/features/x2/providers/provider_manager.dart';
 import 'package:btmu/features/x2/providers/soundcloud_provider.dart';
 import 'package:btmu/features/x2/providers/spotify_metadata_provider.dart';
@@ -54,7 +56,10 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 final x2ConnectivityTesterProvider = Provider<X2ConnectivityTester>(
-  (ref) => X2ConnectivityTester(ref.watch(apiClientProvider)),
+  (ref) => X2ConnectivityTester(
+    ref.watch(apiClientProvider),
+    jamendoClientId: ref.watch(x2ConfigProvider).jamendoClientId,
+  ),
 );
 
 final libraryRepositoryProvider = Provider<LibraryRepository>(
@@ -88,6 +93,16 @@ final playlistsProvider = FutureProvider<List<Playlist>>((ref) async {
 
 final providerManagerProvider = Provider<ProviderManager>((ref) {
   final api = ref.watch(apiClientProvider);
+  // Jamendo reads its client ID from X2Config at construction and stays
+  // in sync via the same ref.listen config-watch pattern ApiClient uses,
+  // so saving the ID in Settings takes effect without a restart.
+  final jamendo = JamendoProvider(
+    api,
+    jamendoClientId: ref.watch(x2ConfigProvider).jamendoClientId,
+  );
+  ref.listen<X2Config>(x2ConfigProvider, (_, next) {
+    jamendo.jamendoClientId = next.jamendoClientId;
+  });
   return ProviderManager([
     VkProvider(api),
     YoutubeProvider(api),
@@ -96,6 +111,12 @@ final providerManagerProvider = Provider<ProviderManager>((ref) {
     AudiusProvider(api),
     DeezerProvider(api),
     ItunesMetadataProvider(api),
+    // Archive.org and Jamendo sit BEFORE DirectUrlProvider on purpose:
+    // ProviderManager.findProviderForUrl returns the first provider whose
+    // canHandleUrl matches, and DirectUrlProvider accepts almost any
+    // http(s) host. Registered after it, their URLs would never reach them.
+    ArchiveOrgProvider(api),
+    jamendo,
     DirectUrlProvider(api),
   ]);
 });

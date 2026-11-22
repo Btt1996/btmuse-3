@@ -7,22 +7,31 @@ import '../networking/api_client.dart';
 ///   - `X2_BACKEND_URL`
 ///   - `PIPED_API_URL` (single URL or comma-separated failover list)
 ///   - `INVIDIOUS_API_URL` (single URL or comma-separated failover list)
+///   - `JAMENDO_CLIENT_ID` (per-user Jamendo API client ID; empty = Jamendo
+///     keyword search disabled, see JamendoProvider)
 ///
 /// IMPORTANT: This class NEVER invents or falls back to a hardcoded backend URL.
 /// When `X2_BACKEND_URL` is omitted, it remains empty and reports as not configured.
+/// The Jamendo client ID is likewise never invented: empty means "not configured".
 class X2Config {
   static const String buildTimeBackendUrl = String.fromEnvironment('X2_BACKEND_URL');
   static const String buildTimePipedUrls = String.fromEnvironment('PIPED_API_URL');
   static const String buildTimeInvidiousUrls = String.fromEnvironment('INVIDIOUS_API_URL');
+  static const String buildTimeJamendoClientId = String.fromEnvironment('JAMENDO_CLIENT_ID');
 
   final String backendUrl;
   final List<String> pipedInstances;
   final List<String> invidiousInstances;
 
+  /// Per-user Jamendo API client ID (from devportal.jamendo.com).
+  /// Empty means no ID is configured and Jamendo keyword search is off.
+  final String jamendoClientId;
+
   const X2Config({
     required this.backendUrl,
     this.pipedInstances = const [],
     this.invidiousInstances = const [],
+    this.jamendoClientId = '',
   });
 
   factory X2Config.fromEnvironment() {
@@ -30,12 +39,14 @@ class X2Config {
       backendUrl: normalizeSingleUrl(buildTimeBackendUrl),
       pipedInstances: parseUrlList(buildTimePipedUrls),
       invidiousInstances: parseUrlList(buildTimeInvidiousUrls),
+      jamendoClientId: buildTimeJamendoClientId.trim(),
     );
   }
 
   bool get isBackendConfigured => isValidBackendUrl(backendUrl);
   bool get hasPipedInstances => pipedInstances.isNotEmpty;
   bool get hasInvidiousInstances => invidiousInstances.isNotEmpty;
+  bool get hasJamendoClientId => jamendoClientId.trim().isNotEmpty;
 
   String get backendStatusLabel =>
       isBackendConfigured ? backendUrl.trim() : 'Not configured (X2_BACKEND_URL missing)';

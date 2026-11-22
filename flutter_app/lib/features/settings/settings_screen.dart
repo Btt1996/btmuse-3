@@ -24,6 +24,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final TextEditingController _pipedCtrl = TextEditingController();
   final TextEditingController _invidiousCtrl = TextEditingController();
   final TextEditingController _authTokenCtrl = TextEditingController();
+  final TextEditingController _jamendoCtrl = TextEditingController();
 
   bool _testingConnectivity = false;
   X2ConnectivityReport? _connectivityReport;
@@ -40,6 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _pipedCtrl.text = await store.getPipedUrlsCsv();
     _invidiousCtrl.text = await store.getInvidiousUrlsCsv();
     _authTokenCtrl.text = (await store.getBackendAuthToken()) ?? '';
+    _jamendoCtrl.text = await store.getJamendoClientId();
     if (mounted) setState(() {});
   }
 
@@ -49,11 +51,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await store.setPipedUrlsCsv(_pipedCtrl.text);
     await store.setInvidiousUrlsCsv(_invidiousCtrl.text);
     await store.setBackendAuthToken(_authTokenCtrl.text);
+    await store.setJamendoClientId(_jamendoCtrl.text);
 
     final updated = X2Config(
       backendUrl: X2Config.normalizeSingleUrl(_backendCtrl.text),
       pipedInstances: X2Config.parseUrlList(_pipedCtrl.text),
       invidiousInstances: X2Config.parseUrlList(_invidiousCtrl.text),
+      jamendoClientId: _jamendoCtrl.text.trim(),
     );
     ref.read(x2ConfigProvider.notifier).state = updated;
     ref.read(apiClientProvider).backendAuthToken = _authTokenCtrl.text.trim();
@@ -90,6 +94,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _pipedCtrl.dispose();
     _invidiousCtrl.dispose();
     _authTokenCtrl.dispose();
+    _jamendoCtrl.dispose();
     super.dispose();
   }
 
@@ -209,7 +214,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Audius, Telegram Sync, Direct/RSS URLs, X1 Local Matching, and YouTube/SoundCloud oEmbed work standalone with ZERO keys. Spotify playlist tracklists need the deployed backend below; single Spotify track links resolve via oEmbed, and SoundCloud works by pasting a track URL (no keyword search, no client ID). Configure optional endpoints below:',
+            'Audius, Internet Archive, Telegram Sync, Direct/RSS URLs, X1 Local Matching, and YouTube/SoundCloud oEmbed work standalone with ZERO keys. Spotify playlist tracklists need the deployed backend below; single Spotify track links resolve via oEmbed, and SoundCloud works by pasting a track URL (no keyword search, no client ID). Jamendo keyword search needs its own client ID below — without it, Jamendo stays off and everything else keeps working. Configure optional endpoints below:',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 10),
@@ -245,6 +250,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             obscureText: true,
             decoration: const InputDecoration(
               labelText: 'Optional Backend Auth Token (X-BTT-AUTH, Keychain)',
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _jamendoCtrl,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Jamendo client ID (optional, Keychain)',
+              hintText: 'From devportal.jamendo.com — only needed for Jamendo search',
             ),
           ),
           const SizedBox(height: 12),
@@ -330,6 +344,18 @@ class _DiagnosticsCard extends StatelessWidget {
             label: 'Audius Direct (Zero-Key)',
             ok: report.audiusReachable,
             detail: report.audiusMessage,
+          ),
+          const SizedBox(height: 6),
+          _statusRow(
+            label: 'Internet Archive (Zero-Key)',
+            ok: report.archiveOrgReachable,
+            detail: report.archiveOrgMessage,
+          ),
+          const SizedBox(height: 6),
+          _statusRow(
+            label: 'Jamendo',
+            ok: report.jamendoReachable,
+            detail: report.jamendoMessage,
           ),
           if (report.pipedProbes.isEmpty) ...[
             const SizedBox(height: 6),

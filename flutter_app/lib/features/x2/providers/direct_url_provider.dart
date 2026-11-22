@@ -78,6 +78,13 @@ class DirectUrlProvider implements X2Provider {
       ok = false;
     }
 
+    // A feed served without a .rss/.xml suffix (or without /feed in the
+    // path) still parses as RSS when the server says so via HEAD.
+    if (ok &&
+        (contentType.contains('xml') || contentType.contains('rss'))) {
+      return _resolveRssAudioFeed(uri);
+    }
+
     // Fallback to tiny Range GET when servers reject HEAD (405 Method Not Allowed / 403)
     if (!ok || contentType.isEmpty) {
       final probe = await _apiClient.dio.get<List<int>>(
@@ -152,6 +159,52 @@ class DirectUrlProvider implements X2Provider {
     return items.isEmpty ? null : items.first;
   }
 
+  /// Parses an RSS duration value: plain seconds ("187"), "MM:SS"
+  /// ("4:05") or "HH:MM:SS" ("1:04:05"). Returns 0 when absent/unparseable.
+  static int parseRssDuration(String? raw) {
+    final text = (raw ?? '').trim();
+    if (text.isEmpty) return 0;
+    final asInt = int.tryParse(text);
+    if (asInt != null) return asInt;
+    final parts = text.split(':').map(int.tryParse).toList();
+    if (parts.any((p) => p == null)) return 0;
+    final nums = parts.cast<int>();
+    var total = 0;
+    for (final n in nums) {
+      total = total * 60 + n;
+    }
+    return total;
+  }
+
+  static String _formatFromTypeOrUrl(String? mimeType, String audioUrl) {
+    final type = (mimeType ?? '').toLowerCase();
+    const byType = {
+      'audio/mpeg': 'MP3',
+      'audio/mp3': 'MP3',
+      'audio/mp4': 'M4A',
+      'audio/x-m4a': 'M4A',
+      'audio/aac': 'AAC',
+      'audio/ogg': 'OGG',
+      'audio/opus': 'OPUS',
+      'audio/x-wav': 'WAV',
+      'audio/wav': 'WAV',
+      'audio/flac': 'FLAC',
+      'audio/x-flac': 'FLAC',
+    };
+    if (byType.containsKey(type)) return byType[type]!;
+    final ext = p.extension(Uri.tryParse(audioUrl)?.path ?? '').toLowerCase().replaceFirst('.', '');
+    if (ext.isNotEmpty) return ext.toUpperCase();
+    return 'MP3';
+  }
+
+  static String? _attrValue(String tag, String name) {
+    final match = RegExp(
+      '''$name\\s*=\\s*["']([^"']+)["']''',
+      caseSensitive: false,
+    ).firstMatch(tag);
+    return match?.group(1);
+  }
+
   static List<X2Result> parseRssAudioEnclosures(
     String xml, {
     required String sourceHost,
@@ -169,18 +222,38 @@ class DirectUrlProvider implements X2Provider {
 
     for (final m in itemMatches.take(15)) {
       final block = m.group(1) ?? '';
-      final encMatch = RegExp(
-        r'''<enclosure[^>]+url=["']([^"']+)["'][^>]*type=["']audio\/[^"']+["']''',
-        caseSensitive: false,
-      ).firstMatch(block);
-      final audioUrl = encMatch?.group(1);
+      // Enclosure attributes may appear in any order, and `type` may be
+      // absent; extract url/type independently instead of requiring
+      // `url=... type="audio/..."` in one fixed order.
+      final enclosureTag = RegExp(r'<enclosure[^>]*>', caseSensitive: false)
+          .firstMatch(block)
+          ?.group(0);
+      if (enclosureTag == null) continue;
+      final audioUrl = _attrValue(enclosureTag, 'url');
       if (audioUrl == null || !ApiClient.isSafeExternalUrl(audioUrl)) continue;
+      final mimeType = _attrValue(enclosureTag, 'type');
+      final ext = p
+          .extension(Uri.tryParse(audioUrl)?.path ?? '')
+          .toLowerCase()
+          .replaceFirst('.', '');
+      // A declared non-audio type is not an audio enclosure. With no
+      // type at all, accept only a known audio extension.
+      if (mimeType != null && mimeType.isNotEmpty) {
+        if (!mimeType.toLowerCase().startsWith('audio/')) continue;
+      } else if (!AudioValidator.supportedExtensions.contains(ext)) {
+        continue;
+      }
 
       final title = RegExp(r'<title>(?:<!\[CDATA\[)?([^<\]]+)', caseSensitive: false)
               .firstMatch(block)
               ?.group(1)
               ?.trim() ??
           'Audio Feed Item';
+      final durationRaw =
+          RegExp(r'<(?:itunes:)?duration>([^<]+)</(?:itunes:)?duration>', caseSensitive: false)
+                  .firstMatch(block)
+                  ?.group(1);
+      final length = int.tryParse(_attrValue(enclosureTag, 'length') ?? '');
 
       results.add(
         X2Result(
@@ -190,9 +263,11 @@ class DirectUrlProvider implements X2Provider {
           title: title,
           artist: channelTitle,
           album: 'Podcast / Audio RSS',
+          durationSeconds: parseRssDuration(durationRaw),
           audioUrl: audioUrl,
           externalPageUrl: feedUrl,
-          format: 'MP3',
+          format: _formatFromTypeOrUrl(mimeType, audioUrl),
+          fileSizeBytes: length,
           audioAvailable: true,
           downloadAuthorized: true,
           authorizationNote: 'Public RSS audio enclosure parsed directly without API keys.',

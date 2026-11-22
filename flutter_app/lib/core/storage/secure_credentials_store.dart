@@ -8,6 +8,7 @@ class SecureCredentialsStore {
   static const _telegramTokenKey = 'btmu_telegram_bot_token';
   static const _vkTokenKey = 'btmu_vk_user_token';
   static const _backendTokenKey = 'btmu_backend_auth_token';
+  static const _jamendoClientIdKey = 'btmu_jamendo_client_id';
   static const _backendUrlKey = 'btmu_backend_url';
   static const _youtubeBridgeUrlKey = 'btmu_youtube_bridge_url';
   static const _pipedUrlsKey = 'btmu_piped_api_urls';
@@ -61,6 +62,26 @@ class SecureCredentialsStore {
       await _secureStorage.delete(key: _backendTokenKey);
     } else {
       await _secureStorage.write(key: _backendTokenKey, value: token.trim());
+    }
+  }
+
+  // Jamendo API client ID (Phase 5, item 24). A user credential, so it
+  // lives in the Keychain like the backend auth token / VK token — never
+  // in SharedPreferences, never in code. Empty (or only a build-time
+  // --dart-define=JAMENDO_CLIENT_ID) means "not configured" and Jamendo
+  // keyword search stays disabled; deleting the stored value falls back
+  // to the build-time define, exactly like getBackendUrl().
+  Future<String> getJamendoClientId() async {
+    final stored = await _secureStorage.read(key: _jamendoClientIdKey);
+    if (stored != null && stored.trim().isNotEmpty) return stored.trim();
+    return X2Config.buildTimeJamendoClientId.trim();
+  }
+
+  Future<void> setJamendoClientId(String? clientId) async {
+    if (clientId == null || clientId.trim().isEmpty) {
+      await _secureStorage.delete(key: _jamendoClientIdKey);
+    } else {
+      await _secureStorage.write(key: _jamendoClientIdKey, value: clientId.trim());
     }
   }
 
@@ -150,10 +171,12 @@ class SecureCredentialsStore {
     final backend = await getBackendUrl();
     final pipedCsv = await getPipedUrlsCsv();
     final invidiousCsv = await getInvidiousUrlsCsv();
+    final jamendoClientId = await getJamendoClientId();
     return X2Config(
       backendUrl: backend,
       pipedInstances: X2Config.parseUrlList(pipedCsv),
       invidiousInstances: X2Config.parseUrlList(invidiousCsv),
+      jamendoClientId: jamendoClientId,
     );
   }
 

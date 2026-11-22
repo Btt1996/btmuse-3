@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Music,
@@ -85,12 +85,24 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
     enableTelegramMatch: true,
     enableSpotDLBridge: false,
     preferLocalCache: true,
-    spotDLBridgeUrl: localStorage.getItem('btt_spotdl_bridge_url') || '',
+    // Quarantined (Phase 0 item 5): the spotDL bridge is disabled pending a
+    // legal audit, so no bridge URL is ever read back here. A URL stored by
+    // an earlier build must not imply the bridge is configured (see the
+    // mount effect below, which drops that stale localStorage key).
+    spotDLBridgeUrl: '',
     spotifyClientId: localStorage.getItem('btt_spotify_client_id') || '',
     spotifyClientSecret: localStorage.getItem('btt_spotify_client_secret') || '',
     requireConfirmationForMedium: true,
     maxRetries: 2,
   });
+
+  // Quarantined bridge (Phase 0 item 5): drop any spotDL bridge URL stored
+  // by an earlier build. The key is dead config for a disabled bridge; leaving
+  // it would let a stale value imply the bridge is configured. The bridge
+  // itself stays disabled — nothing here re-enables it.
+  useEffect(() => {
+    localStorage.removeItem('btt_spotdl_bridge_url');
+  }, []);
 
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [isSpotDLInfoOpen, setIsSpotDLInfoOpen] = useState(false);
@@ -1049,15 +1061,13 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
         <SpotDLInfoModal
           isOpen={isSpotDLInfoOpen}
           onClose={() => setIsSpotDLInfoOpen(false)}
-          bridgeUrl={settings.spotDLBridgeUrl || ''}
-          onSaveBridgeUrl={(url) => {
-            setSettings((prev) => ({
-              ...prev,
-              spotDLBridgeUrl: url,
-              enableSpotDLBridge: !!url,
-            }));
-            localStorage.setItem('btt_spotdl_bridge_url', url);
-            showToast('Updated spotDL bridge configuration');
+          bridgeUrl=""
+          onSaveBridgeUrl={() => {
+            // Quarantined (Phase 0 item 5): the modal never invokes this while
+            // the bridge is under legal review, and nothing may be persisted
+            // here. A bridge URL must never be saved to localStorage and the
+            // bridge must never be enabled from this modal.
+            showToast('spotDL bridge is unavailable — under legal review');
           }}
         />
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   HardDrive,
   Download,
@@ -75,9 +75,14 @@ export const SettingsScreen: React.FC = () => {
   // X2 Engine & spotDL Modals State
   const [isSpotDLModalOpen, setIsSpotDLModalOpen] = useState(false);
   const [isBenchmarkModalOpen, setIsBenchmarkModalOpen] = useState(false);
-  const [spotDLBridgeUrl, setSpotDLBridgeUrl] = useState(
-    localStorage.getItem('btt_spotdl_bridge_url') || ''
-  );
+  // Quarantined (Phase 4): the spotDL bridge is unavailable under legal
+  // review. The bridge URL is never read, saved, or enabled anymore;
+  // the mount effect below drops any stale key a previous version wrote.
+  const [spotDLBridgeUrl, setSpotDLBridgeUrl] = useState('');
+
+  useEffect(() => {
+    localStorage.removeItem('btt_spotdl_bridge_url');
+  }, []);
 
   // Duplicates State
   const [isDuplicatesModalOpen, setIsDuplicatesModalOpen] = useState(false);
@@ -802,10 +807,11 @@ export const SettingsScreen: React.FC = () => {
         isOpen={isSpotDLModalOpen}
         onClose={() => setIsSpotDLModalOpen(false)}
         bridgeUrl={spotDLBridgeUrl}
-        onSaveBridgeUrl={(url) => {
-          setSpotDLBridgeUrl(url);
-          localStorage.setItem('btt_spotdl_bridge_url', url);
-          showToast('Updated spotDL bridge configuration');
+        onSaveBridgeUrl={() => {
+          // Quarantined (Phase 4): the spotDL bridge is unavailable under
+          // legal review — persist nothing, enable nothing.
+          setSpotDLBridgeUrl('');
+          showToast('spotDL bridge is unavailable — under legal review');
         }}
       />
 

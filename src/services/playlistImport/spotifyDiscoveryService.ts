@@ -118,7 +118,24 @@ export async function discoverUserPlaylists(
 }
 
 /**
- * Searches curated and popular playlists matching query
+ * Message callers must show when a keyword search returns no results: there
+ * is no live Spotify playlist search behind this function (see below).
+ */
+export const SPOTIFY_PLAYLIST_SEARCH_UNAVAILABLE_MESSAGE =
+  'Live Spotify playlist search is not available — the btmu server has no playlist-search endpoint. Paste a Spotify playlist link to resolve it directly, or browse playlists from a Spotify user profile.';
+
+/**
+ * Searches curated and popular playlists matching query.
+ *
+ * Honest state (Phase 4): there is NO live Spotify playlist search. The
+ * btmu server exposes `/api/spotify/playlist` (resolve one playlist by ID)
+ * and `/api/spotify/token`, but no keyword playlist-search endpoint, and the
+ * client must not invent results. An earlier version returned static canned
+ * presets (Chill Hits, Today's Top Hits, lofi beats, Beast Mode) for
+ * chill/lofi/workout keywords — placeholder data presented as search results.
+ * That is removed: keyword queries now return [] and callers must surface
+ * SPOTIFY_PLAYLIST_SEARCH_UNAVAILABLE_MESSAGE. The direct-link branch below
+ * is kept — it resolves a playlist the user pasted, it does not fabricate one.
  */
 export async function searchSpotifyPlaylists(
   query: string
@@ -140,56 +157,10 @@ export async function searchSpotifyPlaylists(
     ];
   }
 
-  // Common popular discovery presets if user searches generic genres
-  const presetResults: Record<string, SpotifyPublicPlaylistSummary[]> = {
-    chill: [
-      {
-        id: '37i9dQZF1DX4WYpdgoIcn6',
-        name: 'Chill Hits',
-        ownerName: 'Spotify',
-        trackCount: 100,
-        description: 'Kick back to the best new and recent chill hits.',
-        coverUrl: 'https://i.scdn.co/image/ab67706f00000002b60db5d10442d99d1e389e87',
-        externalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX4WYpdgoIcn6',
-      },
-      {
-        id: '37i9dQZF1DXcBWIGoYBM5M',
-        name: "Today's Top Hits",
-        ownerName: 'Spotify',
-        trackCount: 50,
-        description: 'The hottest tracks right now.',
-        coverUrl: 'https://i.scdn.co/image/ab67706f00000002fe24d7084be472288cd6ee6c',
-        externalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
-      },
-    ],
-    lofi: [
-      {
-        id: '37i9dQZF1DXdLEN7aqioXM',
-        name: 'lofi beats',
-        ownerName: 'Spotify',
-        trackCount: 150,
-        description: 'Beats to relax and study to.',
-        coverUrl: 'https://i.scdn.co/image/ab67706f000000025f187a05dd85de8e792e3a09',
-        externalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DXdLEN7aqioXM',
-      },
-    ],
-    workout: [
-      {
-        id: '37i9dQZF1DX76Wlfdnj7AP',
-        name: 'Beast Mode',
-        ownerName: 'Spotify',
-        trackCount: 75,
-        description: 'High energy hip hop and electronic beats for heavy lifting.',
-        coverUrl: 'https://i.scdn.co/image/ab67706f000000027b407b489d816cb1eeec6990',
-        externalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP',
-      },
-    ],
-  };
-
-  const lower = trimmed.toLowerCase();
-  for (const [key, list] of Object.entries(presetResults)) {
-    if (lower.includes(key)) return list;
-  }
-
+  // No live keyword search exists (no server playlist-search endpoint):
+  // return an empty result instead of canned presets. Callers must show
+  // SPOTIFY_PLAYLIST_SEARCH_UNAVAILABLE_MESSAGE for this case; the warn
+  // below makes the same message visible at runtime for any caller.
+  console.warn(SPOTIFY_PLAYLIST_SEARCH_UNAVAILABLE_MESSAGE);
   return [];
 }

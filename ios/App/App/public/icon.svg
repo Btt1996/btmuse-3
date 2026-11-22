@@ -6,16 +6,17 @@
       <stop offset="100%" stop-color="#030712"/>
     </linearGradient>
     <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="50%" stop-color="#8b5cf6"/>
-      <stop offset="100%" stop-color="#ec4899"/>
+      <stop offset="0%" stop-color="#6202E1"/>
+      <stop offset="50%" stop-color="#C4009B"/>
+      <stop offset="100%" stop-color="#F70E42"/>
     </linearGradient>
     <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#818cf8"/>
+      <stop offset="0%" stop-color="#6202E1"/>
+      <stop offset="50%" stop-color="#C4009B"/>
+      <stop offset="100%" stop-color="#F70E42"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#8b5cf6" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#C4009B" flood-opacity="0.35"/>
     </filter>
   </defs>
 

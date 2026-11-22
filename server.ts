@@ -390,8 +390,17 @@ app.post('/api/spotify/playlist', async (req, res) => {
   } catch (keylessErr: unknown) {
     const keylessMsg = keylessErr instanceof Error ? keylessErr.message : 'Keyless resolution failed';
 
-    // If keyless failed and user provided credentials, try Web API fallback
-    if (clientId && clientSecret) {
+    // If keyless failed, try the official Web API fallback. Credentials
+    // may come from the request body or from the server's own
+    // SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET environment variables
+    // (fetchSpotifyToken checks body first, then env). Attempt the
+    // fallback whenever any credential is present; with none, the token
+    // call throws, the inner catch swallows it, and the 422 below
+    // reports the keyless error — same as before.
+    const hasSpotifyCreds = Boolean(
+      clientId || clientSecret || process.env.SPOTIFY_CLIENT_ID,
+    );
+    if (hasSpotifyCreds) {
       try {
         const token = await fetchSpotifyToken(clientId, clientSecret);
         const spotifyRes = await fetch(

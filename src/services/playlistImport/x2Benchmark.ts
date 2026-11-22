@@ -157,7 +157,7 @@ export async function runX2Benchmark(
 
     if (!hasMatch || matchQuality < 50) {
       if (t.category === 'commercial_hit' || t.category === 'popular_mainstream') {
-        diagnosticNotes = `Commercial copyright barrier: Major label recording is not distributed on Jamendo or Internet Archive. Requires self-hosted spotDL bridge or Telegram bot sync hub to retrieve.`;
+        diagnosticNotes = `Commercial copyright barrier: Major label recording is not distributed on Jamendo or Internet Archive. The spotDL bridge is unavailable (under legal review); use the Telegram Audio Hub, local files, or open catalogs instead.`;
       } else {
         diagnosticNotes = `No matching recording found across enabled open repositories.`;
       }
@@ -187,7 +187,7 @@ export async function runX2Benchmark(
   const summaryNotes =
     `Benchmark Complete: Tested ${total} representative tracks. ` +
     `Open & Creative Commons music achieved ${importSuccessRate}% verified audio import. ` +
-    `Commercial tracks demonstrate why Jamendo/Archive return 0 matches for Billboard songs without spotDL or Telegram hub integration.`;
+    `Commercial tracks demonstrate why Jamendo/Archive return 0 matches for Billboard songs: the spotDL bridge is unavailable (under legal review), so only the Telegram Audio Hub, local files, and open catalogs can supply them.`;
 
   return {
     testedAt: Date.now(),

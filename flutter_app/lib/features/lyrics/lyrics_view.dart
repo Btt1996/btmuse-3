@@ -13,7 +13,7 @@ import 'package:btmu/features/lyrics/lyrics_service.dart';
 /// 2.5s after the last user scroll), falls back to plain lyrics, and shows
 /// distinct empty states for "not found" and "offline". Tapping a synced
 /// line seeks to it via [onSeek]. Dark-only, Plus Jakarta Sans via the app
-/// theme, obsidian / cyan / gold palette.
+/// theme, BT gradient palette (violet → magenta → pink-red).
 class LyricsView extends StatefulWidget {
   final Track track;
   final Duration position;
@@ -50,6 +50,12 @@ class _LyricsViewState extends State<LyricsView> {
   int _lastScrolledIndex = -1;
   List<GlobalKey> _lineKeys = const [];
 
+  /// Monotonic load generation: a slow fetch for a previous track must
+  /// never overwrite the lyrics of the track that replaced it (the React
+  /// view guards this with its `isCancelled` flag; the Flutter view had
+  /// no equivalent until this guard).
+  int _loadGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +78,7 @@ class _LyricsViewState extends State<LyricsView> {
   }
 
   Future<void> _loadLyrics({bool forceRefresh = false}) async {
+    final generation = ++_loadGeneration;
     setState(() {
       _isLoading = true;
       _hasSearched = false;
@@ -85,7 +92,7 @@ class _LyricsViewState extends State<LyricsView> {
           widget.duration.inSeconds > 0 ? widget.duration.inSeconds : null,
       forceRefresh: forceRefresh,
     );
-    if (!mounted) return;
+    if (!mounted || generation != _loadGeneration) return;
     setState(() {
       _lyrics = result;
       _isLoading = false;
@@ -98,6 +105,17 @@ class _LyricsViewState extends State<LyricsView> {
         result?.syncedLyrics?.length ?? 0,
         (_) => GlobalKey(),
       );
+    });
+    // A new track's lyrics open at the top: the shared ScrollController
+    // otherwise keeps the previous track's scroll offset, so a scrolled
+    // list would open mid-song. Registered before the build's
+    // ensure-visible callback, so auto-scroll to the active line (synced
+    // lyrics) still wins for the current position.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || generation != _loadGeneration) return;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
     });
   }
 
@@ -132,7 +150,16 @@ class _LyricsViewState extends State<LyricsView> {
       _userScrolling = true;
       _scrollResumeTimer?.cancel();
       _scrollResumeTimer = Timer(_userScrollResumeDelay, () {
-        if (mounted) _userScrolling = false;
+        if (!mounted) return;
+        // Reset the scrolled index so the next build re-centres on the
+        // active line: without this, auto-scroll stayed suppressed after
+        // the user paused scrolling, because the active index already
+        // equalled _lastScrolledIndex and _maybeScrollToActive returned
+        // early until the next line change.
+        setState(() {
+          _userScrolling = false;
+          _lastScrolledIndex = -1;
+        });
       });
     }
     return false;

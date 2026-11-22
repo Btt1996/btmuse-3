@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Sparkles, RefreshCw, X, Music, AlertCircle, ExternalLink, ChevronDown, Check, Mic2 } from 'lucide-react';
+import { RefreshCw, X, Music, WifiOff, Mic2 } from 'lucide-react';
 import { Track } from '../../types/music';
-import { SongLyrics, LyricLine, fetchLyricsForTrack } from '../../services/lyricsService';
+import { SongLyrics, LyricLine, fetchLyricsForTrack, getLastLyricsFetchStatus } from '../../services/lyricsService';
 
 interface LyricsViewProps {
   track: Track;
@@ -21,6 +21,7 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
   const [lyrics, setLyrics] = useState<SongLyrics | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const [activeLineIndex, setActiveLineIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLDivElement | null>(null);
@@ -34,11 +35,13 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
     const loadLyrics = async () => {
       setIsLoading(true);
       setHasSearched(false);
+      setIsOffline(false);
       try {
         const result = await fetchLyricsForTrack(track.id, track.title, track.artist, duration || track.duration);
         if (!isCancelled) {
           setLyrics(result);
           setHasSearched(true);
+          setIsOffline(result === null && getLastLyricsFetchStatus() === 'offline');
         }
       } catch (err) {
         if (!isCancelled) {
@@ -57,6 +60,14 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
       isCancelled = true;
     };
   }, [track.id, track.title, track.artist, duration]);
+
+  // A new track's lyrics open at the top: the scroll container is shared
+  // across tracks, so without this a scrolled list would open mid-song.
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [lyrics]);
 
   // Determine active synced line based on currentTime
   useEffect(() => {
@@ -99,9 +110,12 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
 
   const handleManualRetry = async () => {
     setIsLoading(true);
-    const result = await fetchLyricsForTrack(track.id, track.title, track.artist, duration);
+    // Force-refresh: without it the retry would return the cached lyrics
+    // immediately and could never pick up newly catalogued lyrics.
+    const result = await fetchLyricsForTrack(track.id, track.title, track.artist, duration, true);
     setLyrics(result);
     setHasSearched(true);
+    setIsOffline(result === null && getLastLyricsFetchStatus() === 'offline');
     setIsLoading(false);
   };
 
@@ -114,7 +128,7 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
       <div className="relative z-10 px-5 pt-4 pb-3 flex items-center justify-between border-b border-[#05070B]/10 dark:border-white/10 shrink-0 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white flex items-center justify-center font-bold">
-            <Mic2 className="w-3.5 h-3.5 text-[#6202E1]" />
+            <Mic2 className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-[11px] font-black uppercase tracking-widest text-[#6202E1] dark:text-[#F70E42] font-mono">
             Lyrics
@@ -194,24 +208,26 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
             ))}
           </div>
         ) : hasSearched ? (
-          /* No Lyrics Found State */
+          /* No Lyrics Found / Offline State */
           <div className="h-full flex flex-col items-center justify-center text-center py-8 space-y-3 px-4">
             <div className="w-12 h-12 rounded-2xl bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] flex items-center justify-center">
-              <Music className="w-6 h-6" />
+              {isOffline ? <WifiOff className="w-6 h-6" /> : <Music className="w-6 h-6" />}
             </div>
             <div>
               <h4 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA]">
-                Couldn't find lyrics
+                {isOffline ? "You're offline" : "Couldn't find lyrics"}
               </h4>
               <p className="text-xs text-[#777267] dark:text-[#92998F] mt-1 max-w-xs">
-                Lyrics for "{track.title}" are not yet catalogued on LRCLIB.
+                {isOffline
+                  ? 'Lyrics need an internet connection. Check your connection and try again.'
+                  : `Lyrics for "${track.title}" are not yet catalogued on LRCLIB.`}
               </p>
             </div>
             <button
               onClick={handleManualRetry}
               className="mt-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold active:scale-95 transition shadow-xs"
             >
-              Search Again
+              {isOffline ? 'Try Again' : 'Search Again'}
             </button>
           </div>
         ) : null}
@@ -221,7 +237,9 @@ export const LyricsView: React.FC<LyricsViewProps> = ({
       {lyrics && (
         <div className="relative z-10 px-5 py-2.5 border-t border-[#05070B]/10 dark:border-white/10 bg-black/5 dark:bg-black/30 text-[10px] text-[#777267] dark:text-[#92998F] flex items-center justify-between font-mono shrink-0">
           <span>Source: {lyrics.source}</span>
-          <span className="text-[#6202E1] dark:text-[#F70E42] font-semibold">Tap line to jump</span>
+          {lyrics.syncedLyrics && lyrics.syncedLyrics.length > 0 && (
+            <span className="text-[#6202E1] dark:text-[#F70E42] font-semibold">Tap line to jump</span>
+          )}
         </div>
       )}
     </div>

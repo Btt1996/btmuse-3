@@ -13,6 +13,21 @@ export interface SongLyrics {
   fetchedAt: number;
 }
 
+/**
+ * Why the most recent `fetchLyricsForTrack` call returned null.
+ * `null` means the last call succeeded (or was served from cache).
+ * Mirrors the Flutter `LyricsFetchStatus` so both apps can tell "offline"
+ * apart from "not catalogued on LRCLIB".
+ */
+export type LyricsFetchStatus = 'offline' | 'notFound' | null;
+
+let lastFetchStatus: LyricsFetchStatus = null;
+
+/** Status of the most recent `fetchLyricsForTrack` call (see above). */
+export function getLastLyricsFetchStatus(): LyricsFetchStatus {
+  return lastFetchStatus;
+}
+
 const LYRICS_CACHE_PREFIX = 'btt_lyrics_cache_';
 
 /**
@@ -20,14 +35,15 @@ const LYRICS_CACHE_PREFIX = 'btt_lyrics_cache_';
  */
 function cleanSongTitle(title: string): string {
   return title
-    .replace(/\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]/gi, '')
+    .replace(/\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?(\s*video)?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]/gi, '')
     .replace(/\.mp3$|\.m4a$|\.wav$|\.flac$/i, '')
     .trim();
 }
 
 function cleanArtistName(artist: string): string {
-  if (!artist || artist === 'Unknown Artist' || artist === 'Imported Audio') return '';
-  return artist.split(',')[0].split('&')[0].trim();
+  const trimmed = artist.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'unknown artist' || trimmed.toLowerCase() === 'imported audio') return '';
+  return trimmed.split(',')[0].split('&')[0].trim();
 }
 
 /**
@@ -91,25 +107,60 @@ export function saveCachedLyrics(lyrics: SongLyrics): void {
 }
 
 /**
- * Fetch lyrics for a song using LRCLIB free open API
+ * A failed `fetch()` in the browser rejects with a TypeError on network
+ * failure (no route, DNS failure, offline) — the only reliable
+ * connection-level signal `fetch` gives. HTTP errors (404/500) do not
+ * throw; they surface as `!resp.ok` and are not connection errors.
+ */
+function isConnectionError(err: unknown): boolean {
+  return err instanceof TypeError;
+}
+
+/** Whether an LRCLIB result's title is the requested title after cleaning. */
+function matchesTitle(entry: any, title: string): boolean {
+  const candidate = entry?.trackName;
+  if (typeof candidate !== 'string') return false;
+  return cleanSongTitle(candidate).toLowerCase() === title.toLowerCase();
+}
+
+/**
+ * Fetch lyrics for a song using LRCLIB free open API.
+ *
+ * Strategy A: exact match via `GET /api/get` with track/artist and the
+ * duration when known. Strategy B: `GET /api/search` fallback, preferring
+ * a title-matching result with synced lyrics, then any result with synced
+ * lyrics, then the first result with any lyrics. The offline cache is
+ * checked first unless `forceRefresh` is set (manual retry); on a forced
+ * refresh that fails at the connection level, the stale cached lyrics are
+ * returned instead of hiding lyrics the user already had. Returns null
+ * when no lyrics can be found; use `getLastLyricsFetchStatus()` to tell
+ * "offline" apart from "not catalogued".
  */
 export async function fetchLyricsForTrack(
   trackId: string,
   rawTitle: string,
   rawArtist: string,
-  durationSeconds?: number
+  durationSeconds?: number,
+  forceRefresh = false
 ): Promise<SongLyrics | null> {
   // 1. Check local offline cache first
   const cached = getCachedLyrics(trackId);
-  if (cached) return cached;
+  if (cached && !forceRefresh) {
+    lastFetchStatus = null;
+    return cached;
+  }
 
   const title = cleanSongTitle(rawTitle);
   const artist = cleanArtistName(rawArtist);
 
-  if (!title) return null;
+  if (!title) {
+    lastFetchStatus = 'notFound';
+    return null;
+  }
 
   try {
     let data: any = null;
+    let sawConnectionError = false;
 
     // Strategy A: Exact match with duration if available
     const params = new URLSearchParams();
@@ -122,46 +173,69 @@ export async function fetchLyricsForTrack(
     try {
       const resp = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
         headers: {
-          'Lrclib-Client': 'BttMusicPlayer/1.5.0 (https://bttmusic.app)',
+          'Lrclib-Client': 'btmu/2.0.0 (https://btt1996.github.io)',
         },
       });
 
       if (resp.ok) {
         data = await resp.json();
       }
-    } catch {
-      // ignore network error, try search fallback
+    } catch (err) {
+      // Network error: record it and try the search fallback.
+      if (isConnectionError(err)) sawConnectionError = true;
     }
 
     // Strategy B: Search fallback if exact get failed
     if (!data || (!data.syncedLyrics && !data.plainLyrics)) {
-      const query = artist ? `${artist} ${title}` : title;
-      const searchResp = await fetch(
-        `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`,
-        {
-          headers: {
-            'Lrclib-Client': 'BttMusicPlayer/1.5.0 (https://bttmusic.app)',
-          },
-        }
-      );
+      try {
+        const query = artist ? `${artist} ${title}` : title;
+        const searchResp = await fetch(
+          `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              'Lrclib-Client': 'btmu/2.0.0 (https://btt1996.github.io)',
+            },
+          }
+        );
 
-      if (searchResp.ok) {
-        const results = await searchResp.json();
-        if (Array.isArray(results) && results.length > 0) {
-          // Prefer item with syncedLyrics
-          data = results.find((r) => r.syncedLyrics) || results[0];
+        if (searchResp.ok) {
+          const results = await searchResp.json();
+          if (Array.isArray(results) && results.length > 0) {
+            // Prefer a title-matching result with synced lyrics: search
+            // relevance does not guarantee the top hit is this track
+            // (a cover or remix can outrank it).
+            data =
+              results.find((r) => r.syncedLyrics && matchesTitle(r, title)) ||
+              results.find((r) => r.syncedLyrics) ||
+              results.find((r) => r.syncedLyrics || r.plainLyrics) ||
+              null;
+          }
         }
+      } catch (err) {
+        if (isConnectionError(err)) sawConnectionError = true;
       }
     }
 
-    if (!data) return null;
+    if (!data) {
+      if (sawConnectionError && cached) {
+        // Forced refresh while offline: keep showing the lyrics the
+        // user already had instead of an empty state.
+        lastFetchStatus = null;
+        return cached;
+      }
+      lastFetchStatus = sawConnectionError ? 'offline' : 'notFound';
+      return null;
+    }
 
     const synced = data.syncedLyrics ? parseLrc(data.syncedLyrics) : undefined;
     const plain = data.plainLyrics
       ? data.plainLyrics.split('\n').map((l: string) => l.trim()).filter(Boolean)
       : undefined;
 
-    if (!synced && !plain) return null;
+    if ((!synced || synced.length === 0) && (!plain || plain.length === 0)) {
+      lastFetchStatus = 'notFound';
+      return null;
+    }
 
     const lyricsObj: SongLyrics = {
       trackId,
@@ -169,14 +243,22 @@ export async function fetchLyricsForTrack(
       artist: data.artistName || rawArtist,
       syncedLyrics: synced && synced.length > 0 ? synced : undefined,
       plainLyrics: plain,
-      source: 'LRCLIB (Synced)',
+      // Plain-only results are labelled without "(Synced)": the footer
+      // must not claim sync the lyrics do not have.
+      source: synced && synced.length > 0 ? 'LRCLIB (Synced)' : 'LRCLIB',
       fetchedAt: Date.now(),
     };
 
+    lastFetchStatus = null;
     saveCachedLyrics(lyricsObj);
     return lyricsObj;
   } catch (err) {
     console.warn('Lyrics fetch failed:', err);
+    if (cached) {
+      lastFetchStatus = null;
+      return cached;
+    }
+    lastFetchStatus = isConnectionError(err) ? 'offline' : 'notFound';
     return null;
   }
 }

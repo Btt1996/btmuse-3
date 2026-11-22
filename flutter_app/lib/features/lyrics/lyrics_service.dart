@@ -97,6 +97,83 @@ enum LyricsFetchStatus {
   notFound,
 }
 
+/// Minimal cache seam for [LyricsService].
+///
+/// Production uses the SQLite `lyrics_cache` table (via
+/// [_SqliteLyricsCacheStore]); tests inject an in-memory fake. The service
+/// only ever talks to this interface, so the cache path is unit-testable
+/// without a sqflite test double (the repo has none) or a constructible
+/// [LocalDatabase] (its constructor is private).
+abstract class LyricsCacheStore {
+  Future<SongLyrics?> read(String trackId);
+  Future<void> write(SongLyrics lyrics);
+}
+
+/// SQLite-backed [LyricsCacheStore] over [LocalDatabase].
+class _SqliteLyricsCacheStore implements LyricsCacheStore {
+  final LocalDatabase _database;
+  bool _tableReady = false;
+
+  _SqliteLyricsCacheStore(this._database);
+
+  /// Creates the cache table on first use.
+  ///
+  /// Done lazily with `CREATE TABLE IF NOT EXISTS` (same pattern as
+  /// `LocalDatabase._createFingerprintTable`) so no change to
+  /// `local_database.dart` and no database version bump is needed. If the
+  /// coordinator prefers the table in `onCreate`/`onUpgrade` with a
+  /// version bump, this method can move there unchanged.
+  Future<void> _ensureLyricsTable() async {
+    if (_tableReady) return;
+    final db = await _database.database;
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS lyrics_cache (
+        track_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        artist TEXT NOT NULL,
+        synced_json TEXT,
+        plain_text TEXT,
+        source TEXT NOT NULL,
+        fetched_at_ms INTEGER NOT NULL
+      );
+    ''');
+    _tableReady = true;
+  }
+
+  @override
+  Future<SongLyrics?> read(String trackId) async {
+    try {
+      await _ensureLyricsTable();
+      final db = await _database.database;
+      final rows = await db.query(
+        'lyrics_cache',
+        where: 'track_id = ?',
+        whereArgs: [trackId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return null;
+      return SongLyrics.fromMap(rows.first);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<void> write(SongLyrics lyrics) async {
+    try {
+      await _ensureLyricsTable();
+      final db = await _database.database;
+      await db.insert(
+        'lyrics_cache',
+        lyrics.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (_) {
+      // Caching must never break playback or the lyrics view.
+    }
+  }
+}
+
 /// Cleans a raw track title for higher lyric-matching rates.
 ///
 /// Faithful port of `cleanSongTitle` in `src/services/lyricsService.ts`:
@@ -106,7 +183,7 @@ enum LyricsFetchStatus {
 String cleanSongTitle(String title) {
   final cleaned = title.replaceAll(
     RegExp(
-      r'''\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]''',
+      r'''\s*[\(\[](official\s*(music\s*)?(video|audio|lyrics?(\s*video)?|visualizer)|lyrics?(\s*video)?|audio|visualizer|hq|hd|remix|feat\..*|ft\..*)[\)\]]''',
       caseSensitive: false,
     ),
     '',
@@ -125,12 +202,13 @@ String cleanSongTitle(String title) {
 /// placeholder artists become empty, and only the first artist of a
 /// collaboration is kept.
 String cleanArtistName(String artist) {
-  if (artist.isEmpty ||
-      artist == 'Unknown Artist' ||
-      artist == 'Imported Audio') {
+  final trimmed = artist.trim();
+  if (trimmed.isEmpty ||
+      trimmed.toLowerCase() == 'unknown artist' ||
+      trimmed.toLowerCase() == 'imported audio') {
     return '';
   }
-  return artist.split(',').first.split('&').first.trim();
+  return trimmed.split(',').first.split('&').first.trim();
 }
 
 /// Parses LRC text ("[mm:ss.xx] line text") into time-sorted [LyricLine]s.
@@ -200,16 +278,14 @@ class LyricsService {
   static const String clientHeader = 'btmu/2.0.0 (https://btt1996.github.io)';
 
   final Dio _dio;
-  final LocalDatabase _database;
+  final LyricsCacheStore _cache;
 
   /// Why the most recent fetch returned null; null after a success or a
   /// cache hit. Lets the UI tell "offline" apart from "not catalogued".
   LyricsFetchStatus? _lastStatus;
   LyricsFetchStatus? get lastFetchStatus => _lastStatus;
 
-  bool _tableReady = false;
-
-  LyricsService({Dio? dio, LocalDatabase? database})
+  LyricsService({Dio? dio, LocalDatabase? database, LyricsCacheStore? cache})
       : _dio = dio ??
             Dio(
               BaseOptions(
@@ -221,71 +297,25 @@ class LyricsService {
                 },
               ),
             ),
-        _database = database ?? LocalDatabase.instance;
-
-  /// Creates the cache table on first use.
-  ///
-  /// Done lazily with `CREATE TABLE IF NOT EXISTS` (same pattern as
-  /// `LocalDatabase._createFingerprintTable`) so no change to
-  /// `local_database.dart` and no database version bump is needed. If the
-  /// coordinator prefers the table in `onCreate`/`onUpgrade` with a
-  /// version bump, this method can move there unchanged.
-  Future<void> _ensureLyricsTable() async {
-    if (_tableReady) return;
-    final db = await _database.database;
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS lyrics_cache (
-        track_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        artist TEXT NOT NULL,
-        synced_json TEXT,
-        plain_text TEXT,
-        source TEXT NOT NULL,
-        fetched_at_ms INTEGER NOT NULL
-      );
-    ''');
-    _tableReady = true;
-  }
+        _cache = cache ??
+            _SqliteLyricsCacheStore(database ?? LocalDatabase.instance);
 
   /// Returns cached lyrics for [trackId], or null on a miss or any error.
-  Future<SongLyrics?> getCachedLyrics(String trackId) async {
-    try {
-      await _ensureLyricsTable();
-      final db = await _database.database;
-      final rows = await db.query(
-        'lyrics_cache',
-        where: 'track_id = ?',
-        whereArgs: [trackId],
-        limit: 1,
-      );
-      if (rows.isEmpty) return null;
-      return SongLyrics.fromMap(rows.first);
-    } catch (_) {
-      return null;
-    }
-  }
+  Future<SongLyrics?> getCachedLyrics(String trackId) => _cache.read(trackId);
 
   /// Saves [lyrics] to the offline cache; silently ignored on any error.
-  Future<void> saveCachedLyrics(SongLyrics lyrics) async {
-    try {
-      await _ensureLyricsTable();
-      final db = await _database.database;
-      await db.insert(
-        'lyrics_cache',
-        lyrics.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    } catch (_) {
-      // Caching must never break playback or the lyrics view.
-    }
-  }
+  Future<void> saveCachedLyrics(SongLyrics lyrics) => _cache.write(lyrics);
 
   /// Fetches lyrics for a track, returning null when none can be found.
   ///
   /// Strategy A: exact match via `GET /api/get` with track/artist and the
   /// duration when known. Strategy B: `GET /api/search` fallback, preferring
-  /// the first result that has synced lyrics. The offline cache is checked
-  /// first unless [forceRefresh] is set (manual retry). Never throws.
+  /// a title-matching result with synced lyrics, then any result with
+  /// synced lyrics, then the first result with any lyrics. The offline cache
+  /// is checked first unless [forceRefresh] is set (manual retry); on a
+  /// forced refresh that fails at the connection level, the stale cached
+  /// lyrics are returned instead of hiding lyrics the user already had.
+  /// Never throws.
   Future<SongLyrics?> fetchLyricsForTrack(
     String trackId,
     String rawTitle,
@@ -293,13 +323,12 @@ class LyricsService {
     int? durationSeconds,
     bool forceRefresh = false,
   }) async {
+    SongLyrics? cached;
     try {
-      if (!forceRefresh) {
-        final cached = await getCachedLyrics(trackId);
-        if (cached != null) {
-          _lastStatus = null;
-          return cached;
-        }
+      cached = await getCachedLyrics(trackId);
+      if (cached != null && !forceRefresh) {
+        _lastStatus = null;
+        return cached;
       }
 
       final title = cleanSongTitle(rawTitle);
@@ -346,19 +375,37 @@ class LyricsService {
               results != null &&
               results.isNotEmpty) {
             Map<String, dynamic>? picked;
+            // Prefer a title-matching result with synced lyrics: search
+            // relevance does not guarantee the top hit is this track
+            // (a cover or remix can outrank it).
             for (final entry in results) {
               if (entry is Map<String, dynamic> &&
-                  entry['syncedLyrics'] != null) {
+                  entry['syncedLyrics'] != null &&
+                  _matchesTitle(entry, title)) {
                 picked = entry;
                 break;
               }
             }
-            picked ??= results.first is Map<String, dynamic>
-                ? results.first as Map<String, dynamic>
-                : null;
-            if (picked != null &&
-                (picked['syncedLyrics'] != null ||
-                    picked['plainLyrics'] != null)) {
+            if (picked == null) {
+              for (final entry in results) {
+                if (entry is Map<String, dynamic> &&
+                    entry['syncedLyrics'] != null) {
+                  picked = entry;
+                  break;
+                }
+              }
+            }
+            if (picked == null) {
+              for (final entry in results) {
+                if (entry is Map<String, dynamic> &&
+                    (entry['syncedLyrics'] != null ||
+                        entry['plainLyrics'] != null)) {
+                  picked = entry;
+                  break;
+                }
+              }
+            }
+            if (picked != null) {
               data = picked;
             }
           }
@@ -368,6 +415,12 @@ class LyricsService {
       }
 
       if (data == null) {
+        if (sawConnectionError && cached != null) {
+          // Forced refresh while offline: keep showing the lyrics the
+          // user already had instead of an empty state.
+          _lastStatus = null;
+          return cached;
+        }
         _lastStatus = sawConnectionError
             ? LyricsFetchStatus.offline
             : LyricsFetchStatus.notFound;
@@ -398,9 +451,9 @@ class LyricsService {
         artist: _responseTitle(data, rawArtist, key: 'artistName'),
         syncedLyrics: synced.isEmpty ? null : synced,
         plainLyrics: plain.isEmpty ? null : plain,
-        // Same source label as the React implementation, even for
-        // plain-only results.
-        source: 'LRCLIB (Synced)',
+        // Plain-only results are labelled without "(Synced)": the footer
+        // must not claim sync the lyrics do not have.
+        source: synced.isEmpty ? 'LRCLIB' : 'LRCLIB (Synced)',
         fetchedAt: DateTime.now(),
       );
 
@@ -408,6 +461,10 @@ class LyricsService {
       await saveCachedLyrics(lyrics);
       return lyrics;
     } catch (_) {
+      if (cached != null) {
+        _lastStatus = null;
+        return cached;
+      }
       _lastStatus = LyricsFetchStatus.notFound;
       return null;
     }
@@ -423,7 +480,24 @@ class LyricsService {
     return fallback;
   }
 
+  /// Whether [entry]'s LRCLIB title is the requested [title] after the
+  /// same cleaning applied to the query (suffixes/extensions stripped).
+  static bool _matchesTitle(Map<String, dynamic> entry, String title) {
+    final candidate = entry['trackName'] as String?;
+    if (candidate == null) return false;
+    return cleanSongTitle(candidate).toLowerCase() == title.toLowerCase();
+  }
+
+  /// Connection-level failures mean "offline", not "not catalogued".
+  ///
+  /// Timeouts and `unknown` (Dio's bucket for transport errors such as
+  /// SocketException / TLS failures, and for malformed responses) count
+  /// here: on a flaky mobile connection a stalled request is an offline
+  /// signal, while a clean 4xx/5xx (`badResponse`) is not.
   static bool _isConnectionError(DioException e) =>
       e.type == DioExceptionType.connectionError ||
-      e.type == DioExceptionType.connectionTimeout;
+      e.type == DioExceptionType.connectionTimeout ||
+      e.type == DioExceptionType.sendTimeout ||
+      e.type == DioExceptionType.receiveTimeout ||
+      e.type == DioExceptionType.unknown;
 }

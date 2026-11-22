@@ -6,7 +6,7 @@ import { triggerHaptic } from '../../services/nativeAudioBridge';
 
 export const MiniPlayer: React.FC = () => {
   const { playerState, togglePlayPause, nextTrack, setIsFullScreenPlayerOpen, isFullScreenPlayerOpen } = useMusic();
-  const { currentTrack, isPlaying, currentTime, duration, isLoading, isSmartMixBlending, volumeBooster, isBoosterActive } = playerState;
+  const { currentTrack, isPlaying, currentTime, duration, isLoading, isSmartMixBlending } = playerState;
   const [bttTrigger, setBttTrigger] = useState<BttAnimationTrigger | null>(null);
   const [activeButton, setActiveButton] = useState<'play' | 'next' | null>(null);
 
@@ -87,11 +87,6 @@ export const MiniPlayer: React.FC = () => {
             {isSmartMixBlending && (
               <span className="px-1.5 py-0.2 rounded bg-[#6202E1]/20 text-[#F70E42] text-[9px] font-mono font-bold shrink-0">
                 Mix
-              </span>
-            )}
-            {isBoosterActive && volumeBooster > 1.0 && (
-              <span className="px-1 py-0.2 rounded bg-[#F70E42]/20 text-[#F70E42] text-[8.5px] font-mono font-bold shrink-0">
-                {(volumeBooster * 100).toFixed(0)}%
               </span>
             )}
           </div>

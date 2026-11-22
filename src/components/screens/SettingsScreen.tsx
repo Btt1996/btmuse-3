@@ -48,7 +48,6 @@ export const SettingsScreen: React.FC = () => {
     refreshLibrary,
     showToast,
     playerState,
-    toggleVolumeBooster,
   } = useMusic();
 
   const { isInstalled } = usePWAInstall();
@@ -433,51 +432,15 @@ export const SettingsScreen: React.FC = () => {
         </h3>
 
         <div className="p-5 rounded-3xl bg-[var(--btt-surface)] backdrop-blur-2xl border border-[var(--btt-border)] space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-bold text-[var(--btt-card-text)] flex items-center gap-1.5">
-                Volume Booster (1.0x – 3.0x)
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                    playerState.isBoosterActive && playerState.volumeBooster > 1.0
-                      ? 'bg-[#F70E42]/20 text-[#F70E42]'
-                      : 'bg-white/10 text-[#7E8F9E]'
-                  }`}
-                >
-                  {playerState.isBoosterActive && playerState.volumeBooster > 1.0
-                    ? `${(playerState.volumeBooster * 100).toFixed(0)}% Active`
-                    : '1.0x Standard'}
-                </span>
-              </span>
-              <p className="text-xs text-[var(--btt-card-subtext)] mt-0.5">
-                Real digital amplification with soft-knee DynamicsCompressorNode
-              </p>
-            </div>
-            <button
-              onClick={() => toggleVolumeBooster()}
-              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
-                playerState.isBoosterActive && playerState.volumeBooster > 1.0
-                  ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-[0_0_16px_rgba(247,14,66,0.5)]'
-                  : 'bg-white/10 text-[#7E8F9E] hover:text-[#F0F4FA]'
-              }`}
-              title="Toggle Volume Booster"
-            >
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>{playerState.isBoosterActive && playerState.volumeBooster > 1.0 ? 'ON' : 'OFF'}</span>
-            </button>
-          </div>
+          <p className="text-xs text-[var(--btt-card-subtext)]">
+            Volume up to 100% — the 300% booster lives in the native app only.
+          </p>
 
           <div className="pt-1">
             <VolumeControl showPresets={true} />
           </div>
 
           <div className="pt-2 border-t border-[var(--btt-border)] space-y-1.5 text-xs text-[var(--btt-card-subtext)]">
-            <div className="flex items-start gap-2">
-              <span className="text-[var(--btt-accent)] font-bold">🛡️</span>
-              <span>
-                <strong className="text-[var(--btt-card-text)]">Soft-Knee Peak Limiter:</strong> Automatically limits audio peaks at -2.5 dB with a 12:1 compression ratio to eliminate distortion and digital clipping at high volume.
-              </span>
-            </div>
             <div className="flex items-start gap-2">
               <span className="text-[var(--btt-accent)] font-bold">📱</span>
               <span>

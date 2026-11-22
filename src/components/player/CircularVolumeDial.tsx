@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Volume2, Zap, Sliders, X, Check, ShieldCheck } from 'lucide-react';
+import { Volume2, Sliders, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useMusic } from '../../context/MusicContext';
 import { triggerHaptic } from '../../services/nativeAudioBridge';
@@ -10,8 +10,8 @@ interface CircularVolumeDialProps {
 }
 
 export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ className = '' }) => {
-  const { playerState, setVolume, setVolumeBooster, toggleVolumeBooster } = useMusic();
-  const { volume, volumeBooster, isBoosterActive, isMuted } = playerState;
+  const { playerState, setVolume } = useMusic();
+  const { volume, isMuted } = playerState;
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
@@ -31,11 +31,10 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
   const effectiveVol = isMuted ? 0 : volume;
   const volDashoffset = circumference * (1 - effectiveVol);
 
-  // Lower arc (Booster): 1.0x to 3.0x (normalized 0 to 1)
-  const boosterRatio = isBoosterActive ? Math.min(1, Math.max(0, (volumeBooster - 1.0) / 2.0)) : 0;
-  const boosterDashoffset = circumference * (1 - boosterRatio);
-
-  const boosterPresets = [1.0, 1.5, 2.0, 2.5, 3.0];
+  // W-1 (Phase 3): the 300% booster arc/presets were removed. The dial is
+  // volume only (0-100% element volume). 300% is native-only
+  // (Flutter/SwiftUI with limiter); the Capacitor path has no safe 300%
+  // because the Web Audio routing breaks iOS background playback.
 
   return (
     <div className={`relative flex items-center justify-center ${className}`}>
@@ -50,7 +49,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
         whileTap={{ scale: 0.92 }}
         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
         className="relative w-18 h-18 rounded-full p-1 bg-[#0D1626]/90 backdrop-blur-3xl border border-[#6202E1]/30 shadow-[0_8px_32px_rgba(0,0,0,0.7)] flex items-center justify-center cursor-pointer select-none group"
-        title="Tap to adjust Volume & Audio Booster"
+        title="Tap to adjust Volume"
         aria-label="Audio dial - tap to expand"
       >
         {/* Specular glass highlight */}
@@ -79,49 +78,18 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
             className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(247,14,66,0.5)]"
           />
 
-          {/* Lower Track (Booster Background) */}
-          <path
-            d="M 36,64 A 28,28 0 0,1 36,8"
-            fill="none"
-            stroke="currentColor"
-            className="text-white/10"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-          {/* Lower Active (Booster Value - Magenta) */}
-          <path
-            d="M 36,64 A 28,28 0 0,1 36,8"
-            fill="none"
-            stroke={isBoosterActive ? '#C4009B' : '#7E8F9E'}
-            strokeWidth="4"
-            strokeDasharray={circumference}
-            strokeDashoffset={boosterDashoffset}
-            strokeLinecap="round"
-            className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(196,0,155,0.5)]"
-          />
         </svg>
 
         {/* Center Glass Core */}
         <div className="absolute inset-3.5 rounded-full bg-[#05070B]/95 border border-[#6202E1]/20 shadow-inner flex flex-col items-center justify-center text-center">
-          {isBoosterActive && volumeBooster > 1.05 ? (
-            <div className="flex flex-col items-center leading-none">
-              <span className="text-[10px] font-mono font-black text-[#F70E42]">
-                {volumeBooster.toFixed(1)}x
-              </span>
-              <span className="text-[7.5px] font-mono font-bold text-[#F70E42] mt-0.5">
-                BOOST
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center leading-none">
-              <span className="text-[10.5px] font-mono font-black text-[#F0F4FA]">
-                {Math.round(effectiveVol * 100)}%
-              </span>
-              <span className="text-[7.5px] font-mono font-bold text-[#7E8F9E] mt-0.5">
-                VOL
-              </span>
-            </div>
-          )}
+          <div className="flex flex-col items-center leading-none">
+            <span className="text-[10.5px] font-mono font-black text-[#F0F4FA]">
+              {Math.round(effectiveVol * 100)}%
+            </span>
+            <span className="text-[7.5px] font-mono font-bold text-[#7E8F9E] mt-0.5">
+              VOL
+            </span>
+          </div>
         </div>
       </motion.button>
 
@@ -154,11 +122,10 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                       </div>
                       <div>
                         <div className="text-xs font-black tracking-wide uppercase text-[#F0F4FA] font-mono">
-                          Audio Dial & Booster
+                          Audio Dial
                         </div>
-                        <p className="text-[10px] text-[#F70E42] font-medium flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-[#F70E42]" />
-                          DSP Soft-Knee Limiter Active
+                        <p className="text-[10px] text-[#7E8F9E] font-medium">
+                          Volume up to 100% — the 300% booster lives in the native app only
                         </p>
                       </div>
                     </div>
@@ -204,83 +171,16 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                     </div>
                   </div>
 
-                  {/* REAL 3X DIGITAL AUDIO BOOSTER STAGE */}
-                  <div className="p-3.5 rounded-2xl bg-[#0D1524]/80 border border-[#F70E42]/25 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#F0F4FA]">
-                          <Zap className="w-4 h-4 text-[#F70E42]" />
-                          <span>Volume Booster (1.0x – 3.0x)</span>
-                        </div>
-                        <span className="text-[10px] text-[#F70E42] font-mono">
-                          {isBoosterActive && volumeBooster > 1.0
-                            ? `Amplified to ${(volumeBooster * 100).toFixed(0)}%`
-                            : 'Standard Line Output'}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleVolumeBooster()}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
-                          isBoosterActive && volumeBooster > 1.0
-                            ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-[0_0_16px_rgba(247,14,66,0.5)]'
-                            : 'bg-white/10 text-[#7E8F9E] hover:text-[#F0F4FA]'
-                        }`}
-                        title="Toggle volume booster"
-                      >
-                        <Zap className="w-3.5 h-3.5 fill-current" />
-                        <span>{isBoosterActive && volumeBooster > 1.0 ? 'ON' : 'OFF'}</span>
-                      </button>
-                    </div>
-
-                    {/* Booster Slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-mono text-[#7E8F9E]">
-                        <span>1.0x (100%)</span>
-                        <span className="font-bold text-[#F70E42]">
-                          {(volumeBooster * 100).toFixed(0)}%
-                        </span>
-                        <span>3.0x (300%)</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={100}
-                        max={300}
-                        step={5}
-                        value={Math.round(volumeBooster * 100)}
-                        onMouseDown={() => setIsDraggingSlider(true)}
-                        onTouchStart={() => setIsDraggingSlider(true)}
-                        onMouseUp={() => setIsDraggingSlider(false)}
-                        onTouchEnd={() => setIsDraggingSlider(false)}
-                        onChange={(e) => setVolumeBooster(Number(e.target.value) / 100)}
-                        className="w-full h-3 rounded-full appearance-none cursor-pointer bg-white/15 accent-[#F70E42]"
-                      />
-                    </div>
-
-                    {/* Quick Presets */}
-                    <div className="flex items-center justify-between gap-1 pt-1">
-                      {boosterPresets.map((mult) => {
-                        const isSelected = isBoosterActive && Math.abs(volumeBooster - mult) < 0.08;
-                        return (
-                          <button
-                            key={mult}
-                            type="button"
-                            onClick={() => setVolumeBooster(mult)}
-                            className={`flex-1 py-1 rounded-lg text-[10.5px] font-mono font-bold transition active:scale-90 border ${
-                              isSelected
-                                ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white border-transparent shadow-sm'
-                                : 'bg-white/5 text-[#7E8F9E] border-white/10 hover:text-[#F0F4FA]'
-                            }`}
-                          >
-                            {mult.toFixed(1)}x
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <p className="text-[10px] text-[#7E8F9E] leading-relaxed">
-                      Real digital gain amplification with soft-knee limiting dynamics compressor. Prevents clipping and crackling while preserving iOS background audio playback.
+                  {/* W-1 (Phase 3): the 300% booster stage was removed. 300% is
+                      native-only (Flutter/SwiftUI with limiter); the Capacitor
+                      path has no safe 300% because the Web Audio routing
+                      breaks iOS background playback (commit 7627d41). Volume
+                      here is the plain audio element, max 100%. */}
+                  <div className="p-3.5 rounded-2xl bg-[#0D1524]/80 border border-white/10">
+                    <p className="text-[11px] text-[#7E8F9E] leading-relaxed">
+                      The 300% volume booster lives in the native app only. In this
+                      web player, volume tops out at 100% to keep iOS background
+                      playback and lock-screen control working.
                     </p>
                   </div>
 

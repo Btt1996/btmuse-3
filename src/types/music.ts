@@ -86,8 +86,10 @@ export interface PlayerState {
   activeAnalysis?: TrackAnalysis | null;
   isAnalyzing: boolean;
   analysisProgress: { current: number; total: number } | null;
-  volumeBooster: number; // 1.0 to 3.0 (up to 3x louder)
-  isBoosterActive: boolean; // whether 3x volume booster is engaged
+  // @deprecated Phase 3 (W-1): Capacitor Web Audio booster removed - always
+  // 1.0 / false. 300% is native-only (Flutter/SwiftUI). Kept for stored-settings compatibility.
+  volumeBooster: number;
+  isBoosterActive: boolean;
 }
 
 export interface TelegramSyncItem {
@@ -130,7 +132,8 @@ export interface AppSettings {
   autoCreatePlaylists: boolean;
   skipDuplicates: boolean;
   smartMix: SmartMixConfig;
-  volumeBooster: number; // 1.0 to 3.0
+  // @deprecated Phase 3 (W-1): see PlayerState above - always 1.0 / false.
+  volumeBooster: number;
   isBoosterActive: boolean;
   paletteCombo?: 'signature' | 'mono' | 'legacy';
   lastSyncedAt?: number;

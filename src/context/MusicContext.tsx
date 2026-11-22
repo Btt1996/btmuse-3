@@ -160,15 +160,13 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const SILENT_AUDIO_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
   const silentKeepAliveRef = useRef<HTMLAudioElement | null>(null);
 
-  // Web Audio for iOS In-App Volume & 3x Booster with Soft-Knee Limiting
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const masterGainRef = useRef<GainNode | null>(null);
-  const deckGainARef = useRef<GainNode | null>(null);
-  const deckGainBRef = useRef<GainNode | null>(null);
-  const compressorRef = useRef<DynamicsCompressorNode | null>(null);
-  const sourceARef = useRef<MediaElementAudioSourceNode | null>(null);
-  const sourceBRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const isWebAudioSetupRef = useRef(false);
+  // W-1 (Phase 3): the 300% Web Audio booster was removed here on purpose.
+  // 300% is native-only (Flutter/SwiftUI with limiter); the Capacitor path has
+  // no safe 300% because the Web Audio routing (media-element source nodes
+  // -> master gain -> compressor) breaks iOS background playback — this is what
+  // commit 7627d41 removed it for. Audio now plays through the plain <audio>
+  // elements at max 100% element volume. No AudioContext, no master gain,
+  // no compressor graph exists in this file anymore.
 
   // Pre-cached ObjectURLs for instantaneous lock-screen AirPod next/previous track switching
   const preloadedUrlsRef = useRef<Map<string, string>>(new Map());
@@ -184,119 +182,33 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 3200);
   }, []);
 
-  // Safe audio engine keeper — ensures background silent audio is running when music plays
+  // Safe audio engine keeper — ensures background silent audio is running when music plays.
+  // (Despite the name, this only resumes the silent keep-alive <audio> element;
+  // it creates no AudioContext and no Web Audio graph — see W-1 above.)
   const ensureWebAudio = useCallback(() => {
     if (silentKeepAliveRef.current && silentKeepAliveRef.current.paused && playerStateRef.current.isPlaying) {
       silentKeepAliveRef.current.play().catch(() => {});
     }
   }, []);
 
-  // Lazily initialize Web Audio DSP chain only when booster is activated
-  const initWebAudioBooster = useCallback(() => {
-    if (isWebAudioSetupRef.current) {
-      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume().catch(() => {});
-      }
-      return;
+  // Plain <audio> element volume only (0-100%). No booster, no Web Audio:
+  // the gain applied here is at most the element volume, never multiplied.
+  const applyMasterGain = useCallback((vol?: number, muted?: boolean) => {
+    const v = vol !== undefined ? vol : playerStateRef.current.volume;
+    const isM = muted !== undefined ? muted : playerStateRef.current.isMuted;
+
+    const baseVol = isM ? 0 : Math.max(0, Math.min(1, v));
+
+    // Adjust active deck element volume
+    const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
+    if (activeDeck) {
+      activeDeck.volume = baseVol;
     }
-
-    try {
-      const AudioCtxClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtxClass) return;
-
-      const ctx = new AudioCtxClass();
-      audioCtxRef.current = ctx;
-
-      // Soft-knee limiting dynamics compressor to prevent clipping at > 1.0x gain
-      const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.setValueAtTime(-2.5, ctx.currentTime);
-      compressor.knee.setValueAtTime(35, ctx.currentTime);
-      compressor.ratio.setValueAtTime(12, ctx.currentTime);
-      compressor.attack.setValueAtTime(0.003, ctx.currentTime);
-      compressor.release.setValueAtTime(0.25, ctx.currentTime);
-      compressorRef.current = compressor;
-
-      const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
-      masterGainRef.current = masterGain;
-
-      const deckGainA = ctx.createGain();
-      const deckGainB = ctx.createGain();
-      deckGainARef.current = deckGainA;
-      deckGainBRef.current = deckGainB;
-
-      // Attach audio element source nodes if available
-      if (deckARef.current && !sourceARef.current) {
-        sourceARef.current = ctx.createMediaElementSource(deckARef.current);
-        sourceARef.current.connect(deckGainA);
-      }
-      if (deckBRef.current && !sourceBRef.current) {
-        sourceBRef.current = ctx.createMediaElementSource(deckBRef.current);
-        sourceBRef.current.connect(deckGainB);
-      }
-
-      deckGainA.connect(masterGain);
-      deckGainB.connect(masterGain);
-      masterGain.connect(compressor);
-      compressor.connect(ctx.destination);
-
-      isWebAudioSetupRef.current = true;
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-    } catch (err) {
-      console.warn('Web Audio DSP initialization deferred or unsupported:', err);
+    const inactiveDeck = activeDeckRef.current === 'A' ? deckBRef.current : deckARef.current;
+    if (inactiveDeck && !isCrossfadingRef.current) {
+      inactiveDeck.volume = baseVol;
     }
   }, []);
-
-  // Calculate and apply direct volume and DSP booster without breaking background playback
-  const applyMasterGain = useCallback(
-    (vol?: number, booster?: number, isBooster?: boolean, muted?: boolean) => {
-      const v = vol !== undefined ? vol : playerStateRef.current.volume;
-      const isM = muted !== undefined ? muted : playerStateRef.current.isMuted;
-      const b = booster !== undefined ? booster : playerStateRef.current.volumeBooster;
-      const active = isBooster !== undefined ? isBooster : playerStateRef.current.isBoosterActive;
-
-      const baseVol = isM ? 0 : Math.max(0, Math.min(1, v));
-      const effectiveBooster = active ? Math.max(1.0, Math.min(3.0, b)) : 1.0;
-
-      // Adjust active deck hardware element volume
-      const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
-      if (activeDeck) {
-        activeDeck.volume = baseVol;
-      }
-      const inactiveDeck = activeDeckRef.current === 'A' ? deckBRef.current : deckARef.current;
-      if (inactiveDeck && !isCrossfadingRef.current) {
-        inactiveDeck.volume = baseVol;
-      }
-
-      // If Web Audio DSP is active, adjust digital gain with soft-knee limiting
-      if (masterGainRef.current && audioCtxRef.current) {
-        try {
-          if (audioCtxRef.current.state === 'suspended') {
-            audioCtxRef.current.resume().catch(() => {});
-          }
-          const targetGain = isM ? 0 : baseVol * effectiveBooster;
-          masterGainRef.current.gain.setTargetAtTime(targetGain, audioCtxRef.current.currentTime, 0.04);
-
-          if (compressorRef.current) {
-            if (effectiveBooster > 1.0) {
-              compressorRef.current.threshold.setValueAtTime(-2.5, audioCtxRef.current.currentTime);
-              compressorRef.current.ratio.setValueAtTime(12, audioCtxRef.current.currentTime);
-            } else {
-              compressorRef.current.threshold.setValueAtTime(0, audioCtxRef.current.currentTime);
-              compressorRef.current.ratio.setValueAtTime(1, audioCtxRef.current.currentTime);
-            }
-          }
-        } catch {
-          // ignore transient Web Audio parameter errors
-        }
-      }
-    },
-    []
-  );
 
   // Initialize Audio Elements & Background Resilience
   useEffect(() => {
@@ -767,14 +679,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         inactiveDeck.currentTime = 0;
       }
 
-      // Reset individual deck gains
-      if (deckGainARef.current && audioCtxRef.current) {
-        deckGainARef.current.gain.setValueAtTime(1.0, audioCtxRef.current.currentTime);
-      }
-      if (deckGainBRef.current && audioCtxRef.current) {
-        deckGainBRef.current.gain.setValueAtTime(0.0, audioCtxRef.current.currentTime);
-      }
-
       setPlayerState((prev) => ({
         ...prev,
         isLoading: true,
@@ -1158,8 +1062,30 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setStorageStats(stats);
       setTrackAnalyses(analyses);
 
-      const effectiveBooster = savedBooster || savedSettings.volumeBooster || 1.0;
-      const effectiveBoosterActive = savedBoosterActive ?? savedSettings.isBoosterActive ?? false;
+      // W-1 booster migration: any stored multiplier > 1.0 is clamped to 1.0 and
+      // the stored booster flags are cleared, so a restored session can NEVER
+      // re-enable the removed 300% boost.
+      // Any stored multiplier is discarded here (not read into state).
+      try {
+        localStorage.removeItem('bttm_volume_booster');
+        localStorage.removeItem('bttm_booster_active');
+      } catch {
+        // storage unavailable — in-memory state below is still forced to 1.0/off
+      }
+      void db.saveSetting('app_volume_booster', 1.0).catch(() => {});
+      void db.saveSetting('app_is_booster_active', false).catch(() => {});
+      if (
+        (savedSettings.volumeBooster !== undefined && savedSettings.volumeBooster !== 1.0) ||
+        savedSettings.isBoosterActive
+      ) {
+        const cleanedSettings: AppSettings = {
+          ...savedSettings,
+          volumeBooster: 1.0,
+          isBoosterActive: false,
+        };
+        setSettings(cleanedSettings);
+        void db.saveSetting('app_settings', cleanedSettings).catch(() => {});
+      }
 
       setPlayerState((prev) => ({
         ...prev,
@@ -1167,11 +1093,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isShuffle: savedSettings.defaultShuffle || false,
         playbackRate: savedSettings.defaultPlaybackRate || 1.0,
         smartMixConfig: savedSettings.smartMix || DEFAULT_SMART_MIX,
-        volumeBooster: effectiveBooster,
-        isBoosterActive: effectiveBoosterActive,
+        volumeBooster: 1.0,
+        isBoosterActive: false,
       }));
 
-      applyMasterGain(undefined, effectiveBooster, effectiveBoosterActive);
+      applyMasterGain();
     } catch (err) {
       console.error('Error loading library from IndexedDB:', err);
       showToast('Error loading local music library.');
@@ -1220,8 +1146,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const currentDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
       const standbyDeck = activeDeckRef.current === 'A' ? deckBRef.current : deckARef.current;
       const standbyDeckId: 'A' | 'B' = activeDeckRef.current === 'A' ? 'B' : 'A';
-      const currentDeckGain = activeDeckRef.current === 'A' ? deckGainARef.current : deckGainBRef.current;
-      const standbyDeckGain = activeDeckRef.current === 'A' ? deckGainBRef.current : deckGainARef.current;
 
       if (!currentDeck || !standbyDeck) return;
 
@@ -1250,11 +1174,8 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         standbyDeck.currentTime = introSilence;
         standbyDeck.playbackRate = playerState.playbackRate;
 
-        // Start standby deck silent in both HTML5 & Web Audio gain
+        // Start standby deck silent (plain element volume)
         standbyDeck.volume = 0;
-        if (standbyDeckGain && audioCtxRef.current) {
-          standbyDeckGain.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
-        }
 
         standbyDeck
           .play()
@@ -1273,12 +1194,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               if (currentDeck) currentDeck.volume = Math.max(0, outGain);
               if (standbyDeck) standbyDeck.volume = Math.min(1, inGain);
 
-              if (audioCtxRef.current) {
-                const now = audioCtxRef.current.currentTime;
-                if (currentDeckGain) currentDeckGain.gain.setValueAtTime(outGain, now);
-                if (standbyDeckGain) standbyDeckGain.gain.setValueAtTime(inGain, now);
-              }
-
               if (progress >= 1) {
                 if (crossfadeTimerRef.current) {
                   clearInterval(crossfadeTimerRef.current);
@@ -1292,9 +1207,6 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
                 // Standby deck is NOW the active deck, playing uninterrupted from synchronized timestamp!
                 activeDeckRef.current = standbyDeckId;
-                if (standbyDeckGain && audioCtxRef.current) {
-                  standbyDeckGain.gain.setValueAtTime(1.0, audioCtxRef.current.currentTime);
-                }
                 const currentVol = playerStateRef.current.isMuted ? 0 : playerStateRef.current.volume;
                 standbyDeck.volume = currentVol;
                 isCrossfadingRef.current = false;
@@ -1365,11 +1277,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  // Volume & Volume Booster Control with Web Audio Engine (iOS & Desktop)
+  // Volume control — plain <audio> element volume only (W-1: booster removed)
   const setVolume = useCallback((val: number) => {
     const clamped = Math.max(0, Math.min(1, val));
     ensureWebAudio();
-    applyMasterGain(clamped, undefined, undefined, clamped === 0);
+    applyMasterGain(clamped, clamped === 0);
 
     const activeDeck = activeDeckRef.current === 'A' ? deckARef.current : deckBRef.current;
     if (activeDeck) activeDeck.volume = clamped;
@@ -1379,49 +1291,43 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPlayerState((prev) => ({ ...prev, volume: clamped, isMuted: clamped === 0 }));
   }, [applyMasterGain, ensureWebAudio]);
 
-  const setVolumeBooster = useCallback(
-    (multiplier: number) => {
-      const clamped = Math.max(1.0, Math.min(3.0, Number(multiplier.toFixed(2))));
-      const isActive = clamped > 1.0;
-      initWebAudioBooster();
-      setPlayerState((prev) => ({
-        ...prev,
-        volumeBooster: clamped,
-        isBoosterActive: isActive,
-      }));
-      applyMasterGain(undefined, clamped, isActive);
-      localStorage.setItem('bttm_volume_booster', String(clamped));
-      localStorage.setItem('bttm_booster_active', isActive ? 'true' : 'false');
-      triggerHaptic();
-      showToast(`Volume Booster: ${(clamped * 100).toFixed(0)}% (Soft-Knee DSP)`);
-    },
-    [applyMasterGain, initWebAudioBooster, showToast]
-  );
+  // W-1: booster removed — kept as a no-op so existing callers
+  // (VolumeControl, SettingsScreen, CircularVolumeDial) keep compiling and
+  // can never raise gain above 100%. Always forces 1.0 / off and clears any
+  // stored booster value. 300% lives in the native app only.
+  const setVolumeBooster = useCallback((_multiplier: number) => {
+    try {
+      localStorage.removeItem('bttm_volume_booster');
+      localStorage.removeItem('bttm_booster_active');
+    } catch {
+      // ignore storage errors
+    }
+    void db.saveSetting('app_volume_booster', 1.0).catch(() => {});
+    void db.saveSetting('app_is_booster_active', false).catch(() => {});
+    setPlayerState((prev) => ({
+      ...prev,
+      volumeBooster: 1.0,
+      isBoosterActive: false,
+    }));
+  }, []);
 
-  const toggleVolumeBooster = useCallback(
-    (enabled?: boolean) => {
-      initWebAudioBooster();
-      setPlayerState((prev) => {
-        const willBeActive = enabled !== undefined ? enabled : !prev.isBoosterActive;
-        const targetMultiplier = willBeActive ? (prev.volumeBooster > 1.0 ? prev.volumeBooster : 1.5) : 1.0;
-        applyMasterGain(undefined, targetMultiplier, willBeActive);
-        localStorage.setItem('bttm_booster_active', willBeActive ? 'true' : 'false');
-        localStorage.setItem('bttm_volume_booster', String(targetMultiplier));
-        triggerHaptic();
-        showToast(
-          willBeActive
-            ? `Volume Booster ON (${(targetMultiplier * 100).toFixed(0)}%)`
-            : 'Volume Booster OFF'
-        );
-        return {
-          ...prev,
-          isBoosterActive: willBeActive,
-          volumeBooster: targetMultiplier,
-        };
-      });
-    },
-    [applyMasterGain, initWebAudioBooster, showToast]
-  );
+  // W-1: booster removed — no-op, see setVolumeBooster above. Any call
+  // (including toggle ON) leaves the booster at 1.0x / inactive.
+  const toggleVolumeBooster = useCallback((_enabled?: boolean) => {
+    try {
+      localStorage.removeItem('bttm_volume_booster');
+      localStorage.removeItem('bttm_booster_active');
+    } catch {
+      // ignore storage errors
+    }
+    void db.saveSetting('app_volume_booster', 1.0).catch(() => {});
+    void db.saveSetting('app_is_booster_active', false).catch(() => {});
+    setPlayerState((prev) => ({
+      ...prev,
+      volumeBooster: 1.0,
+      isBoosterActive: false,
+    }));
+  }, []);
 
   // Favorites
   const toggleFavorite = async (trackId: string) => {

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Volume2, Volume1, VolumeX, Zap } from 'lucide-react';
+import { Volume2, Volume1, VolumeX } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 
 interface VolumeControlProps {
@@ -11,41 +11,26 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
   className = '',
   showPresets = true,
 }) => {
-  const {
-    playerState,
-    setVolume,
-    setVolumeBooster,
-    toggleVolumeBooster,
-  } = useMusic();
+  const { playerState, setVolume } = useMusic();
 
-  const { volume, volumeBooster, isBoosterActive, isMuted } = playerState;
+  const { volume, isMuted } = playerState;
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragPercent, setDragPercent] = useState<number | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
 
-  // Calculate current effective percentage:
-  // If booster is active: 0 to 300%
-  // If booster is not active: 0 to 100%
-  const currentPercent = isMuted
-    ? 0
-    : isBoosterActive
-    ? volume <= 0.99
-      ? volume * 100
-      : 100 + ((volumeBooster - 1.0) / 2.0) * 200
-    : volume * 100;
+  // Volume-only (0-100%). Phase 3 (W-1): the 300% Web Audio booster was
+  // removed - it lives in the native app only. No percentage above 100%.
+  const currentPercent = isMuted ? 0 : volume * 100;
 
   const displayPercent = isDragging && dragPercent !== null ? dragPercent : currentPercent;
-  const maxPercent = isBoosterActive ? 300 : 100;
+  const maxPercent = 100;
   const progressRatio = Math.max(0, Math.min(1, displayPercent / maxPercent));
 
   // Determine current volume icon
   const renderVolumeIcon = () => {
     if (isMuted || displayPercent === 0) {
       return <VolumeX className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />;
-    }
-    if (displayPercent > 100) {
-      return <Zap className="w-4 h-4 text-black dark:text-white fill-current" />;
     }
     if (displayPercent < 40) {
       return <Volume1 className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />;
@@ -65,26 +50,16 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
     [maxPercent]
   );
 
-  // Apply volume / booster based on percentage
+  // Apply volume based on percentage (0-100% only).
   const applyPercent = useCallback(
     (pct: number) => {
       if (pct <= 0) {
         setVolume(0);
         return;
       }
-
-      if (pct <= 100) {
-        setVolume(pct / 100);
-        if (isBoosterActive && volumeBooster > 1.0) {
-          setVolumeBooster(1.0);
-        }
-      } else {
-        setVolume(1.0);
-        const boosterVal = 1.0 + ((pct - 100) / 200) * 2.0;
-        setVolumeBooster(Math.round(boosterVal * 10) / 10);
-      }
+      setVolume(Math.min(pct, 100) / 100);
     },
-    [isBoosterActive, volumeBooster, setVolume, setVolumeBooster]
+    [setVolume]
   );
 
   // Pointer handlers for precise, smooth dragging
@@ -117,16 +92,6 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
     window.addEventListener('pointercancel', handlePointerUp);
   };
 
-  const handlePresetClick = (targetMultiplier: number) => {
-    if (targetMultiplier === 1.0) {
-      setVolume(1.0);
-      setVolumeBooster(1.0);
-    } else {
-      setVolume(1.0);
-      setVolumeBooster(targetMultiplier);
-    }
-  };
-
   return (
     <div className={`space-y-2 select-none ${className}`}>
       <div className="flex items-center justify-between gap-3">
@@ -155,14 +120,6 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
         >
           {/* Background Track */}
           <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden relative border border-zinc-300 dark:border-zinc-700/60">
-            {/* 100% Mark when booster is active */}
-            {isBoosterActive && (
-              <div
-                className="absolute top-0 bottom-0 w-[1.5px] bg-zinc-400 dark:bg-zinc-500 z-10"
-                style={{ left: '33.33%' }}
-              />
-            )}
-
             {/* Filled Volume Monochrome Bar */}
             <div
               className="h-full bg-black dark:bg-white transition-all duration-75"
@@ -186,30 +143,18 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
               className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black text-white dark:bg-white dark:text-black shadow-lg pointer-events-none whitespace-nowrap z-30"
               style={{ left: `${progressRatio * 100}%` }}
             >
-              {displayPercent > 100
-                ? `${displayPercent}% (${(1 + ((displayPercent - 100) / 200) * 2).toFixed(1)}x)`
-                : `${displayPercent}%`}
+              {displayPercent}%
             </div>
           )}
         </div>
 
-        {/* Volume Percentage / Booster Badge */}
+        {/* Volume Percentage */}
         <div className="shrink-0 text-right min-w-[50px]">
           <span className="text-xs font-mono font-bold text-black dark:text-white">
             {Math.round(displayPercent)}%
           </span>
         </div>
 
-        {/* Booster Mode Toggle Button (Disabled for background stability) */}
-        <button
-          type="button"
-          onClick={() => toggleVolumeBooster()}
-          className="px-2.5 py-1 rounded-xl text-xs font-bold font-mono transition flex items-center gap-1 opacity-60 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
-          title="Disabled for background stability"
-        >
-          <Zap className="w-3.5 h-3.5" />
-          <span>Booster Off</span>
-        </button>
       </div>
 
       {/* Volume Presets Row */}
@@ -264,12 +209,6 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
             >
               100%
             </button>
-            <span
-              className="text-[9px] font-mono text-zinc-400 dark:text-zinc-500 pl-1"
-              title="3x Booster disabled for background playback stability"
-            >
-              (Direct output)
-            </span>
           </div>
         </div>
       )}

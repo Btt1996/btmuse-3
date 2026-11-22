@@ -138,6 +138,11 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
     { id: 'all', label: 'All History', icon: History },
     { id: 'search', label: 'Searches', icon: Search },
     { id: 'playlist', label: 'Playlists', icon: ListMusic },
+    // Phase 6: 'playback' is a real HistoryType (types/unifiedSearch.ts) and
+    // historyService.recordPlaybackHistory exists, but the tab was missing so
+    // playback records — once recording is wired — would only be visible
+    // under "All History" with no filter of their own.
+    { id: 'playback', label: 'Playback', icon: Play },
     { id: 'download', label: 'Downloads', icon: Download },
     { id: 'failed_import', label: 'Failed Retries', icon: AlertTriangle },
     { id: 'duplicate', label: 'Duplicates', icon: Copy },
@@ -236,6 +241,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
               const isPlaylist = item.type === 'playlist';
               const isFailed = item.type === 'failed_import';
               const isDownload = item.type === 'download';
+              const isPlayback = item.type === 'playback';
               const isDup = item.type === 'duplicate';
 
               return (
@@ -280,6 +286,8 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                           <Download className="w-5 h-5" />
                         ) : isPlaylist ? (
                           <ListMusic className="w-5 h-5" />
+                        ) : isPlayback ? (
+                          <Play className="w-5 h-5" />
                         ) : isDup ? (
                           <Copy className="w-5 h-5" />
                         ) : (
@@ -325,12 +333,15 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                       </button>
                     )}
 
-                    {/* Play button for downloaded tracks */}
-                    {isDownload && item.localTrackId && (
+                    {/* Play button for downloaded tracks and playback records
+                        (both carry localTrackId; handlePlayDownloaded resolves
+                        it against the library). Phase 6: previously only
+                        download records got this button. */}
+                    {(isDownload || isPlayback) && item.localTrackId && (
                       <button
                         onClick={(e) => handlePlayDownloaded(item, e)}
                         className="p-2 rounded-xl bg-[#6202E1]/15 dark:bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] active:scale-95 transition"
-                        title="Play downloaded audio"
+                        title="Play in library"
                       >
                         <Play className="w-4 h-4 fill-current" />
                       </button>

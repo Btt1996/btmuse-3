@@ -102,7 +102,13 @@ export function useAppUpdate() {
       }
 
       const manifest = await res.json();
-      const remoteVer = manifest.version || APP_VERSION;
+      // A manifest with no version must not read as "latest": that would
+      // report up-to-date against a misconfigured or stale server. Surface
+      // it as an error instead (SettingsScreen renders the error banner).
+      if (!manifest.version || typeof manifest.version !== 'string') {
+        throw new Error('Update server returned no version (manifest missing "version").');
+      }
+      const remoteVer = manifest.version;
       const isNewer = compareVersions(remoteVer, APP_VERSION) > 0;
 
       const now = Date.now();

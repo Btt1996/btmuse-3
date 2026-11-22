@@ -42,9 +42,12 @@ export function findDuplicateTracks(tracks: Track[]): DuplicateGroup[] {
     const normTitle = normalizeSongTitle(track.title);
     const normArtist = normalizeArtistName(track.artist);
 
-    // If title has content, build canonical key
+    // If title has content, build canonical key: normalized title +
+    // normalized artist + a 3-second duration bucket.
+    // Note: Track.fileHash is NOT part of the key (an earlier comment claimed
+    // it was combined when available). Two different encodings of the same
+    // song therefore share one group, which is the intended behaviour.
     if (normTitle) {
-      // If fileHash is available, combine it; otherwise title + artist or title + approximate duration
       const durationBucket = track.duration ? Math.round(track.duration / 3) * 3 : 0;
       const key = `${normTitle}__${normArtist || 'any'}__${durationBucket}`;
 

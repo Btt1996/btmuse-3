@@ -312,6 +312,28 @@ export const SettingsScreen: React.FC = () => {
             </div>
           )}
 
+          {/* Phase 6: the hook already produced status 'error' (server down,
+              HTTP error, or a manifest with no version), but no banner
+              rendered it — a failed check looked identical to "never
+              checked". Show the failure and offer a retry. */}
+          {updateStatus === 'error' && (
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-2 text-xs">
+              <div className="flex items-center gap-2.5 text-[var(--btt-card-text)] font-medium">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>
+                  Couldn’t check for updates{updateError ? `: ${updateError}` : '.'}
+                </span>
+              </div>
+              <button
+                onClick={checkForUpdates}
+                className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold transition active:scale-95 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Try again</span>
+              </button>
+            </div>
+          )}
+
           {lastCheckedAt && (
             <p className="text-[10px] text-[var(--btt-card-subtext)] text-right font-mono">
               Last checked: {new Date(lastCheckedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

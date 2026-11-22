@@ -19,6 +19,8 @@ import {
   Search,
   History,
   ListMusic,
+  User,
+  ChevronRight,
 } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 import {
@@ -35,6 +37,8 @@ import { PlaylistImportModal } from '../import/PlaylistImportModal';
 import { SpotifyPlaylistReviewModal } from '../import/SpotifyPlaylistReviewModal';
 import { TelegramDiscoveryModal } from '../import/TelegramDiscoveryModal';
 import { MusicHistoryModal } from '../common/MusicHistoryModal';
+import { discoverUserPlaylists } from '../../services/playlistImport/spotifyDiscoveryService';
+import type { SpotifyPublicUser } from '../../services/playlistImport/spotifyDiscoveryService';
 
 interface SyncScreenProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -58,6 +62,15 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
   const [isTelegramDiscoveryOpen, setIsTelegramDiscoveryOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [spotifyUrlInput, setSpotifyUrlInput] = useState('');
+  // Spotify user browse state (Phase 6: first UI caller of discoverUserPlaylists).
+  // discoverUserPlaylists talks only to the btmu server (GET /api/spotify/user,
+  // server env credentials, public playlists only, first 50) and throws an
+  // explicit error when the server is unreachable — there is no client-side
+  // fallback and no backend URL is invented here.
+  const [spotifyUserInput, setSpotifyUserInput] = useState('');
+  const [discoveredUser, setDiscoveredUser] = useState<SpotifyPublicUser | null>(null);
+  const [isBrowsingUser, setIsBrowsingUser] = useState(false);
+  const [userBrowseError, setUserBrowseError] = useState<string | null>(null);
   const [isExportingDb, setIsExportingDb] = useState(false);
   const [isImportingDb, setIsImportingDb] = useState(false);
   const dbFileRef = React.useRef<HTMLInputElement | null>(null);
@@ -400,6 +413,58 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
     }
   };
 
+  // Browse a Spotify user's public playlists (metadata only).
+  // The service validates the input, calls GET /api/spotify/user on the btmu
+  // server, and throws a specific error for: invalid input, user not found
+  // (server 404), server credentials not configured (server 422), or the
+  // server being unreachable. All of those surface verbatim below — the UI
+  // never invents a backend URL or a playlist.
+  const handleBrowseSpotifyUser = async () => {
+    const input = spotifyUserInput.trim();
+    if (!input || isBrowsingUser) return;
+    setIsBrowsingUser(true);
+    setUserBrowseError(null);
+    setDiscoveredUser(null);
+    try {
+      const user = await discoverUserPlaylists(input);
+      setDiscoveredUser(user);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Spotify user discovery failed.';
+      setUserBrowseError(msg);
+    } finally {
+      setIsBrowsingUser(false);
+    }
+  };
+
+  // Open a discovered playlist in the existing Playlist Inspector, reusing
+  // the same initialUrl path the history modal uses (SyncScreen:1104+).
+  const openDiscoveredPlaylist = (playlistUrl: string) => {
+    setSpotifyUrlInput(playlistUrl);
+    setIsSpotifyReviewOpen(true);
+  };
+
+  // Heading + hint for a browse failure. The service already returns the
+  // server's own message; this only picks the heading so the three honest
+  // states stay distinguishable: no such user / server not set up / no server.
+  const classifyUserBrowseError = (msg: string): { title: string; hint: string } => {
+    if (/not found/i.test(msg)) {
+      return {
+        title: 'Spotify user not found',
+        hint: 'Check the username or profile link — only public profiles and their public playlists are visible here.',
+      };
+    }
+    if (/credentials not configured/i.test(msg)) {
+      return {
+        title: 'Spotify discovery is not set up on the server',
+        hint: 'The btmu server has no Spotify API credentials configured. Browsing a user’s public playlists needs the server — this build does not talk to Spotify directly.',
+      };
+    }
+    return {
+      title: 'Spotify user discovery is unavailable',
+      hint: 'The btmu server could not be reached. Discovery only works through the deployed btmu server — check that it is running and try again.',
+    };
+  };
+
   return (
     <div className="flex-1 overflow-y-auto px-4 pt-notch pb-8 space-y-5 max-w-lg mx-auto w-full select-none">
       {/* Hidden file input for audio tracks */}
@@ -553,6 +618,156 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               <ListMusic className="w-4 h-4" />
               <span>Open Spotify Playlist Inspector</span>
             </button>
+
+            {/* Divider */}
+            <div className="border-t border-[#05070B]/10 dark:border-white/10" />
+
+            {/* Browse a Spotify user's public playlists (metadata only) */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">
+                    Browse a Spotify user’s public playlists
+                  </h4>
+                  <p className="text-[11px] text-[#777267] dark:text-[#92998F] leading-tight">
+                    Metadata only — names, covers and track counts. Tap a playlist to open it in the Inspector.
+                  </p>
+                </div>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleBrowseSpotifyUser();
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={spotifyUserInput}
+                  onChange={(e) => setSpotifyUserInput(e.target.value)}
+                  placeholder="Username or https://open.spotify.com/user/..."
+                  className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-[#05070B]/15 dark:border-white/15 text-xs font-mono text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-emerald-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!spotifyUserInput.trim() || isBrowsingUser}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold active:scale-95 transition shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isBrowsingUser ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Search className="w-3.5 h-3.5" />
+                  )}
+                  <span>Browse</span>
+                </button>
+              </form>
+
+              {/* Loading */}
+              {isBrowsingUser && (
+                <div className="p-3 rounded-2xl bg-white/50 dark:bg-black/30 border border-[#05070B]/10 dark:border-white/10 flex items-center gap-2.5 text-xs text-[#777267] dark:text-[#92998F]">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0 text-emerald-500" />
+                  <span>Looking up this user’s public playlists…</span>
+                </div>
+              )}
+
+              {/* Error / degraded mode — server message shown verbatim */}
+              {userBrowseError && !isBrowsingUser && (
+                <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/25 space-y-1.5 text-xs">
+                  <p className="font-bold text-[#05070B] dark:text-[#F0F4FA] flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{classifyUserBrowseError(userBrowseError).title}</span>
+                  </p>
+                  <p className="text-[#777267] dark:text-[#92998F] leading-relaxed">{userBrowseError}</p>
+                  <p className="text-[#777267] dark:text-[#92998F] leading-relaxed">
+                    {classifyUserBrowseError(userBrowseError).hint}
+                  </p>
+                </div>
+              )}
+
+              {/* Results */}
+              {discoveredUser && !isBrowsingUser && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    {discoveredUser.avatarUrl ? (
+                      <img
+                        src={discoveredUser.avatarUrl}
+                        alt=""
+                        className="w-9 h-9 rounded-full object-cover border border-[#05070B]/10 dark:border-white/10 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
+                        {discoveredUser.displayName}
+                      </p>
+                      <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
+                        {discoveredUser.playlists.length === 0
+                          ? 'No public playlists visible'
+                          : `${discoveredUser.playlists.length} public playlist${discoveredUser.playlists.length !== 1 ? 's' : ''} (first 50)`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setDiscoveredUser(null);
+                        setSpotifyUserInput('');
+                      }}
+                      className="text-[11px] font-semibold text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white shrink-0"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  {discoveredUser.playlists.length === 0 ? (
+                    <div className="p-3 rounded-2xl bg-white/50 dark:bg-black/30 border border-[#05070B]/10 dark:border-white/10 text-xs text-[#777267] dark:text-[#92998F] leading-relaxed">
+                      This user has no public playlists to show — the profile may be private, or it simply has none. Private playlists are never visible here by design.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {discoveredUser.playlists.map((pl) => (
+                        <button
+                          key={pl.id}
+                          onClick={() => openDiscoveredPlaylist(pl.externalUrl)}
+                          className="w-full text-left p-2.5 rounded-2xl bg-white/60 dark:bg-black/30 hover:bg-emerald-500/10 border border-[#05070B]/10 dark:border-white/10 hover:border-emerald-500/40 transition flex items-center gap-3 active:scale-[0.98]"
+                        >
+                          {pl.coverUrl ? (
+                            <img
+                              src={pl.coverUrl}
+                              alt=""
+                              className="w-11 h-11 rounded-xl object-cover border border-[#05070B]/10 dark:border-white/10 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+                              <ListMusic className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
+                              {pl.name}
+                            </p>
+                            <p className="text-[11px] text-[#777267] dark:text-[#92998F] truncate mt-0.5">
+                              {pl.ownerName} • {pl.trackCount} track{pl.trackCount !== 1 ? 's' : ''}
+                            </p>
+                            {pl.description && (
+                              <p className="text-[11px] text-[#777267] dark:text-[#92998F] truncate mt-0.5">
+                                {pl.description}
+                              </p>
+                            )}
+                          </div>
+                          <ChevronRight className="w-4 h-4 shrink-0 text-[#777267] dark:text-[#92998F]" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 2. UNIFIED SEARCH & TELEGRAM HUB GRID */}

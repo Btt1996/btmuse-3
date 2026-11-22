@@ -11,6 +11,7 @@ import {
 } from '../types/music';
 import * as db from '../services/db';
 import { analyzeTrackAudio, optimizePlaylistOrder } from '../services/audioAnalysis';
+import { recordPlaybackHistory } from '../services/historyService';
 import { AudioBridge, isNativePlatform, triggerHaptic } from '../services/nativeAudioBridge';
 
 interface StorageStats {
@@ -731,6 +732,16 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
         try {
           await db.updateTrackMetadata(updatedTrack);
+          // Record playback history (Phase 6): this only runs for library
+          // tracks — streaming previews throw above and are not recorded,
+          // so every playback record stays playable from history.
+          recordPlaybackHistory({
+            title: track.title,
+            artist: track.artist,
+            artworkUrl: track.artworkUrl,
+            durationSeconds: track.duration,
+            localTrackId: track.id,
+          }).catch(() => {});
         } catch {
           // Might not be in local db yet (e.g. streaming preview)
         }

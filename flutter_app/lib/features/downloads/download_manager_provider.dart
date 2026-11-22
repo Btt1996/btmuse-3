@@ -119,6 +119,13 @@ class DownloadManagerNotifier extends StateNotifier<List<DownloadTask>> {
     }
   }
 
+  /// True only when this task's download payload is still held in memory
+  /// (i.e. the download was queued in this app session). Tasks restored
+  /// from persisted history after a restart have no payload, so their
+  /// Retry button must be disabled — retrying them would silently do
+  /// nothing. The UI gates on this; [retryTask] stays a safe no-op.
+  bool canRetry(String taskId) => _queuedPayloads.containsKey(taskId);
+
   Future<void> clearFinished() async {
     await _historyRepo.clearFinishedHistory();
     state = state.where((t) => t.isActive).toList();

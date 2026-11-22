@@ -230,13 +230,13 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                   Pre-Connection Scanning Experience
                 </div>
                 <p className="text-xs text-[#777267] dark:text-[#92998F]">
-                  You can browse, inspect metadata, and preview audio before configuring a Telegram bot token. Connecting a bot is 100% optional and only needed if you want to stream or download audio files directly from your personal Telegram chats.
+                  The rows below are illustrative samples showing what a scan looks like — they are not real discoverable audio. Connect a bot to scan and import audio from your own Telegram chats.
                 </p>
               </div>
 
               <div>
                 <h4 className="text-xs font-mono uppercase tracking-wider text-[#777267] dark:text-[#92998F] mb-2 font-bold">
-                  Discoverable Public Audio Samples
+                  Sample Preview Catalog — Demo Data (Not Real Audio)
                 </h4>
                 <div className="space-y-2">
                   {PREVIEW_PUBLIC_CHANNELS.map((item, idx) => (

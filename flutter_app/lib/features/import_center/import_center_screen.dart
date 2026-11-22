@@ -484,14 +484,14 @@ class _VkImportSheetState extends ConsumerState<_VkImportSheet> {
               Text('VK Music Import & Link Lookup', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 6),
               Text(
-                'Paste a public VK link (no login needed for public OpenGraph metadata) or supply your own optional VK user token stored in Keychain.',
+                'Paste a public VK link (no login needed for public OpenGraph metadata) or supply your own optional VK user token stored in Keychain. Keyword search needs a VK user token — without one, paste a VK audio link.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _inputCtrl,
                 decoration: const InputDecoration(
-                  hintText: 'https://vk.com/audio... or song keyword',
+                  hintText: 'https://vk.com/audio... or keyword (needs VK token)',
                   prefixIcon: Icon(Icons.public_rounded),
                 ),
                 onSubmitted: (_) => _runVkLookup(),
@@ -706,14 +706,14 @@ class _SoundCloudImportSheetState extends ConsumerState<_SoundCloudImportSheet> 
               Text('SoundCloud Track & URL Lookup', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 6),
               Text(
-                'Paste any public SoundCloud track URL for zero-key oEmbed inspection, or hand off keywords to open X2 sources (Audius, Deezer, iTunes).',
+                'Paste any public SoundCloud track URL for zero-key oEmbed inspection. Keyword search is not available — hand keywords to open X2 sources (Audius, Deezer, iTunes) instead.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _ctrl,
                 decoration: const InputDecoration(
-                  hintText: 'https://soundcloud.com/artist/track or query',
+                  hintText: 'https://soundcloud.com/artist/track',
                   prefixIcon: Icon(Icons.cloud_queue_rounded),
                 ),
                 onSubmitted: (_) => _lookup(),

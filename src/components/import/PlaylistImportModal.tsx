@@ -390,7 +390,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                       Keyless Resolver Active
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#0E8B9C]/15 text-[#0E8B9C] dark:text-[#24C7DB] text-[10px] font-semibold">
-                      SoundCloud Ready
+                      SoundCloud Metadata Only
                     </span>
                   </div>
 
@@ -613,16 +613,12 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                         <div className="font-semibold text-black dark:text-white flex items-center gap-1.5">
                           <span>spotDL Bridge</span>
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                              settings.spotDLBridgeUrl
-                                ? 'bg-emerald-500/15 text-emerald-500'
-                                : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500'
-                            }`}
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/15 text-amber-600`}
                           >
-                            {settings.spotDLBridgeUrl ? 'Configured' : 'Needs Host'}
+                            Unavailable — legal review
                           </span>
                         </div>
-                        <div className="text-[10px] text-zinc-500">Requires self-hosted Python microservice</div>
+                        <div className="text-[10px] text-zinc-500">Unavailable while under legal review — use Telegram Hub, local files, or open catalogs</div>
                       </div>
 
                       <button
@@ -1017,7 +1013,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
             <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-500 leading-relaxed space-y-1">
               <div className="font-semibold text-black dark:text-white">Remaining Limitations:</div>
               <p>
-                Commercial recordings cannot be legally acquired from Jamendo or Internet Archive. For any unavailable tracks, you can forward audio files to your Telegram Hub or configure a self-hosted spotDL runner.
+                Commercial recordings cannot be legally acquired from Jamendo or Internet Archive. For any unavailable tracks, you can forward audio files to your Telegram Hub or import audio files you own.
               </p>
             </div>
 

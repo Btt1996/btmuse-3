@@ -30,7 +30,7 @@ import 'package:btmu/core/utilities/volume_dsp_math.dart';
 void main() {
   group('BoosterTests port — gain = multiplier, dB = 20 * log10(multiplier)', () {
     test('gain mapping at every boost preset (normalization off)', () {
-      const expectedDb = <double, double>{
+      final expectedDb = <double, double>{
         1.0: 0.0,
         1.25: 1.94,
         1.5: 3.52,

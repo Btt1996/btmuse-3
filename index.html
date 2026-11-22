@@ -22,7 +22,15 @@
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#070E1A" />
     <meta name="format-detection" content="telephone=no" />
 
-    <!-- Instant Theme Detector & WebSocket Error Suppressor -->
+    <!-- Pre-paint theme (Phase 2, Stream C) + WebSocket Error Suppressor.
+         This synchronous inline script runs in <head>, before <body> is
+         parsed and before first paint. It reads localStorage['bttm_theme_mode']
+         (default 'dark' — matching the React default in src/App.tsx, which
+         defaults to dark on first run) and adds/removes the `dark` class on
+         documentElement immediately, so a fresh load never flashes the light
+         theme before React mounts. It only READS the stored value; the
+         Settings toggle (toggleTheme in App.tsx) still owns writing it.
+         The theme-color metas above stay as they are. -->
     <script>
       (function() {
         // Suppress benign WebSocket / Vite HMR disconnection errors in iframe environment
@@ -41,8 +49,17 @@
         });
 
         function applyUserTheme() {
-          var stored = localStorage.getItem('bttm_theme_mode');
-          var isDark = stored ? stored === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var stored = null;
+          try {
+            stored = localStorage.getItem('bttm_theme_mode');
+          } catch (e) {
+            stored = null; // storage unavailable: fall through to the dark default
+          }
+          // Default is dark: only an explicit stored 'light' opts out. The OS
+          // preference is deliberately NOT consulted here — the app is
+          // dark-first and React defaults to dark on first run, so following
+          // the OS would flash light and then flip to dark after mount.
+          var isDark = stored ? stored === 'dark' : true;
           var root = document.documentElement;
           if (isDark) {
             root.classList.add('dark');
@@ -55,7 +72,11 @@
         applyUserTheme();
         if (window.matchMedia) {
           window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-            if (!localStorage.getItem('bttm_theme_mode')) applyUserTheme();
+            try {
+              if (!localStorage.getItem('bttm_theme_mode')) applyUserTheme();
+            } catch (e) {
+              // storage unavailable: keep the class already applied
+            }
           });
         }
       })();

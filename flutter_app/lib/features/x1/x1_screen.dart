@@ -9,6 +9,7 @@ import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/data/models/x1_identification.dart';
 import 'package:btmu/features/x1/local_fingerprint_engine.dart';
+import 'package:btmu/features/x1/x1_service.dart';
 
 class X1Screen extends ConsumerStatefulWidget {
   const X1Screen({super.key});
@@ -35,6 +36,33 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
   String? _playingPreviewUrl;
   String? _statusMessage;
   String? _error;
+
+  /// Distinct error states (Phase 5): microphone denial is shown as its own
+  /// card with the Settings path, never as raw `e.toString()`; catalog
+  /// failures are shown per provider instead of an empty list with no
+  /// message. `url_launcher` is NOT a dependency (checked in pubspec.yaml
+  /// at head af44019e), so the mic-denied card shows the Settings path as
+  /// text instead of a button that opens Settings.
+  bool _micDenied = false;
+  bool _catalogSearched = false;
+  bool _catalogAllFailed = false;
+  bool _catalogTimedOut = false;
+  Map<String, String> _catalogErrors = const {};
+
+  /// Hint threshold for "try a longer sample": a 1s tonal snippet already
+  /// yields ~475 landmarks and a 0.25s snippet ~75 (measured with the
+  /// recall harness, docs/x1-recall.md), while silence yields 0. Below 100
+  /// landmarks the sample holds under ~0.3s of usable tonal audio, so a
+  /// longer (up to 8s) sample is the actionable fix — not a different song.
+  static const int _lowLandmarkHintThreshold = 100;
+
+  /// Appends the longer-sample hint to a no-match status when the sample
+  /// was too thin to match reliably.
+  String _noMatchStatus(String base) {
+    if (_landmarkCount >= _lowLandmarkHintThreshold) return base;
+    return '$base Only $_landmarkCount landmarks were extracted — try a '
+        'longer sample (up to 8s) in a quieter spot and listen again.';
+  }
 
   @override
   void initState() {
@@ -71,6 +99,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
 
     setState(() {
       _error = null;
+      _micDenied = false;
       _localMatch = null;
       _telemetry = null;
       _statusMessage = 'Capturing 11 kHz WAV audio on-device (tap again after 5–8s)...';
@@ -92,7 +121,14 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
       setState(() {
         _recording = false;
         _statusMessage = null;
-        _error = e.toString();
+        // Mic denial gets its own card (with the Settings path); every
+        // other recording failure is a plain message, never raw toString().
+        if (X1Service.isMicrophoneDenial(e)) {
+          _micDenied = true;
+          _error = null;
+        } else {
+          _error = X1Service.describeError(e);
+        }
       });
     }
   }
@@ -124,7 +160,8 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
           _telemetry = analysis.telemetry;
           _landmarkCount = analysis.landmarkCount;
           _statusMessage = analysis.localMatch == null
-              ? 'No local offline library match found ($_landmarkCount landmarks extracted). Enter a lyric or title hint below to verify via open catalogs.'
+              ? _noMatchStatus(
+                  'No local offline library match found ($_landmarkCount landmarks extracted). Enter a lyric or title hint below to verify via open catalogs.')
               : null;
         });
       }
@@ -133,7 +170,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
         setState(() {
           _analyzing = false;
           _statusMessage = null;
-          _error = e.toString();
+          _error = X1Service.describeError(e);
         });
       }
     }
@@ -150,6 +187,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
     setState(() {
       _analyzing = true;
       _error = null;
+      _micDenied = false;
       _localMatch = null;
       _statusMessage = 'Analyzing audio clip locally on-device...';
     });
@@ -163,7 +201,8 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
           _telemetry = analysis.telemetry;
           _landmarkCount = analysis.landmarkCount;
           _statusMessage = analysis.localMatch == null
-              ? 'Checked local library ($path). No local match; use public catalog lookup below.'
+              ? _noMatchStatus(
+                  'Checked local library ($path). No local match; use public catalog lookup below.')
               : null;
         });
       }
@@ -172,7 +211,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
         setState(() {
           _analyzing = false;
           _statusMessage = null;
-          _error = e.toString();
+          _error = X1Service.describeError(e);
         });
       }
     }
@@ -185,12 +224,20 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
     setState(() {
       _analyzing = true;
       _error = null;
+      _catalogSearched = false;
+      _catalogAllFailed = false;
+      _catalogTimedOut = false;
+      _catalogErrors = const {};
     });
     try {
-      final results = await ref.read(x1ServiceProvider).searchPublicMetadataCatalogs(q);
+      final result = await ref.read(x1ServiceProvider).searchPublicMetadataCatalogs(q);
       if (mounted) {
         setState(() {
-          _catalogMatches = results;
+          _catalogMatches = result.matches;
+          _catalogErrors = result.providerErrors;
+          _catalogAllFailed = result.allProvidersFailed;
+          _catalogTimedOut = result.anyProviderTimedOut;
+          _catalogSearched = true;
           _analyzing = false;
         });
       }
@@ -198,7 +245,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
       if (mounted) {
         setState(() {
           _analyzing = false;
-          _error = e.toString();
+          _error = X1Service.describeError(e);
         });
       }
     }
@@ -317,9 +364,24 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               ),
             ),
           ],
+          if (_micDenied) ...[
+            const SizedBox(height: 12),
+            _ErrorCard(
+              title: 'Microphone access denied',
+              body:
+                  'Btmus needs microphone access to listen. Enable it in '
+                  'Settings → Privacy & Security → Microphone → Btmus, then '
+                  'tap the microphone again.',
+              accent: BttColors.danger,
+            ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: BttColors.danger)),
+            _ErrorCard(
+              title: 'Something went wrong',
+              body: _error!,
+              accent: BttColors.danger,
+            ),
           ],
           if (_localMatch != null) ...[
             const SizedBox(height: 14),
@@ -358,6 +420,43 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
             ),
           ),
           const SizedBox(height: 12),
+          if (_catalogSearched && _catalogAllFailed) ...[
+            _ErrorCard(
+              title: "Couldn't reach the open catalogs — check your connection",
+              body:
+                  'None of the open catalogs answered. The providers that failed:\n'
+                  '${_catalogErrors.entries.map((e) => '• ${e.key}: ${e.value}').join('\n')}',
+              accent: BttColors.danger,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_catalogSearched &&
+              !_catalogAllFailed &&
+              _catalogMatches.isEmpty) ...[
+            _ErrorCard(
+              title: 'No catalog results for that hint',
+              body: _catalogTimedOut
+                  ? 'The catalogs that answered found nothing, and some catalogs timed out. Try different lyrics or a title.'
+                  : 'The catalogs that answered found nothing for that hint. Try different lyrics or a title.',
+              accent: BttColors.warning,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_catalogSearched &&
+              !_catalogAllFailed &&
+              _catalogMatches.isNotEmpty &&
+              _catalogErrors.isNotEmpty) ...[
+            _ErrorCard(
+              title: _catalogTimedOut
+                  ? 'Some catalogs timed out — showing results from the ones that answered'
+                  : 'Some catalogs did not answer — showing results from the ones that did',
+              body: _catalogErrors.entries
+                  .map((e) => '• ${e.key}: ${e.value}')
+                  .join('\n'),
+              accent: BttColors.warning,
+            ),
+            const SizedBox(height: 12),
+          ],
           ..._catalogMatches.map(
             (m) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -454,6 +553,42 @@ class _MatchCard extends StatelessWidget {
             icon: const Icon(Icons.travel_explore_rounded, size: 18),
             label: const Text('Find this song in X2'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small error-state card in the existing card style (BttColors surfaces
+/// and borders). Used for the distinct X1 states — microphone denial,
+/// catalog unreachable, partial catalog failure, and generic failures —
+/// so an error is never a bare red text line or a raw exception string.
+class _ErrorCard extends StatelessWidget {
+  final String title;
+  final String body;
+  final Color accent;
+
+  const _ErrorCard({
+    required this.title,
+    required this.body,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: BttColors.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(body, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

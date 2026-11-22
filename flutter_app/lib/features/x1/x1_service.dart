@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -23,12 +24,76 @@ class X1SampleAnalysis {
   });
 }
 
+/// Typed result of an open-catalog search.
+///
+/// Previously `searchPublicMetadataCatalogs` returned a bare list and
+/// swallowed every per-provider failure with `catch (_) {}`, so a total
+/// network failure was indistinguishable from "no results". Callers now get
+/// both the matches and, keyed by provider display name, a short reason for
+/// every catalog that failed — including timeouts — so the UI can say which
+/// catalogs failed and why instead of showing an empty list with no message.
+class X1CatalogSearchResult {
+  final List<X1Identification> matches;
+
+  /// Provider display name -> short human-readable failure reason.
+  /// Empty when every attempted provider answered (even with zero results).
+  final Map<String, String> providerErrors;
+
+  const X1CatalogSearchResult({
+    required this.matches,
+    required this.providerErrors,
+  });
+
+  /// True when every attempted provider failed: the search produced no
+  /// matches *because* the catalogs were unreachable, not because the
+  /// hint matched nothing. (Exactly three providers are attempted per
+  /// non-empty query; an empty query returns no matches and no errors.)
+  bool get allProvidersFailed => matches.isEmpty && providerErrors.length == 3;
+
+  /// True when at least one provider failed by timing out (as opposed to
+  /// e.g. a DNS/connection error). The UI shows a distinct timeout message.
+  bool get anyProviderTimedOut =>
+      providerErrors.values.any((reason) => reason.startsWith('Timed out'));
+}
+
 class X1Service {
   final ApiClient _apiClient;
   final LibraryRepository _libraryRepo;
   final AudioRecorder _recorder = AudioRecorder();
 
-  X1Service(this._apiClient, this._libraryRepo);
+  /// Per-provider timeout for open-catalog searches. Same `.timeout(...)`
+  /// pattern as `X2SearchEngine.providerTimeout` (9s there); X1 uses 10s
+  /// per the Phase 5 plan so a slow catalog cannot hang the screen.
+  final Duration catalogProviderTimeout;
+
+  X1Service(
+    this._apiClient,
+    this._libraryRepo, {
+    this.catalogProviderTimeout = const Duration(seconds: 10),
+  });
+
+  /// Message shown when microphone access is denied. Names the fix
+  /// (enable Microphone in iOS Settings) instead of a bare denial.
+  static const String microphoneDeniedMessage =
+      'Microphone access was denied. Enable Microphone in iOS Settings: '
+      'Settings → Privacy & Security → Microphone → Btmus.';
+
+  /// True when [error] is a microphone-denial failure, as opposed to any
+  /// other recording failure. Denial is always an [AuthorizationFailure]
+  /// thrown by [startRecordingSample]; the message check covers the same
+  /// failure surfacing wrapped in another [AppFailure].
+  static bool isMicrophoneDenial(Object error) {
+    if (error is AuthorizationFailure) return true;
+    return error is AppFailure &&
+        error.message.contains('Microphone access was denied');
+  }
+
+  /// User-facing text for a failure: the [AppFailure.message] when the
+  /// error is one, so the UI never shows raw `AppFailure(code): ...` or
+  /// `e.toString()` output. Non-[AppFailure] errors fall back to
+  /// `toString()` unchanged.
+  static String describeError(Object error) =>
+      error is AppFailure ? error.message : error.toString();
 
   Future<bool> hasMicrophonePermission() => _recorder.hasPermission();
 
@@ -47,9 +112,7 @@ class X1Service {
   Future<String> startRecordingSample() async {
     final allowed = await _recorder.hasPermission();
     if (!allowed) {
-      throw const AuthorizationFailure(
-        'Microphone access was denied. Enable Microphone permission in iOS Settings.',
-      );
+      throw const AuthorizationFailure(microphoneDeniedMessage);
     }
     final tempDir = await getTemporaryDirectory();
     final samplePath = p.join(
@@ -57,14 +120,28 @@ class X1Service {
       'x1_sample_${DateTime.now().millisecondsSinceEpoch}.wav',
     );
     // Record uncompressed 16-bit WAV at 11,025 Hz mono so local FFT constellation hashing works directly on-device
-    await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.wav,
-        numChannels: 1,
-        sampleRate: LocalFingerprintEngine.targetSampleRate,
-      ),
-      path: samplePath,
-    );
+    try {
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          numChannels: 1,
+          sampleRate: LocalFingerprintEngine.targetSampleRate,
+        ),
+        path: samplePath,
+      );
+    } on AuthorizationFailure {
+      // Denial surfacing from the recorder itself, not the permission
+      // check above: keep the distinct denial type and fix-naming message.
+      throw const AuthorizationFailure(microphoneDeniedMessage);
+    } catch (e) {
+      // Any other recorder failure is NOT a denial: report it as such so
+      // the UI does not send the user to Settings for a transient failure.
+      throw AppFailure(
+        'Microphone recording failed. Check that no other app is using '
+        'the microphone and try again.',
+        cause: e,
+      );
+    }
     return samplePath;
   }
 
@@ -141,11 +218,39 @@ class X1Service {
 
   /// Searches open, ZERO-API-KEY public music catalogs (Deezer Public API, iTunes Search,
   /// and MusicBrainz WS/2) using lyrics, song snippets, hummed titles, or artist hints.
-  Future<List<X1Identification>> searchPublicMetadataCatalogs(String hintQuery) async {
+  ///
+  /// Each provider gets [catalogProviderTimeout] (default 10s) and runs in
+  /// parallel. A provider failure — timeout, network error, bad response —
+  /// is recorded in [X1CatalogSearchResult.providerErrors] under its display
+  /// name instead of being swallowed, so callers can distinguish "no
+  /// results" from "catalogs unreachable" and say which catalogs failed.
+  /// Only the X1Screen calls this (verified by grep at head af44019e),
+  /// so the return type changed from `List<X1Identification>` to
+  /// [X1CatalogSearchResult] with the screen updated in the same change.
+  Future<X1CatalogSearchResult> searchPublicMetadataCatalogs(String hintQuery) async {
     final trimmed = hintQuery.trim();
-    if (trimmed.isEmpty) return const [];
+    if (trimmed.isEmpty) {
+      return const X1CatalogSearchResult(matches: [], providerErrors: {});
+    }
 
     final matches = <X1Identification>[];
+    final providerErrors = <String, String>{};
+    final timeoutSeconds = catalogProviderTimeout.inSeconds;
+
+    // Short, user-facing reason for a provider failure. Timeouts get a
+    // distinct message (starting with 'Timed out') so the UI can tell a
+    // slow catalog apart from a connection failure.
+    String describeProviderError(String provider, Object error) {
+      if (error is TimeoutException) {
+        return 'Timed out after ${timeoutSeconds}s — no response from $provider.';
+      }
+      if (error is DioException) {
+        final detail = error.message?.trim();
+        if (detail != null && detail.isNotEmpty) return detail;
+        return 'Request to $provider failed (${error.type.name}).';
+      }
+      return error.toString();
+    }
 
     await Future.wait([
       // 1. Deezer Public API (zero key, returns artwork + 30s verification preview)
@@ -154,7 +259,7 @@ class X1Service {
           final res = await _apiClient.dio.get<Map<String, dynamic>>(
             'https://api.deezer.com/search',
             queryParameters: {'q': trimmed, 'limit': 6},
-          );
+          ).timeout(catalogProviderTimeout);
           final data = (res.data?['data'] as List<dynamic>?) ?? [];
           for (final raw in data.whereType<Map<dynamic, dynamic>>()) {
             matches.add(
@@ -173,7 +278,9 @@ class X1Service {
               ),
             );
           }
-        } catch (_) {}
+        } catch (e) {
+          providerErrors['Deezer'] = describeProviderError('Deezer', e);
+        }
       }(),
 
       // 2. MusicBrainz WS/2 (zero key, open encyclopedia with proper User-Agent)
@@ -185,7 +292,7 @@ class X1Service {
             options: Options(
               headers: const {'User-Agent': 'BttMusic/2.00 (ahmed96btt@gmail.com)'},
             ),
-          );
+          ).timeout(catalogProviderTimeout);
           final recs = (res.data?['recordings'] as List<dynamic>?) ?? [];
           for (final raw in recs.whereType<Map<dynamic, dynamic>>()) {
             final credits = (raw['artist-credit'] as List<dynamic>?) ?? [];
@@ -209,7 +316,9 @@ class X1Service {
               ),
             );
           }
-        } catch (_) {}
+        } catch (e) {
+          providerErrors['MusicBrainz'] = describeProviderError('MusicBrainz', e);
+        }
       }(),
 
       // 3. iTunes Search API (zero key)
@@ -218,7 +327,7 @@ class X1Service {
           final res = await _apiClient.dio.get<dynamic>(
             'https://itunes.apple.com/search',
             queryParameters: {'term': trimmed, 'media': 'music', 'entity': 'song', 'limit': 4},
-          );
+          ).timeout(catalogProviderTimeout);
           final decoded = res.data is String ? jsonDecode(res.data as String) : res.data;
           final items = (decoded?['results'] as List<dynamic>?) ?? [];
           for (final raw in items.whereType<Map<dynamic, dynamic>>()) {
@@ -237,11 +346,13 @@ class X1Service {
               ),
             );
           }
-        } catch (_) {}
+        } catch (e) {
+          providerErrors['iTunes'] = describeProviderError('iTunes', e);
+        }
       }(),
     ]);
 
-    return matches;
+    return X1CatalogSearchResult(matches: matches, providerErrors: providerErrors);
   }
 
   void dispose() {

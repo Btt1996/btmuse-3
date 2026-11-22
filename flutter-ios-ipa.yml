@@ -1,0 +1,118 @@
+name: Btt Music 2.00 iOS Build & IPA
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ios-ipa.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'flutter_app/**'
+      - '.github/workflows/flutter-ios-ipa.yml'
+  workflow_dispatch:
+
+jobs:
+  analyze-test-and-ipa:
+    name: Analyze, Test & Build iOS IPA (com.ahmed.btmu)
+    runs-on: macos-latest
+
+    defaults:
+      run:
+        working-directory: flutter_app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Verify Bundle Identifier
+        run: |
+          grep -q "PRODUCT_BUNDLE_IDENTIFIER = com.ahmed.btmu;" ios/Runner.xcodeproj/project.pbxproj
+
+      - name: Install Dart dependencies
+        run: flutter pub get
+
+      - name: Run Dart static analyzer
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter unit tests
+        run: flutter test
+
+      - name: Install CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Generate Xcode project config (no build)
+        env:
+          X2_BACKEND_URL: ${{ vars.X2_BACKEND_URL || '' }}
+          PIPED_API_URL: ${{ vars.PIPED_API_URL || '' }}
+          INVIDIOUS_API_URL: ${{ vars.INVIDIOUS_API_URL || '' }}
+        run: |
+          # Let Flutter run its project migrators and generate
+          # ios/Flutter/Generated.xcconfig (including DART_DEFINES) without
+          # building. `flutter build ios` itself refuses to finish a
+          # deployable device build with no Development Team selected, even
+          # with --no-codesign, so the real build below runs xcodebuild
+          # directly, which has no such check.
+          flutter build ios --release --config-only --no-codesign \
+            --dart-define=X2_BACKEND_URL="$X2_BACKEND_URL" \
+            --dart-define=PIPED_API_URL="$PIPED_API_URL" \
+            --dart-define=INVIDIOUS_API_URL="$INVIDIOUS_API_URL"
+
+      - name: Build Unsigned Release Runner.app (xcodebuild, no signing)
+        run: |
+          # Direct xcodebuild with the same build Flutter would run, minus
+          # Flutter's post-build Development Team check. Explicitly unsigned:
+          # no team, no provisioning profile, no certificate. The .app lands
+          # directly at build/ios/iphoneos/Runner.app, where the packaging
+          # step below expects it.
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            build \
+            CONFIGURATION_BUILD_DIR="$PWD/build/ios/iphoneos" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=""
+
+      - name: Package Unsigned Payload IPA
+        run: |
+          mkdir -p build/ios/unsigned_ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/unsigned_ipa/Payload/
+          cd build/ios/unsigned_ipa
+          zip -r ../btmu-2.00-unsigned.ipa Payload
+
+      - name: Verify Unsigned IPA Artifact
+        run: |
+          IPA_PATH="build/ios/btmu-2.00-unsigned.ipa"
+          APP_PATH="build/ios/unsigned_ipa/Payload/Runner.app"
+          test -f "$IPA_PATH" || { echo "IPA missing: $IPA_PATH"; exit 1; }
+          lipo -info "$APP_PATH/Runner" | grep -q "arm64" || { echo "Runner binary is not arm64"; exit 1; }
+          vtool -show-build "$APP_PATH/Runner" | grep -q "platform 2" || { echo "Runner is not built for iOS (platform 2)"; exit 1; }
+          # Reject simulator builds: on Apple silicon a simulator slice is
+          # also arm64, so lipo alone cannot tell it apart from a device
+          # build. vtool reports the simulator platform explicitly.
+          ! vtool -show-build "$APP_PATH/Runner" | grep -qE '^ *platform (IOSSIMULATOR|7)$' || { echo "Runner is a simulator build, not a device build"; exit 1; }
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Info.plist")
+          test "$BUNDLE_ID" = "com.ahmed.btmu" || { echo "Bundle id mismatch: $BUNDLE_ID"; exit 1; }
+          unzip -l "$IPA_PATH" | grep -q "Payload/Runner.app" || { echo "IPA has no Payload/Runner.app"; exit 1; }
+          echo "Unsigned IPA verified: $IPA_PATH ($BUNDLE_ID, arm64, iOS platform)"
+
+      - name: Upload Unsigned IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: btmu-unsigned-ipa
+          path: flutter_app/build/ios/btmu-2.00-unsigned.ipa
+          if-no-files-found: error

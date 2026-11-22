@@ -128,7 +128,10 @@ class TelegramService {
     final entries = <TelegramAudioEntry>[];
     final seenFileIds = <String>{};
 
-    for (final raw in updates.reversed) {
+    // Iterate in Telegram's chronological order, so a file posted twice
+    // is represented by its FIRST occurrence (its original post). The
+    // collected list is reversed below so the screen shows newest first.
+    for (final raw in updates) {
       if (raw is! Map) continue;
       final msg = (raw['message'] ?? raw['channel_post']) as Map?;
       if (msg == null) continue;
@@ -203,21 +206,26 @@ class TelegramService {
       }
     }
 
+    // Newest first: entries were collected chronologically above, so
+    // reverse them for display. Each entry keeps the date of the
+    // message it represents, so the list is newest-first by that date.
+    final ordered = entries.reversed.toList();
+
     // Pre-download dedup annotation: flag entries whose exact Telegram
     // file is already in the library, so the screen can show
     // "already in library" instead of offering a re-download. One
     // indexed lookup per entry; entries without a `file_unique_id`
     // stay unflagged and rely on the post-download SHA-256 check.
-    for (var i = 0; i < entries.length; i++) {
-      final uniqueId = entries[i].fileUniqueId;
+    for (var i = 0; i < ordered.length; i++) {
+      final uniqueId = ordered[i].fileUniqueId;
       if (uniqueId == null || uniqueId.isEmpty) continue;
       final existing = await _libraryRepo.findByTelegramFileUniqueId(uniqueId);
       if (existing != null) {
-        entries[i] = entries[i].copyWith(alreadyInLibrary: true);
+        ordered[i] = ordered[i].copyWith(alreadyInLibrary: true);
       }
     }
 
-    return entries;
+    return ordered;
   }
 
   Future<Track> downloadAndImportAudio({

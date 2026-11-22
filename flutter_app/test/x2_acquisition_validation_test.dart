@@ -97,6 +97,11 @@ class _DuplicateLibraryRepository extends LibraryRepository {
 }
 
 /// Pretends the import succeeds and returns a canned track.
+///
+/// Mirrors the real repository's contract: when `deleteSourceAfterCopy`
+/// is true the source file is deleted (the X2 engine relies on this to
+/// remove its temporary download on the success path, just as the real
+/// `importFile` does).
 class _SucceedingLibraryRepository extends LibraryRepository {
   _SucceedingLibraryRepository() : super(LocalDatabase.instance);
 
@@ -112,6 +117,9 @@ class _SucceedingLibraryRepository extends LibraryRepository {
     bool deleteSourceAfterCopy = false,
     String? telegramFileUniqueId,
   }) async {
+    if (deleteSourceAfterCopy && await sourceFile.exists()) {
+      await sourceFile.delete();
+    }
     return _importedTrack();
   }
 }

@@ -15,8 +15,8 @@ import 'package:btmu/core/storage/queue_repository.dart';
 
 void main() {
   group('schema version (Q-1)', () {
-    test('schema is v4 (queue tables exist from v4 on)', () {
-      expect(LocalDatabase.schemaVersion, 4);
+    test('schema is v5 (queue tables exist from v4 on)', () {
+      expect(LocalDatabase.schemaVersion, 5);
     });
   });
 

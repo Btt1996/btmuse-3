@@ -218,11 +218,11 @@ export const SettingsScreen: React.FC = () => {
       {/* Screen Title */}
       <div>
         <div className="text-[10px] uppercase tracking-widest text-[var(--btt-accent)] font-black font-mono">
-          btmu by Ahmed
+          Btmus by Taboubi Ahmed
         </div>
         <h1 className="text-3xl font-extrabold text-[var(--btt-card-text)] tracking-tight font-display">Settings</h1>
         <p className="text-xs text-[var(--btt-card-subtext)] mt-1 font-sans">
-          btmu preferences, updates, audio transitions, palette themes, and offline storage.
+          Btmus preferences, updates, audio transitions, palette themes, and offline storage.
         </p>
       </div>
 
@@ -243,7 +243,7 @@ export const SettingsScreen: React.FC = () => {
                 />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[var(--btt-card-text)] font-display">btmu by Ahmed</h4>
+                <h4 className="text-sm font-bold text-[var(--btt-card-text)] font-display">Btmus by Taboubi Ahmed</h4>
                 <p className="text-xs text-[var(--btt-card-subtext)] font-mono mt-0.5">
                   Version {currentVersion} • iOS Edition
                 </p>
@@ -273,7 +273,7 @@ export const SettingsScreen: React.FC = () => {
           {updateStatus === 'latest' && (
             <div className="p-3 rounded-2xl bg-[var(--btt-accent)]/15 border border-[var(--btt-accent)]/30 flex items-center gap-2.5 text-xs text-[var(--btt-card-text)] font-medium">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-[var(--btt-accent)]" />
-              <span>You are using the latest version of btmu (v{currentVersion}).</span>
+              <span>You are using the latest version of Btmus (v{currentVersion}).</span>
             </div>
           )}
 
@@ -339,7 +339,7 @@ export const SettingsScreen: React.FC = () => {
               onClick={async () => {
                 document.documentElement.setAttribute('data-palette', 'signature');
                 await updateSettings({ paletteCombo: 'signature' });
-                showToast('Palette switched to Signature (Navy/Gold/Cyan)');
+                showToast('Palette switched to Signature (Violet/Magenta/Pink)');
               }}
               className={`p-3.5 rounded-2xl border text-left transition flex items-center justify-between ${
                 (settings.paletteCombo || 'signature') === 'signature'
@@ -353,13 +353,14 @@ export const SettingsScreen: React.FC = () => {
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--btt-accent)]/20 text-[var(--btt-accent)] font-semibold">DEFAULT</span>
                 </div>
                 <p className="text-[11px] text-[var(--btt-card-subtext)] leading-snug">
-                  Signature Navy (#070E1A) with Gold (#D4AF37) accents and Cyan (#00E5FF) highlights.
+                  Signature deep black (#05070B) with a Violet (#6202E1) → Magenta (#C4009B) → Pink (#F70E42) gradient.
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0 ml-3">
-                <span className="w-4 h-4 rounded-full bg-[#070E1A] border border-white/20" />
-                <span className="w-4 h-4 rounded-full bg-[#D4AF37]" />
-                <span className="w-4 h-4 rounded-full bg-[#00E5FF]" />
+                <span className="w-4 h-4 rounded-full bg-[#05070B] border border-white/20" />
+                <span className="w-4 h-4 rounded-full bg-[#6202E1]" />
+                <span className="w-4 h-4 rounded-full bg-[#C4009B]" />
+                <span className="w-4 h-4 rounded-full bg-[#F70E42]" />
               </div>
             </button>
 
@@ -412,13 +413,13 @@ export const SettingsScreen: React.FC = () => {
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-500/20 text-[var(--btt-card-subtext)] font-semibold">v1.7</span>
                 </div>
                 <p className="text-[11px] text-[var(--btt-card-subtext)] leading-snug">
-                  v1.7 champagne/sand (#070E1A), deep forest (#0E8B9C), and chartreuse (#24C7DB).
+                  v1.7 champagne/sand (#F3EBDD), deep forest (#176B67), and chartreuse (#C8F169).
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0 ml-3">
-                <span className="w-4 h-4 rounded-full bg-[#0E8B9C]" />
-                <span className="w-4 h-4 rounded-full bg-[#24C7DB]" />
-                <span className="w-4 h-4 rounded-full bg-[#070E1A] border border-black/20" />
+                <span className="w-4 h-4 rounded-full bg-[#176B67]" />
+                <span className="w-4 h-4 rounded-full bg-[#C8F169]" />
+                <span className="w-4 h-4 rounded-full bg-[#F3EBDD] border border-black/20" />
               </div>
             </button>
           </div>
@@ -439,7 +440,7 @@ export const SettingsScreen: React.FC = () => {
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
                     playerState.isBoosterActive && playerState.volumeBooster > 1.0
-                      ? 'bg-[#E5B842]/20 text-[#E5B842]'
+                      ? 'bg-[#F70E42]/20 text-[#F70E42]'
                       : 'bg-white/10 text-[#7E8F9E]'
                   }`}
                 >
@@ -456,7 +457,7 @@ export const SettingsScreen: React.FC = () => {
               onClick={() => toggleVolumeBooster()}
               className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
                 playerState.isBoosterActive && playerState.volumeBooster > 1.0
-                  ? 'bg-[#E5B842] text-[#070E1A] shadow-[0_0_12px_rgba(229,184,66,0.4)]'
+                  ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-[0_0_16px_rgba(247,14,66,0.5)]'
                   : 'bg-white/10 text-[#7E8F9E] hover:text-[#F0F4FA]'
               }`}
               title="Toggle Volume Booster"
@@ -493,10 +494,10 @@ export const SettingsScreen: React.FC = () => {
           <Sparkles className="w-4 h-4 text-[var(--btt-accent)]" /> Smart Mix & Transitions
         </h3>
 
-        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#070E1A]/10 dark:border-white/10 space-y-4 shadow-sm">
+        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#05070B]/10 dark:border-white/10 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm font-bold text-[#070E1A] dark:text-[#F0F4FA]">Btt Smart Mix</span>
+              <span className="text-sm font-bold text-[#05070B] dark:text-[#F0F4FA]">Btt Smart Mix</span>
               <p className="text-xs text-[#777267] dark:text-[#92998F]">
                 Continuous DJ blending between consecutive songs
               </p>
@@ -505,7 +506,7 @@ export const SettingsScreen: React.FC = () => {
               type="checkbox"
               checked={smartMixConfig.enabled}
               onChange={(e) => updateSmartMixConfig({ enabled: e.target.checked })}
-              className="w-5 h-5 rounded-md accent-[#0E8B9C] dark:accent-[#24C7DB] cursor-pointer"
+              className="w-5 h-5 rounded-md accent-[#6202E1] dark:accent-[#F70E42] cursor-pointer"
             />
           </div>
 
@@ -519,8 +520,8 @@ export const SettingsScreen: React.FC = () => {
                   onClick={() => updateSmartMixConfig({ preset: p.id })}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                     smartMixConfig.preset === p.id
-                      ? 'bg-[#0E8B9C] text-[#070E1A] dark:bg-[#24C7DB] dark:text-[#070E1A] shadow-sm'
-                      : 'bg-[#0D1524] dark:bg-[#0D1524] text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-[#F0F4FA] border border-[#070E1A]/10 dark:border-white/10'
+                      ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm'
+                      : 'bg-[#0D1524] dark:bg-[#0D1524] text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-[#F0F4FA] border border-[#05070B]/10 dark:border-white/10'
                   }`}
                 >
                   {p.label}
@@ -530,14 +531,14 @@ export const SettingsScreen: React.FC = () => {
           </div>
 
           {/* Silence & Harmonic Toggles */}
-          <div className="pt-2 border-t border-[#070E1A]/10 dark:border-white/10 space-y-2.5 text-xs text-[#070E1A] dark:text-[#F0F4FA]">
+          <div className="pt-2 border-t border-[#05070B]/10 dark:border-white/10 space-y-2.5 text-xs text-[#05070B] dark:text-[#F0F4FA]">
             <div className="flex items-center justify-between">
               <span>Trim Dead Silence (Intro/Outro)</span>
               <input
                 type="checkbox"
                 checked={smartMixConfig.trimSilence}
                 onChange={(e) => updateSmartMixConfig({ trimSilence: e.target.checked })}
-                className="w-4 h-4 rounded accent-[#0E8B9C] dark:accent-[#24C7DB]"
+                className="w-4 h-4 rounded accent-[#6202E1] dark:accent-[#F70E42]"
               />
             </div>
             <div className="flex items-center justify-between">
@@ -546,15 +547,15 @@ export const SettingsScreen: React.FC = () => {
                 type="checkbox"
                 checked={smartMixConfig.useHarmonicMixing}
                 onChange={(e) => updateSmartMixConfig({ useHarmonicMixing: e.target.checked })}
-                className="w-4 h-4 rounded accent-[#0E8B9C] dark:accent-[#24C7DB]"
+                className="w-4 h-4 rounded accent-[#6202E1] dark:accent-[#F70E42]"
               />
             </div>
           </div>
 
           {/* Acoustic Analysis Runner */}
-          <div className="pt-2 border-t border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between">
+          <div className="pt-2 border-t border-[#05070B]/10 dark:border-white/10 flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-[#070E1A] dark:text-[#F0F4FA]">Acoustic Library Analysis</span>
+              <span className="text-xs font-semibold text-[#05070B] dark:text-[#F0F4FA]">Acoustic Library Analysis</span>
               <p className="text-[10px] text-[#777267] dark:text-[#92998F] font-mono">
                 {analyzedCount} of {tracks.length} songs analyzed
               </p>
@@ -562,7 +563,7 @@ export const SettingsScreen: React.FC = () => {
             <button
               onClick={() => batchAnalyzeTracks()}
               disabled={isAnalyzing || analyzedCount === tracks.length}
-              className="px-3 py-1.5 rounded-xl bg-[#0E8B9C] text-[#070E1A] dark:bg-[#24C7DB] dark:text-[#070E1A] disabled:opacity-40 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white disabled:opacity-40 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
             >
               {isAnalyzing ? (
                 <>
@@ -582,21 +583,21 @@ export const SettingsScreen: React.FC = () => {
 
       {/* SECTION 4: STORAGE & BACKUP */}
       <section className="space-y-3">
-        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#0E8B9C] dark:text-[#24C7DB] flex items-center gap-1.5">
-          <HardDrive className="w-4 h-4 text-[#0E8B9C] dark:text-[#24C7DB]" /> Storage & Cache
+        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#6202E1] dark:text-[#F70E42] flex items-center gap-1.5">
+          <HardDrive className="w-4 h-4 text-[#6202E1] dark:text-[#F70E42]" /> Storage & Cache
         </h3>
 
-        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#070E1A]/10 dark:border-white/10 space-y-4 shadow-sm">
+        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#05070B]/10 dark:border-white/10 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs text-[#777267] dark:text-[#92998F]">Audio Storage Used</span>
-              <p className="text-xl font-extrabold text-[#070E1A] dark:text-[#F0F4FA] font-mono mt-0.5">
+              <p className="text-xl font-extrabold text-[#05070B] dark:text-[#F0F4FA] font-mono mt-0.5">
                 {formatFileSize(storageStats.trackBytes)}
               </p>
             </div>
             <div className="text-right">
               <span className="text-xs text-[#777267] dark:text-[#92998F]">Total Offline Songs</span>
-              <p className="text-xl font-extrabold text-[#070E1A] dark:text-[#F0F4FA] font-mono mt-0.5">
+              <p className="text-xl font-extrabold text-[#05070B] dark:text-[#F0F4FA] font-mono mt-0.5">
                 {storageStats.trackCount}
               </p>
             </div>
@@ -609,9 +610,9 @@ export const SettingsScreen: React.FC = () => {
                 <span>Used: {formatFileSize(storageStats.usedBytes)}</span>
                 <span>Available: {formatFileSize(storageStats.quotaBytes)}</span>
               </div>
-              <div className="w-full h-2 rounded-full bg-[#0D1524] dark:bg-[#0D1524] overflow-hidden border border-[#070E1A]/5 dark:border-white/5">
+              <div className="w-full h-2 rounded-full bg-[#0D1524] dark:bg-[#0D1524] overflow-hidden border border-[#05070B]/5 dark:border-white/5">
                 <div
-                  className="h-full bg-gradient-to-r from-[#0E8B9C] to-[#24C7DB] rounded-full"
+                  className="h-full bg-gradient-to-r from-[#6202E1] to-[#F70E42] rounded-full"
                   style={{
                     width: `${Math.min(
                       100,
@@ -624,10 +625,10 @@ export const SettingsScreen: React.FC = () => {
           )}
 
           {/* Duplicate Track Cleaner */}
-          <div className="pt-3 border-t border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between">
+          <div className="pt-3 border-t border-[#05070B]/10 dark:border-white/10 flex items-center justify-between">
             <div>
-              <div className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] flex items-center gap-1.5">
-                <Copy className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+              <div className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] flex items-center gap-1.5">
+                <Copy className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                 <span>Duplicate Songs Cleaner</span>
               </div>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F] mt-0.5">
@@ -636,38 +637,38 @@ export const SettingsScreen: React.FC = () => {
             </div>
             <button
               onClick={handleScanDuplicates}
-              className="py-1.5 px-3 rounded-xl border border-[#0E8B9C]/30 dark:border-[#24C7DB]/30 bg-[#0E8B9C]/10 dark:bg-[#24C7DB]/10 text-[#0E8B9C] dark:text-[#24C7DB] hover:bg-[#0E8B9C] hover:text-[#070E1A] dark:hover:bg-[#24C7DB] dark:hover:text-[#070E1A] text-xs font-bold transition flex items-center gap-1 active:scale-95"
+              className="py-1.5 px-3 rounded-xl border border-[#6202E1]/30 dark:border-[#6202E1]/30 bg-[#6202E1]/10 dark:bg-[#6202E1]/10 text-[#6202E1] dark:text-[#F70E42] hover:bg-[#6202E1] hover:text-[#05070B] dark:hover:bg-[#6202E1] dark:hover:text-[#05070B] text-xs font-bold transition flex items-center gap-1 active:scale-95"
             >
               <span>Scan Duplicates</span>
             </button>
           </div>
 
           {/* Export / Import Database */}
-          <div className="space-y-2 pt-2 border-t border-[#070E1A]/10 dark:border-white/10">
+          <div className="space-y-2 pt-2 border-t border-[#05070B]/10 dark:border-white/10">
             <div className="text-[11px] font-bold text-[#777267] dark:text-[#92998F] uppercase tracking-wider font-mono">
               Database Backup & Sharing
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => handleExportBackup(false)}
-                className="py-2.5 px-3 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#24C7DB]/20 text-[#070E1A] dark:text-[#F0F4FA] border border-[#070E1A]/10 dark:border-white/10 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                className="py-2.5 px-3 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#6202E1]/20 text-[#05070B] dark:text-[#F0F4FA] border border-[#05070B]/10 dark:border-white/10 text-xs font-bold flex items-center justify-center gap-1.5 transition"
               >
-                <Download className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                <Download className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                 Export DB (.json)
               </button>
               <button
                 onClick={() => backupFileInputRef.current?.click()}
-                className="py-2.5 px-3 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#24C7DB]/20 text-[#070E1A] dark:text-[#F0F4FA] border border-[#070E1A]/10 dark:border-white/10 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                className="py-2.5 px-3 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#6202E1]/20 text-[#05070B] dark:text-[#F0F4FA] border border-[#05070B]/10 dark:border-white/10 text-xs font-bold flex items-center justify-center gap-1.5 transition"
               >
-                <Upload className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                <Upload className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                 Restore DB File
               </button>
             </div>
             <button
               onClick={() => handleExportBackup(true)}
-              className="w-full py-2.5 px-3 rounded-xl bg-[#0E8B9C] hover:bg-[#0E8B9C]/90 text-[#070E1A] text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98"
+              className="w-full py-2.5 px-3 rounded-xl bg-[#6202E1] hover:bg-[#6202E1]/90 text-[#05070B] text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98"
             >
-              <Share2 className="w-3.5 h-3.5 text-[#24C7DB]" />
+              <Share2 className="w-3.5 h-3.5 text-[#F70E42]" />
               Export Complete Audio Vault (for sharing)
             </button>
           </div>
@@ -676,11 +677,11 @@ export const SettingsScreen: React.FC = () => {
 
       {/* SECTION 5: SPOTIFY ENGINE & X2 RETRIEVAL */}
       <section className="space-y-3">
-        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#0E8B9C] dark:text-[#24C7DB] flex items-center gap-1.5">
-          <Server className="w-4 h-4 text-[#0E8B9C] dark:text-[#24C7DB]" /> Music Engines & Spotify Integration
+        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#6202E1] dark:text-[#F70E42] flex items-center gap-1.5">
+          <Server className="w-4 h-4 text-[#6202E1] dark:text-[#F70E42]" /> Music Engines & Spotify Integration
         </h3>
 
-        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#070E1A]/10 dark:border-white/10 space-y-4 shadow-sm">
+        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#05070B]/10 dark:border-white/10 space-y-4 shadow-sm">
           {/* Spotify Engine Active Status */}
           <div className="p-3.5 rounded-2xl bg-[#1DB954]/10 border border-[#1DB954]/30 space-y-1.5">
             <div className="flex items-center justify-between">
@@ -694,15 +695,15 @@ export const SettingsScreen: React.FC = () => {
                 Direct / No Token
               </span>
             </div>
-            <p className="text-xs text-[#070E1A]/80 dark:text-[#F0F4FA]/80 leading-relaxed">
+            <p className="text-xs text-[#05070B]/80 dark:text-[#F0F4FA]/80 leading-relaxed">
               Available in the Search tab. Resolves public Spotify track, playlist, and album links without requiring personal API keys or developer accounts.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-sm font-bold text-[#070E1A] dark:text-[#F0F4FA] flex items-center gap-1.5">
+            <span className="text-sm font-bold text-[#05070B] dark:text-[#F0F4FA] flex items-center gap-1.5">
               Modular X2 Engine
-              <span className="px-2 py-0.5 rounded-full bg-[#24C7DB]/20 text-[#0E8B9C] dark:text-[#24C7DB] text-[10px] font-mono font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] text-[10px] font-mono font-bold">
                 Local Cache + Hub Active
               </span>
             </span>
@@ -714,16 +715,16 @@ export const SettingsScreen: React.FC = () => {
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button
               onClick={() => setIsBenchmarkModalOpen(true)}
-              className="py-2.5 px-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#24C7DB]/20 border border-[#070E1A]/10 dark:border-white/10 text-[#070E1A] dark:text-[#F0F4FA] text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="py-2.5 px-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#6202E1]/20 border border-[#05070B]/10 dark:border-white/10 text-[#05070B] dark:text-[#F0F4FA] text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
-              <BarChart3 className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+              <BarChart3 className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
               <span>Real Track Benchmark</span>
             </button>
             <button
               onClick={() => setIsSpotDLModalOpen(true)}
-              className="py-2.5 px-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#24C7DB]/20 border border-[#070E1A]/10 dark:border-white/10 text-[#070E1A] dark:text-[#F0F4FA] text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+              className="py-2.5 px-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#6202E1]/20 border border-[#05070B]/10 dark:border-white/10 text-[#05070B] dark:text-[#F0F4FA] text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
             >
-              <Server className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+              <Server className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
               <span>spotDL Evaluation</span>
             </button>
           </div>
@@ -732,14 +733,14 @@ export const SettingsScreen: React.FC = () => {
 
       {/* SECTION 6: OFFLINE VERIFICATION & INSTALL */}
       <section className="space-y-3">
-        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#0E8B9C] dark:text-[#24C7DB] flex items-center gap-1.5">
-          <Activity className="w-4 h-4 text-[#0E8B9C] dark:text-[#24C7DB]" /> Offline & Device Status
+        <h3 className="text-xs font-mono font-black uppercase tracking-wider text-[#6202E1] dark:text-[#F70E42] flex items-center gap-1.5">
+          <Activity className="w-4 h-4 text-[#6202E1] dark:text-[#F70E42]" /> Offline & Device Status
         </h3>
 
-        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#070E1A]/10 dark:border-white/10 space-y-3 shadow-sm">
+        <div className="p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/80 backdrop-blur-2xl border border-[#05070B]/10 dark:border-white/10 space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">iPhone Installation</span>
+              <span className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">iPhone Installation</span>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
                 {isInstalled
                   ? 'Running as installed Home Screen PWA'
@@ -749,20 +750,20 @@ export const SettingsScreen: React.FC = () => {
 
             <button
               onClick={() => setIsInstallModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#24C7DB]/20 border border-[#070E1A]/10 dark:border-white/10 text-[#070E1A] dark:text-[#F0F4FA] text-xs font-bold flex items-center gap-1"
+              className="px-3.5 py-1.5 rounded-xl bg-[#0D1524] dark:bg-[#0D1524] hover:bg-[#6202E1]/20 border border-[#05070B]/10 dark:border-white/10 text-[#05070B] dark:text-[#F0F4FA] text-xs font-bold flex items-center gap-1"
             >
-              <Smartphone className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+              <Smartphone className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
               {isInstalled ? 'Instructions' : 'Install Guide'}
             </button>
           </div>
 
-          <div className="pt-2 border-t border-[#070E1A]/10 dark:border-white/10 space-y-2">
+          <div className="pt-2 border-t border-[#05070B]/10 dark:border-white/10 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">Offline Playback Audit</span>
+              <span className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">Offline Playback Audit</span>
               <button
                 onClick={runOfflineDiagnostic}
                 disabled={isTestingOffline}
-                className="px-3 py-1.5 rounded-xl bg-[#0E8B9C] text-[#070E1A] dark:bg-[#24C7DB] dark:text-[#070E1A] text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50"
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50"
               >
                 {isTestingOffline ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -774,7 +775,7 @@ export const SettingsScreen: React.FC = () => {
             </div>
 
             {diagnosticResult && (
-              <div className="p-3 rounded-2xl bg-[#070E1A]/70 dark:bg-[#070E1A]/70 border border-[#070E1A]/10 dark:border-white/10 text-[11px] text-[#070E1A] dark:text-[#F0F4FA] leading-relaxed font-mono">
+              <div className="p-3 rounded-2xl bg-[#05070B]/70 dark:bg-[#05070B]/70 border border-[#05070B]/10 dark:border-white/10 text-[11px] text-[#05070B] dark:text-[#F0F4FA] leading-relaxed font-mono">
                 {diagnosticResult}
               </div>
             )}
@@ -805,7 +806,7 @@ export const SettingsScreen: React.FC = () => {
 
       {/* Footer Branding */}
       <div className="text-center pt-2 pb-6 text-[11px] text-[#777267] dark:text-[#92998F] space-y-1">
-        <p className="font-bold text-[var(--btt-accent)] font-mono">btmu by Ahmed</p>
+        <p className="font-bold text-[var(--btt-accent)] font-mono">Btmus by Taboubi Ahmed</p>
         <p>{APP_NAME} v{APP_VERSION} • iOS Edition • Built {BUILD_DATE}</p>
       </div>
 

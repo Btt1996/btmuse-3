@@ -117,7 +117,7 @@ export const SAMPLE_AUDIO_PRESETS = [
     duration: 22,
     frequency: 110.0, // A2
     type: 'ambient' as const,
-    artworkGradient: 'from-cyan-500 to-blue-800',
+    artworkGradient: 'from-[#6202E1] to-[#F70E42]',
     iconBg: '#06b6d4',
   },
 ];

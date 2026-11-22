@@ -32,7 +32,7 @@ export const TrackDetailModal: React.FC<TrackDetailModalProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-black dark:text-white font-display">Song Information</h3>
             <span className="px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white text-[10px] font-bold">
-              btmu
+              Btmus
             </span>
           </div>
           <button

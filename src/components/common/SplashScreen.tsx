@@ -33,13 +33,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#070E1A] select-none transition-opacity duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#05070B] select-none transition-opacity duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isExiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       aria-label="btmu Splash"
     >
       {/* Soft atmospheric ambient glow */}
-      <div className="absolute w-72 h-72 rounded-full bg-radial from-[#24C7DB]/20 via-[#E5B842]/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute w-72 h-72 rounded-full bg-radial from-[#6202E1]/20 via-[#C4009B]/10 to-transparent blur-3xl pointer-events-none" />
 
       {/* Main Logo Emblem */}
       <div
@@ -49,21 +49,21 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
             : 'scale-[0.88] opacity-0 translate-y-2'
         } ${isExiting ? 'scale-[1.04]' : ''}`}
       >
-        <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-[#24C7DB]/30 bg-[#070E1A] p-0.5">
+        <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-[#6202E1]/30 bg-[#05070B] p-0.5">
           <img
             src="/app-logo.png"
-            alt="btmu by Ahmed"
+            alt="Btmus by Taboubi Ahmed"
             className="w-full h-full object-cover rounded-[1.35rem]"
           />
         </div>
 
         {/* Wordmark in Sora display font */}
         <div className="flex flex-col items-center">
-          <h1 className="font-display text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#E5B842] via-[#F0F4FA] to-[#24C7DB] bg-clip-text text-transparent">
-            btmu
+          <h1 className="font-display text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] bg-clip-text text-transparent">
+            Btmus
           </h1>
           <span className="text-xs font-medium tracking-widest text-[#7E8F9E] uppercase font-sans mt-0.5">
-            by Ahmed
+            by Taboubi Ahmed
           </span>
         </div>
       </div>

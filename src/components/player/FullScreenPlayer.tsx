@@ -207,7 +207,7 @@ export const FullScreenPlayer: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#070E1A] text-[#F0F4FA] select-none overflow-hidden transition-colors duration-300">
+    <div className="fixed inset-0 z-50 flex flex-col bg-[#05070B] text-[#F0F4FA] select-none overflow-hidden transition-colors duration-300">
       {/* Background Liquid Glass Ambient Artwork Glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-35 filter blur-3xl scale-125 transition-all duration-700">
         {currentTrack.artworkUrl ? (
@@ -217,9 +217,12 @@ export const FullScreenPlayer: React.FC = () => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-tr from-[#0E8B9C] via-[#24C7DB]/40 to-[#E5B842]/30" />
+          <div className="w-full h-full bg-gradient-to-tr from-[#6202E1] via-[#C4009B]/40 to-[#F70E42]/30" />
         )}
       </div>
+
+      {/* Signature gradient wash over the artwork glow (low opacity; no color extraction) */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#6202E1]/15 via-transparent to-[#F70E42]/15" />
 
       {/* Main Player Container */}
       <div className="relative z-10 flex-1 flex flex-col justify-between p-4 sm:p-6 max-w-md mx-auto w-full pt-[max(env(safe-area-inset-top,0px),1rem)] pb-[max(env(safe-area-inset-bottom,0px),1rem)]">
@@ -230,16 +233,16 @@ export const FullScreenPlayer: React.FC = () => {
               triggerHaptic();
               setIsFullScreenPlayerOpen(false);
             }}
-            className="p-2.5 rounded-full bg-[#0D1524]/85 backdrop-blur-xl border border-[#24C7DB]/25 text-[#24C7DB] active:scale-90 transition shadow-xs"
+            className="p-2.5 rounded-full bg-[#0D1524]/85 backdrop-blur-xl border border-[#6202E1]/25 text-[#F70E42] active:scale-90 transition shadow-xs"
             aria-label="Minimize player"
           >
             <ChevronDown className="w-5 h-5" />
           </button>
 
-          {/* Discreet Branding: btmu by Ahmed */}
+          {/* Discreet Branding: Btmus by Taboubi Ahmed */}
           <div className="text-center flex flex-col items-center">
-            <span className="text-[11px] font-mono tracking-widest uppercase font-black text-[#E5B842]">
-              btmu <span className="lowercase font-normal tracking-normal text-[#7E8F9E]">by</span> Ahmed
+            <span className="text-[11px] font-mono tracking-widest uppercase font-black text-[#F70E42]">
+              Btmus <span className="lowercase font-normal tracking-normal text-[#7E8F9E]">by Taboubi Ahmed</span>
             </span>
             <span className="text-[9px] font-mono text-[#7E8F9E] font-bold">
               NOW PLAYING
@@ -255,7 +258,7 @@ export const FullScreenPlayer: React.FC = () => {
               }}
               className={`p-2.5 rounded-full backdrop-blur-xl border transition active:scale-90 ${
                 smartMixConfig.enabled
-                  ? 'bg-[#24C7DB]/20 border-[#24C7DB]/40 text-[#24C7DB] shadow-[0_0_12px_rgba(36,199,219,0.3)]'
+                  ? 'bg-[#F70E42]/20 border-[#F70E42]/40 text-[#F70E42] shadow-[0_0_12px_rgba(247,14,66,0.3)]'
                   : 'bg-[#0D1524]/80 border-white/10 text-[#7E8F9E]'
               }`}
               title="Smart Mix"
@@ -269,12 +272,12 @@ export const FullScreenPlayer: React.FC = () => {
                 triggerHaptic();
                 setIsQueueOpen(true);
               }}
-              className="p-2.5 rounded-full bg-[#0D1524]/80 backdrop-blur-xl border border-[#24C7DB]/25 text-[#24C7DB] active:scale-90 transition relative shadow-xs"
+              className="p-2.5 rounded-full bg-[#0D1524]/80 backdrop-blur-xl border border-[#6202E1]/25 text-[#F70E42] active:scale-90 transition relative shadow-xs"
               aria-label="Open queue"
             >
               <ListMusic className="w-4 h-4" />
               {playerState.queue.length > 1 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#E5B842] shadow-xs" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#F70E42] shadow-xs" />
               )}
             </button>
           </div>
@@ -302,9 +305,9 @@ export const FullScreenPlayer: React.FC = () => {
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              className="w-full max-w-[310px] sm:max-w-[330px] aspect-square rounded-[2.5rem] p-2 bg-[#0D1524]/80 backdrop-blur-3xl border border-[#24C7DB]/30 shadow-[0_24px_60px_rgba(0,0,0,0.85)] relative group overflow-hidden"
+              className="w-full max-w-[310px] sm:max-w-[330px] aspect-square rounded-[2.5rem] p-2 bg-[#0D1524]/80 backdrop-blur-3xl border border-[#6202E1]/30 shadow-[0_24px_60px_rgba(0,0,0,0.85)] relative group overflow-hidden"
             >
-              <div className="w-full h-full rounded-[2rem] overflow-hidden bg-[#070E1A] relative">
+              <div className="w-full h-full rounded-[2rem] overflow-hidden bg-[#05070B] relative">
                 {currentTrack.artworkUrl ? (
                   <img
                     src={currentTrack.artworkUrl}
@@ -321,8 +324,8 @@ export const FullScreenPlayer: React.FC = () => {
 
                 {/* Acoustic camelot badge if analyzed */}
                 {activeAnalysis && (
-                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#070E1A]/85 backdrop-blur-md border border-[#24C7DB]/40 text-[9.5px] font-mono font-bold text-[#F0F4FA] flex items-center gap-1.5 shadow-md">
-                    <Activity className="w-3 h-3 text-[#24C7DB]" />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#05070B]/85 backdrop-blur-md border border-[#6202E1]/40 text-[9.5px] font-mono font-bold text-[#F0F4FA] flex items-center gap-1.5 shadow-md">
+                    <Activity className="w-3 h-3 text-[#F70E42]" />
                     <span>{activeAnalysis.bpm} BPM</span>
                     <span>•</span>
                     <span>{activeAnalysis.camelot}</span>
@@ -331,7 +334,7 @@ export const FullScreenPlayer: React.FC = () => {
 
                 {isLoading && (
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center">
-                    <div className="w-10 h-10 border-3 border-[#24C7DB] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-10 h-10 border-3 border-[#6202E1] border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
               </div>
@@ -347,7 +350,7 @@ export const FullScreenPlayer: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-black text-[#F0F4FA] truncate tracking-tight">
                 {currentTrack.title}
               </h2>
-              <p className="text-sm sm:text-base text-[#24C7DB] font-bold truncate mt-0.5">
+              <p className="text-sm sm:text-base text-[#F70E42] font-bold truncate mt-0.5">
                 {currentTrack.artist || 'Unknown Artist'}
               </p>
               {currentTrack.album && currentTrack.album !== 'Unknown Album' && (
@@ -361,7 +364,7 @@ export const FullScreenPlayer: React.FC = () => {
               {/* PLAY IN OTHER APP BUTTON */}
               <button
                 onClick={handlePlayInOtherApp}
-                className="px-2.5 py-1.5 rounded-xl bg-[#0D1524]/80 text-[#24C7DB] border border-[#24C7DB]/30 hover:border-[#24C7DB] text-xs font-bold flex items-center gap-1 transition active:scale-90 shadow-xs"
+                className="px-2.5 py-1.5 rounded-xl bg-[#0D1524]/80 text-[#F70E42] border border-[#6202E1]/30 hover:border-[#6202E1] text-xs font-bold flex items-center gap-1 transition active:scale-90 shadow-xs"
                 title="Play in other app (VLC, Clik, Documents, Files)"
                 aria-label="Play in other app"
               >
@@ -377,8 +380,8 @@ export const FullScreenPlayer: React.FC = () => {
                 }}
                 className={`px-3 py-1.5 rounded-xl transition active:scale-90 border text-xs font-bold flex items-center gap-1.5 shadow-xs ${
                   isLyricsOpen
-                    ? 'bg-[#24C7DB] text-[#070E1A] border-[#24C7DB]'
-                    : 'bg-[#0D1524]/80 text-[#24C7DB] border-[#24C7DB]/30 hover:border-[#24C7DB]'
+                    ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white border-transparent shadow-[0_0_16px_rgba(247,14,66,0.4)]'
+                    : 'bg-[#0D1524]/80 text-[#F70E42] border-[#6202E1]/30 hover:border-[#6202E1]'
                 }`}
                 title="Toggle Synced Lyrics"
                 aria-label="Toggle Lyrics"
@@ -427,17 +430,17 @@ export const FullScreenPlayer: React.FC = () => {
             >
               {/* Background Track */}
               <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden relative group-hover:h-2 transition-all">
-                {/* Played Progress Bar in Cyan & Gold */}
+                {/* Played Progress Bar in Signature Gradient */}
                 <div
-                  className="h-full bg-gradient-to-r from-[#0E8B9C] via-[#24C7DB] to-[#E5B842] rounded-full transition-all duration-75 shadow-xs"
+                  className="h-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] rounded-full transition-all duration-75 shadow-xs"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
 
               {/* Scrubber Thumb */}
               <div
-                className={`absolute top-1/2 -translate-y-1/2 -ml-2 w-4 h-4 rounded-full bg-[#24C7DB] shadow-md transition-transform ${
-                  isDraggingSeek ? 'scale-125 ring-4 ring-[#24C7DB]/40' : 'group-hover:scale-110'
+                className={`absolute top-1/2 -translate-y-1/2 -ml-2 w-4 h-4 rounded-full bg-[#F70E42] shadow-md transition-transform ${
+                  isDraggingSeek ? 'scale-125 ring-4 ring-[#F70E42]/40' : 'group-hover:scale-110'
                 }`}
                 style={{ left: `${progressPercent}%` }}
               />
@@ -445,7 +448,7 @@ export const FullScreenPlayer: React.FC = () => {
               {/* Drag Position Live Tooltip */}
               {isDraggingSeek && (
                 <div
-                  className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-md bg-[#24C7DB] text-[#070E1A] text-[10px] font-mono font-bold shadow-lg pointer-events-none"
+                  className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-md bg-[#F70E42] text-white text-[10px] font-mono font-bold shadow-lg pointer-events-none"
                   style={{ left: `${progressPercent}%` }}
                 >
                   {formatDuration(displayTime)}
@@ -454,14 +457,14 @@ export const FullScreenPlayer: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between text-xs font-mono font-bold text-[#7E8F9E] tabular-nums">
-              <span className={isDraggingSeek ? 'text-[#24C7DB]' : ''}>
+              <span className={isDraggingSeek ? 'text-[#F70E42]' : ''}>
                 {formatDuration(displayTime)}
               </span>
               <span>-{formatDuration(remainingTime)}</span>
             </div>
           </div>
 
-          {/* Primary Controls Row with Signature BTT Playback Animation */}
+          {/* Primary Controls Row with BTT Playback Animation */}
           <div className="relative flex items-center justify-between px-2 pt-1">
             <BttPlaybackAnimation currentTrigger={bttTrigger} />
 
@@ -472,7 +475,7 @@ export const FullScreenPlayer: React.FC = () => {
               }}
               className={`p-2.5 rounded-full transition active:scale-90 ${
                 isShuffle
-                  ? 'text-[#24C7DB] bg-[#24C7DB]/20'
+                  ? 'text-[#F70E42] bg-[#F70E42]/20'
                   : 'text-[#7E8F9E] hover:text-white'
               }`}
               aria-label="Shuffle"
@@ -483,9 +486,9 @@ export const FullScreenPlayer: React.FC = () => {
             {/* Previous Button with Tactile Animation */}
             <button
               onClick={handlePrevClick}
-              className={`p-3 rounded-full text-[#F0F4FA] hover:text-[#24C7DB] transition-all duration-200 active:scale-75 ${
+              className={`p-3 rounded-full text-[#F0F4FA] hover:text-[#F70E42] transition-all duration-200 active:scale-75 ${
                 activeBttButton === 'prev'
-                  ? '-translate-x-2 text-[#24C7DB] bg-[#24C7DB]/20 shadow-[0_0_20px_rgba(36,199,219,0.6)]'
+                  ? '-translate-x-2 text-[#F70E42] bg-[#F70E42]/20 shadow-[0_0_20px_rgba(247,14,66,0.6)]'
                   : ''
               }`}
               aria-label="Previous track"
@@ -493,14 +496,14 @@ export const FullScreenPlayer: React.FC = () => {
               <SkipBack className="w-7 h-7 fill-current" />
             </button>
 
-            {/* Cyan/Gold Play/Pause Button with Tactile Spring */}
+            {/* Signature Gradient Play/Pause Button with Tactile Spring */}
             <button
               onClick={handlePlayPauseClick}
-              className={`w-18 h-18 rounded-full bg-gradient-to-tr from-[#24C7DB] to-[#0E8B9C] text-[#070E1A] flex items-center justify-center transition-all duration-300 shadow-[0_8px_28px_rgba(36,199,219,0.4)] select-none ${
+              className={`w-18 h-18 rounded-full bg-gradient-to-tr from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white flex items-center justify-center transition-all duration-300 shadow-[0_8px_28px_rgba(247,14,66,0.4)] select-none ${
                 activeBttButton === 'play'
-                  ? 'scale-115 ring-4 ring-[#24C7DB]/70 shadow-[0_0_36px_rgba(36,199,219,0.9)]'
+                  ? 'scale-115 ring-4 ring-[#F70E42]/70 shadow-[0_0_36px_rgba(247,14,66,0.9)]'
                   : isPlaying
-                  ? 'ring-2 ring-[#24C7DB]/40 hover:scale-105 active:scale-90 shadow-[0_0_24px_rgba(36,199,219,0.4)]'
+                  ? 'ring-2 ring-[#F70E42]/40 hover:scale-105 active:scale-90 shadow-[0_0_24px_rgba(247,14,66,0.4)]'
                   : 'hover:scale-105 active:scale-90'
               }`}
               aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -515,9 +518,9 @@ export const FullScreenPlayer: React.FC = () => {
             {/* Next Button with Tactile Animation */}
             <button
               onClick={handleNextClick}
-              className={`p-3 rounded-full text-[#F0F4FA] hover:text-[#24C7DB] transition-all duration-200 active:scale-75 ${
+              className={`p-3 rounded-full text-[#F0F4FA] hover:text-[#F70E42] transition-all duration-200 active:scale-75 ${
                 activeBttButton === 'next'
-                  ? 'translate-x-2 text-[#24C7DB] bg-[#24C7DB]/20 shadow-[0_0_20px_rgba(36,199,219,0.6)]'
+                  ? 'translate-x-2 text-[#F70E42] bg-[#F70E42]/20 shadow-[0_0_20px_rgba(247,14,66,0.6)]'
                   : ''
               }`}
               aria-label="Next track"
@@ -532,7 +535,7 @@ export const FullScreenPlayer: React.FC = () => {
               }}
               className={`p-2.5 rounded-full transition active:scale-90 ${
                 repeatMode !== 'off'
-                  ? 'text-[#24C7DB] bg-[#24C7DB]/20'
+                  ? 'text-[#F70E42] bg-[#F70E42]/20'
                   : 'text-[#7E8F9E] hover:text-white'
               }`}
               aria-label="Repeat"

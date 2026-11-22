@@ -276,14 +276,14 @@ export const SearchScreen: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-[#F3EBDD] dark:bg-[#070E1A] text-[#070E1A] dark:text-[#F0F4FA] select-none transition-colors duration-300">
+    <div className="flex-1 flex flex-col min-h-0 bg-[#F3EBDD] dark:bg-[#05070B] text-[#05070B] dark:text-[#F0F4FA] select-none transition-colors duration-300">
       {/* Top Bar with History & Modals triggers */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-[#070E1A]/10 dark:border-white/10 shrink-0">
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-[#05070B]/10 dark:border-white/10 shrink-0">
         <div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#0E8B9C] dark:text-[#24C7DB] font-bold">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#6202E1] dark:text-[#F70E42] font-bold">
             Unified Discovery & Import
           </span>
-          <h1 className="text-xl font-bold tracking-tight text-[#070E1A] dark:text-[#F0F4FA]">
+          <h1 className="text-xl font-bold tracking-tight text-[#05070B] dark:text-[#F0F4FA]">
             Music Search
           </h1>
         </div>
@@ -292,7 +292,7 @@ export const SearchScreen: React.FC = () => {
           {/* Telegram Hub Modal Button */}
           <button
             onClick={() => setIsTelegramModalOpen(true)}
-            className="p-2 rounded-xl bg-[#02ABB0]/15 text-[#02ABB0] hover:bg-[#02ABB0]/25 active:scale-95 transition"
+            className="p-2 rounded-xl bg-[#6202E1]/15 text-[#F70E42] hover:bg-[#6202E1]/25 active:scale-95 transition"
             title="Telegram Music Hub"
           >
             <Send className="w-4 h-4" />
@@ -301,7 +301,7 @@ export const SearchScreen: React.FC = () => {
           {/* Persistent History Button */}
           <button
             onClick={() => setIsHistoryOpen(true)}
-            className="p-2 rounded-xl bg-[#0E8B9C]/15 dark:bg-[#24C7DB]/15 text-[#0E8B9C] dark:text-[#24C7DB] hover:opacity-80 active:scale-95 transition flex items-center gap-1.5"
+            className="p-2 rounded-xl bg-[#6202E1]/15 dark:bg-[#6202E1]/15 text-[#6202E1] dark:text-[#F70E42] hover:opacity-80 active:scale-95 transition flex items-center gap-1.5"
             title="Music & Search History"
           >
             <History className="w-4 h-4" />
@@ -318,7 +318,7 @@ export const SearchScreen: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search songs, artists, albums, or Spotify URLs..."
-            className="w-full pl-11 pr-24 py-3 rounded-2xl bg-white/80 dark:bg-[#0D1524]/80 backdrop-blur-xl border border-[#070E1A]/15 dark:border-white/15 text-sm font-medium text-[#070E1A] dark:text-[#F0F4FA] placeholder:text-[#777267] shadow-sm focus:outline-none focus:border-[#0E8B9C] dark:focus:border-[#24C7DB] transition"
+            className="w-full pl-11 pr-24 py-3 rounded-2xl bg-white/80 dark:bg-[#0D1524]/80 backdrop-blur-xl border border-[#05070B]/15 dark:border-white/15 text-sm font-medium text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] shadow-sm focus:outline-none focus:border-[#6202E1] dark:focus:border-[#6202E1] transition"
           />
           <Search className="w-5 h-5 text-[#777267] absolute left-3.5 pointer-events-none" />
 
@@ -327,7 +327,7 @@ export const SearchScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="p-1.5 rounded-lg text-[#777267] hover:text-[#070E1A] dark:hover:text-white transition"
+                className="p-1.5 rounded-lg text-[#777267] hover:text-[#05070B] dark:hover:text-white transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -335,7 +335,7 @@ export const SearchScreen: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || !query.trim()}
-              className="px-3.5 py-1.5 rounded-xl bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] text-xs font-bold active:scale-95 transition disabled:opacity-50 flex items-center gap-1 shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold active:scale-95 transition disabled:opacity-50 flex items-center gap-1 shadow-xs"
             >
               {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>Search</span>}
             </button>
@@ -355,8 +355,8 @@ export const SearchScreen: React.FC = () => {
                 onClick={() => handleSourceTabChange(tab.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all duration-200 active:scale-95 ${
                   isActive
-                    ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] shadow-sm'
-                    : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-white'
+                    ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm'
+                    : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -389,7 +389,7 @@ export const SearchScreen: React.FC = () => {
               <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
                 Spotify Playlist Detected
               </span>
-              <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+              <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                 {detectedPlaylist.playlistTitle}
               </h4>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F] font-mono">
@@ -420,13 +420,13 @@ export const SearchScreen: React.FC = () => {
       <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-2.5">
         {isLoading ? (
           <div className="p-12 text-center text-[#777267] dark:text-[#92998F] text-xs font-mono flex flex-col items-center justify-center">
-            <Loader2 className="w-7 h-7 animate-spin text-[#0E8B9C] dark:text-[#24C7DB] mb-3" />
+            <Loader2 className="w-7 h-7 animate-spin text-[#6202E1] dark:text-[#F70E42] mb-3" />
             <span>Searching across YouTube, Spotify, Local, and Open CC catalogs...</span>
           </div>
         ) : results.length === 0 ? (
           <div className="p-12 text-center select-none text-[#777267] dark:text-[#92998F]">
             <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <h3 className="text-sm font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+            <h3 className="text-sm font-bold text-[#05070B] dark:text-[#F0F4FA]">
               Discover Music Anywhere
             </h3>
             <p className="text-xs mt-1 max-w-xs mx-auto leading-relaxed">
@@ -443,12 +443,12 @@ export const SearchScreen: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className="group p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#070E1A]/10 dark:border-white/10 hover:border-[#0E8B9C]/40 dark:hover:border-[#24C7DB]/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-xs"
+                className="group p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#05070B]/10 dark:border-white/10 hover:border-[#6202E1]/40 dark:hover:border-[#6202E1]/40 transition-all duration-200 flex items-center justify-between gap-3 shadow-xs"
               >
                 {/* Left: Thumbnail + Info */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   {/* Artwork with Play Preview Overlay */}
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[#070E1A]/10 dark:bg-white/10 shrink-0">
+                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[#05070B]/10 dark:bg-white/10 shrink-0">
                     {item.artworkUrl ? (
                       <img
                         src={item.artworkUrl}
@@ -467,7 +467,7 @@ export const SearchScreen: React.FC = () => {
                       onClick={() => handleTogglePreview(item)}
                       className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
                         isPreviewing
-                          ? 'bg-black/60 text-[#24C7DB] opacity-100'
+                          ? 'bg-black/60 text-[#F70E42] opacity-100'
                           : 'bg-black/40 text-white opacity-0 group-hover:opacity-100 active:scale-95'
                       }`}
                       title={isPreviewing ? 'Stop preview' : 'Play preview stream'}
@@ -483,7 +483,7 @@ export const SearchScreen: React.FC = () => {
                   {/* Metadata */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+                      <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                         {item.title}
                       </h4>
                       {/* Source Badge */}
@@ -496,9 +496,9 @@ export const SearchScreen: React.FC = () => {
                             : item.source === 'soundcloud'
                             ? 'bg-amber-500/15 text-amber-500'
                             : item.source === 'telegram'
-                            ? 'bg-[#02ABB0]/15 text-[#02ABB0]'
+                            ? 'bg-[#6202E1]/15 text-[#F70E42]'
                             : item.source === 'local'
-                            ? 'bg-[#0E8B9C]/20 text-[#0E8B9C] dark:text-[#24C7DB]'
+                            ? 'bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42]'
                             : 'bg-purple-500/15 text-purple-500'
                         }`}
                       >
@@ -519,7 +519,7 @@ export const SearchScreen: React.FC = () => {
                         </span>
                       )}
                       {progress?.status && progress.status !== 'completed' && (
-                        <span className="text-[#0E8B9C] dark:text-[#24C7DB]">{progress.status}</span>
+                        <span className="text-[#6202E1] dark:text-[#F70E42]">{progress.status}</span>
                       )}
                     </div>
                   </div>
@@ -534,14 +534,14 @@ export const SearchScreen: React.FC = () => {
                       <span className="hidden sm:inline">Downloaded</span>
                     </span>
                   ) : isDownloading ? (
-                    <span className="px-2.5 py-1.5 rounded-xl bg-[#0E8B9C]/20 text-[#0E8B9C] dark:text-[#24C7DB] text-xs font-mono font-bold flex items-center gap-1.5">
+                    <span className="px-2.5 py-1.5 rounded-xl bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] text-xs font-mono font-bold flex items-center gap-1.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>{progress.percent}%</span>
                     </span>
                   ) : item.downloadAvailability === 'downloadable' ? (
                     <button
                       onClick={() => handleDownloadTrack(item)}
-                      className="px-3 py-1.5 rounded-xl bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] text-xs font-bold active:scale-95 transition flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold active:scale-95 transition flex items-center gap-1 shadow-xs"
                       title="Download audio recording to local vault"
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -549,7 +549,7 @@ export const SearchScreen: React.FC = () => {
                     </button>
                   ) : (
                     <span
-                      className="px-2 py-1 rounded-lg bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] text-[10px] font-mono flex items-center gap-1"
+                      className="px-2 py-1 rounded-lg bg-[#05070B]/5 dark:bg-white/5 text-[#777267] text-[10px] font-mono flex items-center gap-1"
                       title={item.availabilityReason}
                     >
                       <span>Stream Only</span>
@@ -562,17 +562,17 @@ export const SearchScreen: React.FC = () => {
                       onClick={() =>
                         setActiveMenuTrackId(activeMenuTrackId === item.id ? null : item.id)
                       }
-                      className="p-1.5 rounded-lg text-[#777267] hover:text-[#070E1A] dark:hover:text-white transition"
+                      className="p-1.5 rounded-lg text-[#777267] hover:text-[#05070B] dark:hover:text-white transition"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
 
                     {/* Context Dropdown */}
                     {activeMenuTrackId === item.id && (
-                      <div className="absolute right-0 top-full mt-1 w-44 rounded-2xl bg-white/95 dark:bg-[#0D1524]/95 backdrop-blur-2xl border border-[#070E1A]/15 dark:border-white/15 shadow-xl p-1.5 z-30 space-y-1">
+                      <div className="absolute right-0 top-full mt-1 w-44 rounded-2xl bg-white/95 dark:bg-[#0D1524]/95 backdrop-blur-2xl border border-[#05070B]/15 dark:border-white/15 shadow-xl p-1.5 z-30 space-y-1">
                         <button
                           onClick={() => handleAddToQueue(item)}
-                          className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/5 dark:hover:bg-white/5 flex items-center gap-2"
+                          className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/5 dark:hover:bg-white/5 flex items-center gap-2"
                         >
                           <Plus className="w-3.5 h-3.5" /> Add to Queue
                         </button>
@@ -581,12 +581,12 @@ export const SearchScreen: React.FC = () => {
                             href={item.sourceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/5 dark:hover:bg-white/5 flex items-center gap-2"
+                            className="w-full px-2.5 py-1.5 rounded-xl text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/5 dark:hover:bg-white/5 flex items-center gap-2"
                           >
                             <ExternalLink className="w-3.5 h-3.5" /> View on {item.source}
                           </a>
                         )}
-                        <div className="p-2 border-t border-[#070E1A]/10 dark:border-white/10 text-[10px] text-[#777267] font-mono leading-tight">
+                        <div className="p-2 border-t border-[#05070B]/10 dark:border-white/10 text-[10px] text-[#777267] font-mono leading-tight">
                           {item.availabilityReason}
                         </div>
                       </div>

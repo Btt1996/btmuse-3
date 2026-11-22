@@ -348,15 +348,15 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl rounded-3xl bg-[#070E1A]/95 dark:bg-[#070E1A]/95 border border-[#0E8B9C]/20 dark:border-[#24C7DB]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="w-full max-w-2xl rounded-3xl bg-[#05070B]/95 dark:bg-[#05070B]/95 border border-[#6202E1]/20 dark:border-[#6202E1]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[92vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
+        <div className="p-4 border-b border-[#05070B]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
               <ListMusic className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#070E1A] dark:text-[#F0F4FA] tracking-tight">
+              <h2 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA] tracking-tight">
                 Spotify Playlist Inspector
               </h2>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F] font-mono">
@@ -370,14 +370,14 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
               if (isBatchDownloading) isCancelledRef.current = true;
               onClose();
             }}
-            className="p-2 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 text-[#070E1A] dark:text-[#F0F4FA] active:scale-95 transition"
+            className="p-2 rounded-xl bg-[#05070B]/5 dark:bg-white/5 text-[#05070B] dark:text-[#F0F4FA] active:scale-95 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Input Bar if not loaded or if user wants to change URL */}
-        <div className="p-3 border-b border-[#070E1A]/10 dark:border-white/10 bg-white/40 dark:bg-[#0D1524]/40">
+        <div className="p-3 border-b border-[#05070B]/10 dark:border-white/10 bg-white/40 dark:bg-[#0D1524]/40">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -391,13 +391,13 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="Paste Spotify playlist URL (e.g. https://open.spotify.com/playlist/...)"
-                className="w-full pl-3.5 pr-8 py-2 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 border border-[#070E1A]/10 dark:border-white/10 text-xs font-mono text-[#070E1A] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-[#0E8B9C] dark:focus:border-[#24C7DB]"
+                className="w-full pl-3.5 pr-8 py-2 rounded-xl bg-[#05070B]/5 dark:bg-white/5 border border-[#05070B]/10 dark:border-white/10 text-xs font-mono text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-[#6202E1] dark:focus:border-[#6202E1]"
               />
               {urlInput && (
                 <button
                   type="button"
                   onClick={() => setUrlInput('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#777267] hover:text-[#070E1A]"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#777267] hover:text-[#05070B]"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -406,7 +406,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
             <button
               type="submit"
               disabled={isLoadingMetadata || !urlInput.trim()}
-              className="px-4 py-2 rounded-xl bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] text-xs font-bold flex items-center gap-1.5 active:scale-95 transition shrink-0 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold flex items-center gap-1.5 active:scale-95 transition shrink-0 disabled:opacity-50"
             >
               {isLoadingMetadata ? (
                 <>
@@ -432,16 +432,16 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
 
         {/* Playlist Overview & Pre-flight Summary */}
         {playlist && (
-          <div className="p-4 border-b border-[#070E1A]/10 dark:border-white/10 bg-white/60 dark:bg-[#0D1524]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="p-4 border-b border-[#05070B]/10 dark:border-white/10 bg-white/60 dark:bg-[#0D1524]/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               {playlist.playlistCoverUrl ? (
                 <img
                   src={playlist.playlistCoverUrl}
                   alt=""
-                  className="w-14 h-14 rounded-2xl object-cover shadow-sm shrink-0 border border-[#070E1A]/10"
+                  className="w-14 h-14 rounded-2xl object-cover shadow-sm shrink-0 border border-[#05070B]/10"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-2xl bg-[#0E8B9C]/20 text-[#0E8B9C] dark:bg-[#24C7DB]/20 dark:text-[#24C7DB] flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-[#6202E1]/20 text-[#6202E1] dark:bg-[#6202E1]/20 dark:text-[#F70E42] flex items-center justify-center shrink-0">
                   <Music className="w-7 h-7" />
                 </div>
               )}
@@ -454,7 +454,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                     {playlist.totalTracks} tracks
                   </span>
                 </div>
-                <h3 className="text-base font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate tracking-tight mt-0.5">
+                <h3 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA] truncate tracking-tight mt-0.5">
                   {playlist.playlistTitle}
                 </h3>
                 {playlist.playlistDescription && (
@@ -472,7 +472,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                   type="checkbox"
                   checked={skipDuplicates}
                   onChange={(e) => setSkipDuplicates(e.target.checked)}
-                  className="rounded text-[#0E8B9C] dark:text-[#24C7DB] focus:ring-0"
+                  className="rounded text-[#6202E1] dark:text-[#F70E42] focus:ring-0"
                 />
                 <span>Skip duplicates ({summary.inLibrary})</span>
               </label>
@@ -480,7 +480,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
               <button
                 onClick={handleBatchDownload}
                 disabled={isBatchDownloading || summary.eligible === 0}
-                className="px-4 py-2.5 rounded-2xl bg-[#24C7DB] text-[#070E1A] text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition flex items-center gap-2 disabled:opacity-50"
               >
                 {isBatchDownloading ? (
                   <>
@@ -500,7 +500,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
 
         {/* Filter Tabs & Search Within Playlist */}
         {playlist && (
-          <div className="p-3 border-b border-[#070E1A]/10 dark:border-white/10 flex flex-col sm:flex-row gap-2 justify-between items-center">
+          <div className="p-3 border-b border-[#05070B]/10 dark:border-white/10 flex flex-col sm:flex-row gap-2 justify-between items-center">
             {/* Filter Pills */}
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none w-full sm:w-auto">
               {(
@@ -516,8 +516,8 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                   onClick={() => setFilterTab(tab.id)}
                   className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 whitespace-nowrap ${
                     filterTab === tab.id
-                      ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A]'
-                      : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
+                      ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white'
+                      : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
                   }`}
                 >
                   <span>{tab.label}</span>
@@ -533,7 +533,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tracks..."
-                className="w-full pl-7 pr-3 py-1 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 text-xs text-[#070E1A] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none"
+                className="w-full pl-7 pr-3 py-1 rounded-xl bg-[#05070B]/5 dark:bg-white/5 text-xs text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none"
               />
               <Search className="w-3.5 h-3.5 text-[#777267] absolute left-2 top-1/2 -translate-y-1/2" />
             </div>
@@ -545,7 +545,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
           {!playlist ? (
             <div className="p-12 text-center text-[#777267] dark:text-[#92998F] select-none">
               <Music className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+              <p className="text-sm font-bold text-[#05070B] dark:text-[#F0F4FA]">
                 Enter a Spotify playlist or album URL above
               </p>
               <p className="text-xs mt-1">
@@ -569,7 +569,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                       ? 'border-emerald-500/20'
                       : item.status === 'unavailable'
                       ? 'border-amber-500/20 opacity-75'
-                      : 'border-[#070E1A]/10 dark:border-white/10'
+                      : 'border-[#05070B]/10 dark:border-white/10'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -578,7 +578,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                       type="checkbox"
                       checked={item.isSelected}
                       onChange={() => handleToggleSelect(item.id)}
-                      className="rounded text-[#0E8B9C] dark:text-[#24C7DB] focus:ring-0 shrink-0"
+                      className="rounded text-[#6202E1] dark:text-[#F70E42] focus:ring-0 shrink-0"
                     />
 
                     {/* Track Number or Artwork */}
@@ -586,17 +586,17 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                       <img
                         src={item.meta.artworkUrl}
                         alt=""
-                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#070E1A]/10"
+                        className="w-10 h-10 rounded-xl object-cover shrink-0 border border-[#05070B]/10"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 flex items-center justify-center font-mono text-xs text-[#777267] shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#05070B]/5 dark:bg-white/5 flex items-center justify-center font-mono text-xs text-[#777267] shrink-0">
                         {idx + 1}
                       </div>
                     )}
 
                     {/* Track Info */}
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+                      <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                         {item.meta.title}
                       </h4>
                       <p className="text-[11px] text-[#777267] dark:text-[#92998F] truncate">
@@ -623,7 +623,7 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                     {/* Inspect match candidate */}
                     <button
                       onClick={() => handleInspectCandidates(item)}
-                      className="p-1.5 rounded-lg text-[#777267] dark:text-[#92998F] hover:text-[#0E8B9C] dark:hover:text-[#24C7DB] active:scale-95 transition"
+                      className="p-1.5 rounded-lg text-[#777267] dark:text-[#92998F] hover:text-[#6202E1] dark:hover:text-[#F70E42] active:scale-95 transition"
                       title="Inspect match candidates"
                     >
                       <Layers className="w-3.5 h-3.5" />
@@ -636,14 +636,14 @@ export const SpotifyPlaylistReviewModal: React.FC<SpotifyPlaylistReviewModalProp
                         <span>Downloaded</span>
                       </span>
                     ) : isDownloading ? (
-                      <span className="px-2.5 py-1.5 rounded-xl bg-[#0E8B9C]/20 text-[#0E8B9C] dark:text-[#24C7DB] text-xs font-mono font-bold flex items-center gap-1.5">
+                      <span className="px-2.5 py-1.5 rounded-xl bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] text-xs font-mono font-bold flex items-center gap-1.5">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>{item.downloadProgress}%</span>
                       </span>
                     ) : (
                       <button
                         onClick={() => handleDownloadSingle(item)}
-                        className="px-3 py-1.5 rounded-xl bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] text-xs font-bold shadow-xs active:scale-95 transition flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold shadow-xs active:scale-95 transition flex items-center gap-1"
                         title="Download matching audio recording"
                       >
                         <Download className="w-3.5 h-3.5" />

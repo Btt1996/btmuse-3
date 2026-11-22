@@ -1,4 +1,4 @@
-# Btt Music 2.00 — btmu by Ahmed
+# Btt Music 2.00 — Btmus by Taboubi Ahmed
 
 **Btt Music** (short name **btmu**) is an offline-first music player for iPhone.
 Bundle identifier: `com.ahmed.btmu` · Target: iOS 18+ · Primary device: iPhone XS Max ·
@@ -160,9 +160,13 @@ to `.env` and fill in the backend URLs; never invent a backend URL.
 3. **X2 backend deployment** (`X2_BACKEND_URL`) — a Node host for `server.ts`.
    Without it the Piped/Invidious relay and CORS-free proxy paths report
    "Not Configured".
-4. **Logo check** — confirm the v5 Triforce mark (gold-to-cyan gradient,
-   "BTmu by Ahmed") is the artwork in `flutter_app/assets/images/app_logo.png`
-   and the app icons before release.
+4. **Logo check** — confirm the BT monogram mark (bold "BT" in
+   violet→magenta→pink-red gradient, white play button inside the B, on
+   black) is the artwork in `flutter_app/assets/images/app_logo.png`,
+   `public/app-logo.png`, and the app icons before release.
+   (Superseded 2026-11-22: the old Triforce mark is retired; the new BT
+   monogram binaries must land at every logo path, including
+   `public/app-logo.png` and the PWA icons.)
 
 No Apple signing secrets are needed: the release is a regular unsigned IPA
 (see Release sequencing above).

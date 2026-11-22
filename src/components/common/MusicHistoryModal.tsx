@@ -145,15 +145,15 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-3xl bg-[#070E1A]/95 dark:bg-[#070E1A]/95 border border-[#0E8B9C]/20 dark:border-[#24C7DB]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-xl rounded-3xl bg-[#05070B]/95 dark:bg-[#05070B]/95 border border-[#6202E1]/20 dark:border-[#6202E1]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
+        <div className="p-4 border-b border-[#05070B]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#0E8B9C]/20 text-[#0E8B9C] dark:bg-[#24C7DB]/20 dark:text-[#24C7DB] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-[#6202E1]/20 text-[#6202E1] dark:bg-[#6202E1]/20 dark:text-[#F70E42] flex items-center justify-center">
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#070E1A] dark:text-[#F0F4FA] tracking-tight">
+              <h2 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA] tracking-tight">
                 Music & Import History
               </h2>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F] font-mono">
@@ -174,7 +174,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 text-[#070E1A] dark:text-[#F0F4FA] active:scale-95 transition"
+              className="p-2 rounded-xl bg-[#05070B]/5 dark:bg-white/5 text-[#05070B] dark:text-[#F0F4FA] active:scale-95 transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -182,7 +182,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
         </div>
 
         {/* Filter Pills */}
-        <div className="p-3 border-b border-[#070E1A]/10 dark:border-white/10 overflow-x-auto scrollbar-none flex gap-2">
+        <div className="p-3 border-b border-[#05070B]/10 dark:border-white/10 overflow-x-auto scrollbar-none flex gap-2">
           {filterTabs.map((tab) => {
             const Icon = tab.icon;
             const count = records.filter((r) => (tab.id === 'all' ? true : r.type === tab.id)).length;
@@ -194,8 +194,8 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                 onClick={() => setActiveFilter(tab.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all duration-200 active:scale-95 ${
                   isActive
-                    ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A] shadow-sm'
-                    : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-white'
+                    ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm'
+                    : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                     isActive
-                      ? 'bg-black/20 text-white dark:bg-black/20 dark:text-[#070E1A]'
+                      ? 'bg-black/20 text-white dark:bg-black/20 dark:text-white'
                       : 'bg-black/5 dark:bg-white/10 text-inherit'
                   }`}
                 >
@@ -223,7 +223,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
           ) : filteredRecords.length === 0 ? (
             <div className="p-12 text-center select-none">
               <History className="w-8 h-8 text-[#777267]/50 dark:text-[#92998F]/50 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-[#070E1A] dark:text-[#F0F4FA]">
+              <p className="text-sm font-semibold text-[#05070B] dark:text-[#F0F4FA]">
                 No history in this category
               </p>
               <p className="text-xs text-[#777267] dark:text-[#92998F] mt-1">
@@ -250,8 +250,8 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                       onClose();
                     }
                   }}
-                  className={`group relative p-3 rounded-2xl bg-white/60 dark:bg-[#0D1524]/60 border border-[#070E1A]/10 dark:border-white/10 transition-all duration-200 flex items-center justify-between gap-3 ${
-                    isSearch || isPlaylist ? 'cursor-pointer hover:border-[#0E8B9C] dark:hover:border-[#24C7DB]' : ''
+                  className={`group relative p-3 rounded-2xl bg-white/60 dark:bg-[#0D1524]/60 border border-[#05070B]/10 dark:border-white/10 transition-all duration-200 flex items-center justify-between gap-3 ${
+                    isSearch || isPlaylist ? 'cursor-pointer hover:border-[#6202E1] dark:hover:border-[#6202E1]' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -260,7 +260,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                       <img
                         src={item.artworkUrl}
                         alt=""
-                        className="w-11 h-11 rounded-xl object-cover border border-[#070E1A]/10 shrink-0"
+                        className="w-11 h-11 rounded-xl object-cover border border-[#05070B]/10 shrink-0"
                       />
                     ) : (
                       <div
@@ -270,8 +270,8 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                             : isDownload
                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                             : isPlaylist
-                            ? 'bg-[#0E8B9C]/10 text-[#0E8B9C] dark:text-[#24C7DB] border-[#0E8B9C]/20'
-                            : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] border-transparent'
+                            ? 'bg-[#6202E1]/10 text-[#6202E1] dark:text-[#F70E42] border-[#6202E1]/20'
+                            : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F] border-transparent'
                         }`}
                       >
                         {isFailed ? (
@@ -291,11 +291,11 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                     {/* Metadata */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+                        <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                           {item.title}
                         </h4>
                         {item.source && (
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-[#0E8B9C]/10 dark:bg-[#24C7DB]/20 text-[#0E8B9C] dark:text-[#24C7DB] uppercase font-bold shrink-0">
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-[#6202E1]/10 dark:bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] uppercase font-bold shrink-0">
                             {item.source}
                           </span>
                         )}
@@ -329,7 +329,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
                     {isDownload && item.localTrackId && (
                       <button
                         onClick={(e) => handlePlayDownloaded(item, e)}
-                        className="p-2 rounded-xl bg-[#0E8B9C]/15 dark:bg-[#24C7DB]/20 text-[#0E8B9C] dark:text-[#24C7DB] active:scale-95 transition"
+                        className="p-2 rounded-xl bg-[#6202E1]/15 dark:bg-[#6202E1]/20 text-[#6202E1] dark:text-[#F70E42] active:scale-95 transition"
                         title="Play downloaded audio"
                       >
                         <Play className="w-4 h-4 fill-current" />
@@ -338,7 +338,7 @@ export const MusicHistoryModal: React.FC<MusicHistoryModalProps> = ({
 
                     {/* Reopen search arrow */}
                     {isSearch && (
-                      <span className="p-2 text-[#777267] dark:text-[#92998F] group-hover:text-[#0E8B9C] dark:group-hover:text-[#24C7DB] transition">
+                      <span className="p-2 text-[#777267] dark:text-[#92998F] group-hover:text-[#6202E1] dark:group-hover:text-[#F70E42] transition">
                         <ArrowRight className="w-4 h-4" />
                       </span>
                     )}

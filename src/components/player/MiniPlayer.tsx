@@ -39,23 +39,23 @@ export const MiniPlayer: React.FC = () => {
       className="fixed bottom-[calc(5.75rem+max(env(safe-area-inset-bottom,0px),0.75rem))] left-3.5 right-3.5 z-35 max-w-md mx-auto pointer-events-auto select-none"
       onClick={() => setIsFullScreenPlayerOpen(true)}
     >
-      <div className="relative overflow-hidden rounded-[1.8rem] bg-[#0D1626]/92 backdrop-blur-3xl border border-[#24C7DB]/25 shadow-[0_16px_44px_rgba(0,0,0,0.85)] p-2.5 flex items-center gap-3.5 cursor-pointer active:scale-[0.98] transition-all">
+      <div className="relative overflow-hidden rounded-[1.8rem] bg-[#0D1626]/92 backdrop-blur-3xl border border-[#6202E1]/25 shadow-[0_16px_44px_rgba(0,0,0,0.85)] p-2.5 flex items-center gap-3.5 cursor-pointer active:scale-[0.98] transition-all">
         {/* Specular Liquid Top Highlight */}
-        <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#24C7DB]/50 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-5 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#C4009B]/50 to-transparent pointer-events-none" />
 
         {/* BTT signature micro-interaction animation overlay */}
         <BttPlaybackAnimation currentTrigger={bttTrigger} />
 
-        {/* Bottom Micro Scrubber Progress Line in Cyan & Gold */}
+        {/* Bottom Micro Scrubber Progress Line in Signature Gradient */}
         <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-white/10">
           <div
-            className="h-full bg-gradient-to-r from-[#24C7DB] to-[#E5B842] transition-all duration-200"
+            className="h-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] transition-all duration-200"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
         {/* Small Album Artwork */}
-        <div className="w-12 h-12 rounded-xl bg-[#070E1A] shrink-0 overflow-hidden relative shadow-md border border-[#24C7DB]/25 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-[#05070B] shrink-0 overflow-hidden relative shadow-md border border-[#6202E1]/25 flex items-center justify-center">
           {currentTrack.artworkUrl ? (
             <img
               src={currentTrack.artworkUrl}
@@ -73,7 +73,7 @@ export const MiniPlayer: React.FC = () => {
 
           {isLoading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-[#24C7DB] border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-[#6202E1] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
         </div>
@@ -85,12 +85,12 @@ export const MiniPlayer: React.FC = () => {
               {currentTrack.title}
             </h4>
             {isSmartMixBlending && (
-              <span className="px-1.5 py-0.2 rounded bg-[#24C7DB]/20 text-[#24C7DB] text-[9px] font-mono font-bold shrink-0">
+              <span className="px-1.5 py-0.2 rounded bg-[#6202E1]/20 text-[#F70E42] text-[9px] font-mono font-bold shrink-0">
                 Mix
               </span>
             )}
             {isBoosterActive && volumeBooster > 1.0 && (
-              <span className="px-1 py-0.2 rounded bg-[#E5B842]/20 text-[#E5B842] text-[8.5px] font-mono font-bold shrink-0">
+              <span className="px-1 py-0.2 rounded bg-[#F70E42]/20 text-[#F70E42] text-[8.5px] font-mono font-bold shrink-0">
                 {(volumeBooster * 100).toFixed(0)}%
               </span>
             )}
@@ -107,17 +107,17 @@ export const MiniPlayer: React.FC = () => {
         >
           <button
             onClick={handleMiniPlayPause}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-85 ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 active:scale-85 bg-gradient-to-tr from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-[0_0_16px_rgba(247,14,66,0.45)] ${
               activeButton === 'play'
-                ? 'scale-115 bg-[#24C7DB]/30 shadow-[0_0_16px_rgba(36,199,219,0.5)]'
-                : 'hover:bg-white/10'
+                ? 'scale-115 ring-2 ring-white/40 shadow-[0_0_20px_rgba(247,14,66,0.7)]'
+                : 'hover:brightness-110'
             }`}
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5 text-[#24C7DB] fill-[#24C7DB]" />
+              <Pause className="w-5 h-5 text-white fill-white" />
             ) : (
-              <Play className="w-5 h-5 text-[#24C7DB] fill-[#24C7DB] ml-0.5" />
+              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
             )}
           </button>
 
@@ -125,7 +125,7 @@ export const MiniPlayer: React.FC = () => {
             onClick={handleMiniNext}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-85 ${
               activeButton === 'next'
-                ? 'scale-115 bg-[#24C7DB]/30 shadow-[0_0_16px_rgba(36,199,219,0.5)]'
+                ? 'scale-115 bg-[#F70E42]/20 shadow-[0_0_16px_rgba(247,14,66,0.5)]'
                 : 'hover:bg-white/10 text-[#7E8F9E] hover:text-[#F0F4FA]'
             }`}
             aria-label="Next track"

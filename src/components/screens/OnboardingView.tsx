@@ -119,14 +119,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
           />
         </div>
         <span className="absolute -bottom-1 -right-1 px-2.5 py-0.5 rounded-full bg-[var(--btt-accent)] text-black text-[10px] font-extrabold shadow-md font-mono">
-          v1.8.0
+          v2.00
         </span>
       </div>
 
       <div>
         <div className="flex items-center justify-center gap-1.5 mb-1">
           <span className="text-xs font-black tracking-widest uppercase text-[var(--btt-accent)] font-mono">
-            btmu by Ahmed
+            Btmus by Taboubi Ahmed
           </span>
           <span className="text-[10px] font-mono text-zinc-500 bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.2 rounded-md">
             iOS PWA
@@ -145,9 +145,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
         {/* Option 1: Telegram Sync */}
         <button
           onClick={onGoToSync}
-          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#024E5B]/15 border border-zinc-200 dark:border-[#02ABB0]/20 hover:border-[#02ABB0] transition flex items-center gap-3.5 group active:scale-[0.99]"
+          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#6202E1]/15 border border-zinc-200 dark:border-[#F70E42]/20 hover:border-[#F70E42] transition flex items-center gap-3.5 group active:scale-[0.99]"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#035A69]/10 dark:bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-[#6202E1]/10 dark:bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             <Send className="w-5 h-5 ml-0.5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -163,9 +163,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
         {/* Option 2: Local Audio Files */}
         <button
           onClick={onTriggerFileInput}
-          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#024E5B]/15 border border-zinc-200 dark:border-[#02ABB0]/20 hover:border-[#02ABB0] transition flex items-center gap-3.5 group active:scale-[0.99]"
+          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#6202E1]/15 border border-zinc-200 dark:border-[#F70E42]/20 hover:border-[#F70E42] transition flex items-center gap-3.5 group active:scale-[0.99]"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#035A69]/10 dark:bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl bg-[#6202E1]/10 dark:bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             <FolderPlus className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -182,9 +182,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
         <button
           onClick={handleLoadSampleBundle}
           disabled={isLoadingSamples}
-          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#024E5B]/15 border border-zinc-200 dark:border-[#02ABB0]/20 hover:border-[#02ABB0] transition flex items-center gap-3.5 group active:scale-[0.99] disabled:opacity-50"
+          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#6202E1]/15 border border-zinc-200 dark:border-[#F70E42]/20 hover:border-[#F70E42] transition flex items-center gap-3.5 group active:scale-[0.99] disabled:opacity-50"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#035A69]/10 dark:bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-[#6202E1]/10 dark:bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center shrink-0">
             {isLoadingSamples ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
@@ -205,9 +205,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
         <button
           onClick={() => dbFileInputRef.current?.click()}
           disabled={isRestoringDb}
-          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#024E5B]/20 border border-[#02ABB0]/40 hover:border-[#02ABB0] transition flex items-center gap-3.5 group active:scale-[0.99] disabled:opacity-50"
+          className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-[#6202E1]/20 border border-[#F70E42]/40 hover:border-[#F70E42] transition flex items-center gap-3.5 group active:scale-[0.99] disabled:opacity-50"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#02ABB0] text-black flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-md shadow-[#02ABB0]/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-md shadow-[#F70E42]/20">
             {isRestoringDb ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
@@ -219,7 +219,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
               <h4 className="text-xs font-bold text-black dark:text-white font-serif">
                 {isRestoringDb ? 'Restoring Music Database...' : '4. Restore Database from Files App'}
               </h4>
-              <span className="px-1.5 py-0.2 rounded-full bg-[#02ABB0] text-black text-[9px] font-black uppercase">
+              <span className="px-1.5 py-0.2 rounded-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-[9px] font-black uppercase">
                 New
               </span>
             </div>

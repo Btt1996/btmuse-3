@@ -33,7 +33,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-base font-extrabold text-black dark:text-white">btmu</h3>
+              <h3 className="text-base font-extrabold text-black dark:text-white">Btmus</h3>
               <span className="px-1.5 py-0.2 rounded-md bg-zinc-200 dark:bg-zinc-800 text-black dark:text-white text-[10px] font-bold">
                 iOS
               </span>
@@ -49,13 +49,13 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
             </div>
             <p className="text-sm font-semibold text-black dark:text-white">Installed on Home Screen!</p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              btmu is running in standalone mode with notch & Dynamic Island safe area support.
+              Btmus is running in standalone mode with notch & Dynamic Island safe area support.
             </p>
           </div>
         ) : isInstallable ? (
           <div className="space-y-4 my-2">
             <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-              Install btmu onto your device for standalone offline playback, full notch clearance, and lock-screen media controls.
+              Install Btmus onto your device for standalone offline playback, full notch clearance, and lock-screen media controls.
             </p>
             <button
               onClick={async () => {
@@ -71,7 +71,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
         ) : (
           <div className="space-y-4 my-2">
             <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-              To install <strong>btmu</strong> on your <strong>iPhone</strong> with full notch and Dynamic Island support:
+              To install <strong>Btmus</strong> on your <strong>iPhone</strong> with full notch and Dynamic Island support:
             </p>
             <ol className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-950 p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <li className="flex items-start gap-2.5">
@@ -105,7 +105,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
                 <span>iPhone Notch & Dynamic Island Ready</span>
               </div>
               <p className="leading-tight">
-                When opened from the Home Screen, btmu automatically expands into a standalone app without browser bars, keeping all controls clearly below the notch and above the home swipe indicator.
+                When opened from the Home Screen, Btmus automatically expands into a standalone app without browser bars, keeping all controls clearly below the notch and above the home swipe indicator.
               </p>
             </div>
           </div>

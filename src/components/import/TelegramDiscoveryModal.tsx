@@ -158,15 +158,15 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-3xl bg-[#070E1A]/95 dark:bg-[#070E1A]/95 border border-[#0E8B9C]/20 dark:border-[#24C7DB]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="w-full max-w-xl rounded-3xl bg-[#05070B]/95 dark:bg-[#05070B]/95 border border-[#6202E1]/20 dark:border-[#6202E1]/20 shadow-[0_20px_60px_0_rgba(0,0,0,0.6)] flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
+        <div className="p-4 border-b border-[#05070B]/10 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#0D1524]/50 dark:bg-[#0D1524]/50 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#02ABB0]/20 text-[#02ABB0] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-[#6202E1]/20 text-[#F70E42] flex items-center justify-center">
               <Send className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#070E1A] dark:text-[#F0F4FA] tracking-tight">
+              <h2 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA] tracking-tight">
                 Telegram Music Sync Hub
               </h2>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F] font-mono">
@@ -177,20 +177,20 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 text-[#070E1A] dark:text-[#F0F4FA] active:scale-95 transition"
+            className="p-2 rounded-xl bg-[#05070B]/5 dark:bg-white/5 text-[#05070B] dark:text-[#F0F4FA] active:scale-95 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div className="p-3 border-b border-[#070E1A]/10 dark:border-white/10 flex gap-2">
+        <div className="p-3 border-b border-[#05070B]/10 dark:border-white/10 flex gap-2">
           <button
             onClick={() => setActiveTab('preview')}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 ${
               activeTab === 'preview'
-                ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A]'
-                : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
+                ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white'
+                : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
             }`}
           >
             Pre-Connection Preview
@@ -199,8 +199,8 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
             onClick={() => setActiveTab('connect')}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 ${
               activeTab === 'connect'
-                ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A]'
-                : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
+                ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white'
+                : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
             }`}
           >
             {botInfo ? `@${botInfo.username}` : 'Connect Bot'}
@@ -210,8 +210,8 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
               onClick={() => setActiveTab('active_hub')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition active:scale-95 ${
                 activeTab === 'active_hub'
-                  ? 'bg-[#0E8B9C] text-white dark:bg-[#24C7DB] dark:text-[#070E1A]'
-                  : 'bg-[#070E1A]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
+                  ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white'
+                  : 'bg-[#05070B]/5 dark:bg-white/5 text-[#777267] dark:text-[#92998F]'
               }`}
             >
               Bot Audio Files ({discoveredTracks.length})
@@ -224,8 +224,8 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
           {/* TAB 1: PRE-CONNECTION SCANNING EXPERIENCE */}
           {activeTab === 'preview' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#02ABB0]/10 border border-[#02ABB0]/20 text-[#070E1A] dark:text-[#F0F4FA]">
-                <div className="flex items-center gap-2 text-[#02ABB0] font-bold text-xs uppercase tracking-wider mb-1">
+              <div className="p-4 rounded-2xl bg-[#6202E1]/10 border border-[#F70E42]/20 text-[#05070B] dark:text-[#F0F4FA]">
+                <div className="flex items-center gap-2 text-[#F70E42] font-bold text-xs uppercase tracking-wider mb-1">
                   <Sparkles className="w-4 h-4" />
                   Pre-Connection Scanning Experience
                 </div>
@@ -242,18 +242,18 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                   {PREVIEW_PUBLIC_CHANNELS.map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between"
+                      className="p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#05070B]/10 dark:border-white/10 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center font-bold text-xs shrink-0">
                           <FileMusic className="w-5 h-5" />
                         </div>
                         <div>
-                          <h5 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+                          <h5 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">
                             {item.title}
                           </h5>
                           <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
-                            {item.artist} • <span className="font-mono text-[#02ABB0]">{item.channel}</span>
+                            {item.artist} • <span className="font-mono text-[#F70E42]">{item.channel}</span>
                           </p>
                           <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[#777267] font-mono">
                             <span>{formatDuration(item.duration)}</span>
@@ -265,7 +265,7 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
 
                       <button
                         onClick={() => setActiveTab('connect')}
-                        className="px-3 py-1.5 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 hover:bg-[#02ABB0]/20 text-[#02ABB0] text-xs font-semibold transition active:scale-95 shrink-0"
+                        className="px-3 py-1.5 rounded-xl bg-[#05070B]/5 dark:bg-white/5 hover:bg-[#6202E1]/20 text-[#F70E42] text-xs font-semibold transition active:scale-95 shrink-0"
                       >
                         Connect Bot to Sync
                       </button>
@@ -279,8 +279,8 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
           {/* TAB 2: CONNECT BOT STEP */}
           {activeTab === 'connect' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-[#0D1524]/70 dark:bg-[#0D1524]/70 border border-[#070E1A]/10 dark:border-white/10">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] mb-1">
+              <div className="p-4 rounded-2xl bg-[#0D1524]/70 dark:bg-[#0D1524]/70 border border-[#05070B]/10 dark:border-white/10">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] mb-1">
                   <Lock className="w-4 h-4 text-emerald-500" />
                   Secure Architecture Notice
                 </div>
@@ -290,7 +290,7 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] block">
+                <label className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] block">
                   Telegram Bot Token
                 </label>
                 <div className="flex gap-2">
@@ -299,12 +299,12 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                     value={tokenInput}
                     onChange={(e) => setTokenInput(e.target.value)}
                     placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#070E1A]/15 dark:border-white/15 text-xs font-mono text-[#070E1A] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-[#02ABB0]"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#05070B]/15 dark:border-white/15 text-xs font-mono text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-[#F70E42]"
                   />
                   <button
                     onClick={() => verifyToken(tokenInput)}
                     disabled={isVerifying || !tokenInput.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-[#02ABB0] text-white text-xs font-bold active:scale-95 transition shrink-0 disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold active:scale-95 transition shrink-0 disabled:opacity-50 flex items-center gap-1.5"
                   >
                     {isVerifying ? (
                       <>
@@ -356,7 +356,7 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                 <button
                   onClick={() => scanBotUpdates(tokenInput)}
                   disabled={isScanning}
-                  className="px-3 py-1 rounded-xl bg-[#070E1A]/5 dark:bg-white/5 text-xs font-semibold text-[#02ABB0] flex items-center gap-1 active:scale-95 transition"
+                  className="px-3 py-1 rounded-xl bg-[#05070B]/5 dark:bg-white/5 text-xs font-semibold text-[#F70E42] flex items-center gap-1 active:scale-95 transition"
                 >
                   <Loader2 className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
                   <span>Refresh</span>
@@ -376,18 +376,18 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                     return (
                       <div
                         key={item.fileId}
-                        className="p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between gap-3"
+                        className="p-3 rounded-2xl bg-white/70 dark:bg-[#0D1524]/70 border border-[#05070B]/10 dark:border-white/10 flex items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center font-bold text-xs shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center font-bold text-xs shrink-0">
                             <FileMusic className="w-5 h-5" />
                           </div>
                           <div className="min-w-0">
-                            <h5 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+                            <h5 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                               {item.title || item.fileName}
                             </h5>
                             <p className="text-[11px] text-[#777267] dark:text-[#92998F] truncate">
-                              {item.performer || 'Telegram Audio'} • <span className="font-mono text-[#02ABB0]">{item.chatTitle}</span>
+                              {item.performer || 'Telegram Audio'} • <span className="font-mono text-[#F70E42]">{item.chatTitle}</span>
                             </p>
                             <div className="flex items-center gap-2 text-[10px] text-[#777267] font-mono">
                               <span>{formatDuration(item.duration || 0)}</span>
@@ -401,13 +401,13 @@ export const TelegramDiscoveryModal: React.FC<TelegramDiscoveryModalProps> = ({
                             <Check className="w-3.5 h-3.5" /> In Library
                           </span>
                         ) : isDownloading ? (
-                          <span className="px-3 py-1.5 rounded-xl bg-[#02ABB0]/20 text-[#02ABB0] text-xs font-mono font-bold flex items-center gap-1 shrink-0">
+                          <span className="px-3 py-1.5 rounded-xl bg-[#6202E1]/20 text-[#F70E42] text-xs font-mono font-bold flex items-center gap-1 shrink-0">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
                           </span>
                         ) : (
                           <button
                             onClick={() => handleDownloadItem(item)}
-                            className="px-3 py-1.5 rounded-xl bg-[#02ABB0] text-white text-xs font-bold active:scale-95 transition flex items-center gap-1 shrink-0 shadow-xs"
+                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold active:scale-95 transition flex items-center gap-1 shrink-0 shadow-xs"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download</span>

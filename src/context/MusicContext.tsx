@@ -573,7 +573,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     navigator.mediaSession.metadata = new MediaMetadata({
       title: track.title,
       artist: track.artist || 'Unknown Artist',
-      album: track.album || 'btmu by Ahmed',
+      album: track.album || 'Btmus by Taboubi Ahmed',
       artwork,
     });
 
@@ -645,7 +645,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       AudioBridge.setNowPlayingInfo({
         title: track.title,
         artist: track.artist || 'Unknown Artist',
-        album: track.album || 'btmu by Ahmed',
+        album: track.album || 'Btmus by Taboubi Ahmed',
         duration: track.duration || 0,
         currentTime: activeDeck?.currentTime || 0,
         playbackRate: 1.0,

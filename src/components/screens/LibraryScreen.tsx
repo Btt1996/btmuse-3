@@ -154,20 +154,20 @@ export const LibraryScreen: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase font-mono font-black text-[var(--btt-accent)] tracking-wider">
-            btmu Library
+            Btmus Library
           </div>
           <h1 className="text-2xl font-black text-[var(--btt-card-text)] tracking-tight font-display">Music Library</h1>
           <p className="text-xs text-[#777267] dark:text-[#92998F] mt-0.5 flex items-center gap-2">
             <span>{tracks.length} songs</span>
             <span>•</span>
             <span className="flex items-center gap-1">
-              <HardDrive className="w-3 h-3 text-[#0E8B9C] dark:text-[#24C7DB]" />
+              <HardDrive className="w-3 h-3 text-[#6202E1] dark:text-[#F70E42]" />
               {formatFileSize(storageStats.trackBytes)} stored
             </span>
             {analyzedCount > 0 && (
               <>
                 <span>•</span>
-                <span className="flex items-center gap-1 text-[#0E8B9C] dark:text-[#24C7DB]">
+                <span className="flex items-center gap-1 text-[#6202E1] dark:text-[#F70E42]">
                   <Activity className="w-3 h-3" />
                   {analyzedCount} analyzed
                 </span>
@@ -179,7 +179,7 @@ export const LibraryScreen: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleCheckDuplicates}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-[#0E8B9C]/30 dark:border-[#24C7DB]/30 bg-[#0D1524]/70 dark:bg-[#0D1524] text-[#0E8B9C] dark:text-[#24C7DB] hover:bg-[#24C7DB]/20 transition flex items-center gap-1.5 active:scale-95"
+            className="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-[#6202E1]/30 dark:border-[#6202E1]/30 bg-[#0D1524]/70 dark:bg-[#0D1524] text-[#6202E1] dark:text-[#F70E42] hover:bg-[#6202E1]/20 transition flex items-center gap-1.5 active:scale-95"
             title="Scan & remove duplicate songs"
           >
             <Copy className="w-3.5 h-3.5" />
@@ -193,8 +193,8 @@ export const LibraryScreen: React.FC = () => {
             }}
             className={`text-xs font-semibold px-3 py-1.5 rounded-xl transition ${
               isMultiSelectMode
-                ? 'bg-[#070E1A] text-[#0D1524] dark:bg-[#24C7DB] dark:text-[#070E1A]'
-                : 'text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-white'
+                ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white'
+                : 'text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white'
             }`}
           >
             {isMultiSelectMode ? 'Cancel' : 'Select'}
@@ -210,12 +210,12 @@ export const LibraryScreen: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search title, artist, key, BPM..."
-          className="w-full pl-10 pr-9 py-2.5 rounded-2xl bg-[#0D1524]/70 dark:bg-[#0D1524]/90 border border-[#070E1A]/15 dark:border-white/10 text-xs text-[#070E1A] dark:text-[#F0F4FA] placeholder-[#777267] dark:placeholder-[#92998F] focus:outline-none focus:border-[#0E8B9C] dark:focus:border-[#24C7DB] transition shadow-xs"
+          className="w-full pl-10 pr-9 py-2.5 rounded-2xl bg-[#0D1524]/70 dark:bg-[#0D1524]/90 border border-[#05070B]/15 dark:border-white/10 text-xs text-[#05070B] dark:text-[#F0F4FA] placeholder-[#777267] dark:placeholder-[#92998F] focus:outline-none focus:border-[#6202E1] dark:focus:border-[#6202E1] transition shadow-xs"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777267] hover:text-[#070E1A] dark:hover:text-white p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#777267] hover:text-[#05070B] dark:hover:text-white p-1"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -231,11 +231,11 @@ export const LibraryScreen: React.FC = () => {
               onClick={() => setActiveFilter(f)}
               className={`px-3 py-1.5 rounded-full capitalize font-semibold transition flex items-center gap-1 ${
                 activeFilter === f
-                  ? 'bg-[#070E1A] text-[#0D1524] dark:bg-[#24C7DB] dark:text-[#070E1A] shadow-sm'
-                  : 'bg-[#0D1524]/60 dark:bg-[#0D1524]/70 text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-white border border-[#070E1A]/10 dark:border-white/10'
+                  ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm'
+                  : 'bg-[#0D1524]/60 dark:bg-[#0D1524]/70 text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white border border-[#05070B]/10 dark:border-white/10'
               }`}
             >
-              {f === 'analyzed' && <Sparkles className="w-3 h-3 text-[#0E8B9C] dark:text-[#070E1A]" />}
+              {f === 'analyzed' && <Sparkles className="w-3 h-3 text-[#6202E1] dark:text-[#05070B]" />}
               {f === 'all' ? 'All Songs' : f === 'favorites' ? 'Favorites' : f === 'telegram' ? 'Telegram' : 'Smart Mix'}
             </button>
           ))}
@@ -246,7 +246,7 @@ export const LibraryScreen: React.FC = () => {
           <select
             value={activeSort}
             onChange={(e) => setActiveSort(e.target.value as SortOption)}
-            className="appearance-none pl-7 pr-4 py-1.5 rounded-full bg-[#0D1524]/60 dark:bg-[#0D1524]/70 border border-[#070E1A]/10 dark:border-white/10 text-[11px] font-semibold text-[#070E1A] dark:text-[#F0F4FA] focus:outline-none focus:border-[#0E8B9C] dark:focus:border-[#24C7DB] cursor-pointer"
+            className="appearance-none pl-7 pr-4 py-1.5 rounded-full bg-[#0D1524]/60 dark:bg-[#0D1524]/70 border border-[#05070B]/10 dark:border-white/10 text-[11px] font-semibold text-[#05070B] dark:text-[#F0F4FA] focus:outline-none focus:border-[#6202E1] dark:focus:border-[#6202E1] cursor-pointer"
           >
             <option value="recent">Recently Added</option>
             <option value="title">Title (A-Z)</option>
@@ -262,9 +262,9 @@ export const LibraryScreen: React.FC = () => {
 
       {/* Multi-Select Action Bar */}
       {isMultiSelectMode && (
-        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] border border-[#070E1A]/15 dark:border-white/10 text-xs">
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] border border-[#05070B]/15 dark:border-white/10 text-xs">
           <div className="flex items-center gap-2">
-            <button onClick={selectAll} className="text-[#070E1A] dark:text-[#F0F4FA] hover:underline font-bold">
+            <button onClick={selectAll} className="text-[#05070B] dark:text-[#F0F4FA] hover:underline font-bold">
               Select All ({filteredTracks.length})
             </button>
             <span className="text-[#777267]">•</span>
@@ -275,7 +275,7 @@ export const LibraryScreen: React.FC = () => {
             <button
               onClick={() => batchAnalyzeTracks(Array.from(selectedTrackIds))}
               disabled={selectedTrackIds.size === 0}
-              className="px-2.5 py-1.5 rounded-xl bg-[#070E1A] text-[#0D1524] dark:bg-[#24C7DB] dark:text-[#070E1A] disabled:opacity-40 font-semibold flex items-center gap-1 transition"
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white disabled:opacity-40 font-semibold flex items-center gap-1 transition"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Analyze
@@ -296,7 +296,7 @@ export const LibraryScreen: React.FC = () => {
       {filteredTracks.length === 0 ? (
         <div className="text-center py-12 space-y-2">
           <Music className="w-10 h-10 text-[#777267] dark:text-[#92998F] mx-auto opacity-40" />
-          <h4 className="text-sm font-semibold text-[#070E1A] dark:text-[#F0F4FA]">No matching tracks found</h4>
+          <h4 className="text-sm font-semibold text-[#05070B] dark:text-[#F0F4FA]">No matching tracks found</h4>
           <p className="text-xs text-[#777267] max-w-xs mx-auto">
             {searchQuery
               ? `No results for "${searchQuery}". Try another search term.`
@@ -315,18 +315,18 @@ export const LibraryScreen: React.FC = () => {
                 key={track.id}
                 className={`relative flex items-center justify-between p-2.5 rounded-2xl border transition group ${
                   isSelected
-                    ? 'bg-[#0D1524] dark:bg-[#0D1524] border-[#0E8B9C] dark:border-[#24C7DB]'
-                    : 'bg-[#0D1524]/50 dark:bg-[#0D1524]/60 hover:bg-[#0D1524] dark:hover:bg-[#0D1524] border-[#070E1A]/10 dark:border-white/10'
+                    ? 'bg-[#0D1524] dark:bg-[#0D1524] border-[#6202E1] dark:border-[#6202E1]'
+                    : 'bg-[#0D1524]/50 dark:bg-[#0D1524]/60 hover:bg-[#0D1524] dark:hover:bg-[#0D1524] border-[#05070B]/10 dark:border-white/10'
                 }`}
               >
                 {/* Checkbox in multi-select mode */}
                 {isMultiSelectMode && (
                   <button
                     onClick={() => toggleSelectTrack(track.id)}
-                    className="p-1 mr-1 text-[#777267] hover:text-[#070E1A] dark:hover:text-white"
+                    className="p-1 mr-1 text-[#777267] hover:text-[#05070B] dark:hover:text-white"
                   >
                     {isSelected ? (
-                      <CheckSquare className="w-5 h-5 text-[#0E8B9C] dark:text-[#24C7DB] fill-current" />
+                      <CheckSquare className="w-5 h-5 text-[#6202E1] dark:text-[#F70E42] fill-current" />
                     ) : (
                       <Square className="w-5 h-5 text-[#777267] dark:text-[#92998F]" />
                     )}
@@ -344,19 +344,19 @@ export const LibraryScreen: React.FC = () => {
                   }}
                   className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[#070E1A]/10 dark:bg-white/10 shrink-0 overflow-hidden relative flex items-center justify-center border border-[#070E1A]/10 dark:border-white/10">
+                  <div className="w-11 h-11 rounded-xl bg-[#05070B]/10 dark:bg-white/10 shrink-0 overflow-hidden relative flex items-center justify-center border border-[#05070B]/10 dark:border-white/10">
                     {track.artworkUrl ? (
                       <img src={track.artworkUrl} alt={track.title} className="w-full h-full object-cover" />
                     ) : (
                       <Music className="w-5 h-5 text-[#777267] dark:text-[#92998F]" />
                     )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <Play className="w-4 h-4 text-[#24C7DB] fill-current ml-0.5" />
+                      <Play className="w-4 h-4 text-[#F70E42] fill-current ml-0.5" />
                     </div>
                   </div>
 
                   <div className="min-w-0 flex-1 pr-2">
-                    <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA] truncate">
+                    <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA] truncate">
                       {track.title}
                     </h4>
                     <p className="text-[11px] text-[#777267] dark:text-[#92998F] truncate mt-0.5">
@@ -369,7 +369,7 @@ export const LibraryScreen: React.FC = () => {
                       {analysis && (
                         <>
                           <span>•</span>
-                          <span className="px-1.5 py-0.2 rounded bg-[#070E1A]/10 dark:bg-white/10 text-[#0E8B9C] dark:text-[#24C7DB] font-bold">
+                          <span className="px-1.5 py-0.2 rounded bg-[#05070B]/10 dark:bg-white/10 text-[#6202E1] dark:text-[#F70E42] font-bold">
                             {analysis.bpm} BPM • {analysis.camelot}
                           </span>
                         </>
@@ -377,8 +377,8 @@ export const LibraryScreen: React.FC = () => {
                       {track.telegramSource && (
                         <>
                           <span>•</span>
-                          <span className="text-[#070E1A] dark:text-[#F0F4FA] flex items-center gap-0.5 font-sans">
-                            <Send className="w-2.5 h-2.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                          <span className="text-[#05070B] dark:text-[#F0F4FA] flex items-center gap-0.5 font-sans">
+                            <Send className="w-2.5 h-2.5 text-[#6202E1] dark:text-[#F70E42]" />
                             {track.telegramSource.topicName || track.telegramSource.chatTitle || 'Telegram'}
                           </span>
                         </>
@@ -402,7 +402,7 @@ export const LibraryScreen: React.FC = () => {
                       onClick={() =>
                         setActiveActionMenuTrackId((curr) => (curr === track.id ? null : track.id))
                       }
-                      className="p-2 text-[#777267] dark:text-[#92998F] hover:text-[#070E1A] dark:hover:text-white rounded-lg hover:bg-[#070E1A]/10 dark:hover:bg-white/10 transition"
+                      className="p-2 text-[#777267] dark:text-[#92998F] hover:text-[#05070B] dark:hover:text-white rounded-lg hover:bg-[#05070B]/10 dark:hover:bg-white/10 transition"
                       aria-label="Options"
                     >
                       <MoreVertical className="w-4 h-4" />
@@ -410,15 +410,15 @@ export const LibraryScreen: React.FC = () => {
 
                     {/* Popover Action Menu */}
                     {isMenuOpen && (
-                      <div className="absolute right-0 top-10 z-30 w-44 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] border border-[#070E1A]/15 dark:border-white/10 shadow-2xl p-1.5 space-y-0.5 animate-in fade-in duration-150">
+                      <div className="absolute right-0 top-10 z-30 w-44 rounded-2xl bg-[#0D1524] dark:bg-[#0D1524] border border-[#05070B]/15 dark:border-white/10 shadow-2xl p-1.5 space-y-0.5 animate-in fade-in duration-150">
                         <button
                           onClick={() => {
                             addToQueue(track);
                             setActiveActionMenuTrackId(null);
                           }}
-                          className="w-full px-3 py-2 text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
+                          className="w-full px-3 py-2 text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
                         >
-                          <Music className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                          <Music className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                           Add to Queue
                         </button>
                         <button
@@ -426,9 +426,9 @@ export const LibraryScreen: React.FC = () => {
                             playNextInQueue(track);
                             setActiveActionMenuTrackId(null);
                           }}
-                          className="w-full px-3 py-2 text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
+                          className="w-full px-3 py-2 text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
                         >
-                          <Play className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                          <Play className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                           Play Next
                         </button>
                         <button
@@ -436,9 +436,9 @@ export const LibraryScreen: React.FC = () => {
                             setPlaylistTrack(track);
                             setActiveActionMenuTrackId(null);
                           }}
-                          className="w-full px-3 py-2 text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
+                          className="w-full px-3 py-2 text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
                         >
-                          <ListPlus className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                          <ListPlus className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                           Add to Playlist
                         </button>
                         <button
@@ -446,12 +446,12 @@ export const LibraryScreen: React.FC = () => {
                             setDetailTrack(track);
                             setActiveActionMenuTrackId(null);
                           }}
-                          className="w-full px-3 py-2 text-left text-xs text-[#070E1A] dark:text-[#F0F4FA] hover:bg-[#070E1A]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
+                          className="w-full px-3 py-2 text-left text-xs text-[#05070B] dark:text-[#F0F4FA] hover:bg-[#05070B]/10 dark:hover:bg-white/10 rounded-xl flex items-center gap-2 transition"
                         >
-                          <Info className="w-3.5 h-3.5 text-[#0E8B9C] dark:text-[#24C7DB]" />
+                          <Info className="w-3.5 h-3.5 text-[#6202E1] dark:text-[#F70E42]" />
                           Song Info
                         </button>
-                        <div className="h-px bg-[#070E1A]/10 dark:bg-white/10 my-1" />
+                        <div className="h-px bg-[#05070B]/10 dark:bg-white/10 my-1" />
                         <button
                           onClick={() => {
                             setDeleteConfirmTarget({ id: track.id });

@@ -49,7 +49,7 @@ nothing, only shows a message, or (here) is intentionally disabled by quarantine
 
 | # | Feature / screen | File(s) | Status | Evidence |
 |---|---|---|---|---|
-| R1 | Home + Onboarding | `components/screens/HomeScreen.tsx`, `OnboardingView.tsx` | implemented | Recently Played / Favorites / Recently Downloaded carousels, Smart Synchro run with live status, Smart Mix drawer, Import modal, library metrics, online/offline badge. Empty library shows Onboarding with 4 working actions (Telegram sync, file import, demo pack, DB restore). Cosmetic: Onboarding version badge still says **v1.8.0** while the app is 2.00 — stale label, fix when convenient. |
+| R1 | Home + Onboarding | `components/screens/HomeScreen.tsx`, `OnboardingView.tsx` | implemented | Recently Played / Favorites / Recently Downloaded carousels, Smart Synchro run with live status, Smart Mix drawer, Import modal, library metrics, online/offline badge. Empty library shows Onboarding with 4 working actions (Telegram sync, file import, demo pack, DB restore). Fixed 2026-11-22 (premium redesign): Onboarding badge now reads v2.00; header brand is "Btmus by Taboubi Ahmed" with the BT monogram gradient accent. |
 | R2 | Library | `components/screens/LibraryScreen.tsx` | implemented | Search (title/artist/album/file/key/BPM), filters (all/favorites/telegram/analyzed), 7 sort orders, multi-select batch analyze + delete, duplicates scan, per-track menu (queue, play next, add to playlist, info, delete with confirm). |
 | R3 | Search (unified) | `components/screens/SearchScreen.tsx` | implemented | Unified search across YouTube/Spotify/SoundCloud/Telegram/local/Open-CC with source tabs + counts, Spotify playlist detection banner, preview playback, per-track download with progress state machine, history + Telegram Hub modals. Non-local "Add to Queue" honestly toasts "Download track first" instead of pretending to queue. |
 | R4 | Playlists + detail | `components/screens/PlaylistsScreen.tsx`, `PlaylistDetailView.tsx` | implemented | Create, import, rename (inline), delete (confirmed), play-all, shuffle, reorder (up/down), remove track, Smart Mix optimize. |
@@ -168,7 +168,7 @@ must stay closed until:
    call-site-only verification for the reference app.
 8. R20 — React downloads history: add, or explicitly disposition as reference-only.
 
-Cosmetic / non-blocking: Onboarding v1.8.0 badge (R1), X1 index snackbar stale count (F13),
+Cosmetic / non-blocking: X1 index snackbar stale count (F13),
 `x2Benchmark.ts` spotDL wording, `PlaylistDetailScreen` (Flutter) remove-without-confirm.
 
 ## Coordinator dispositions (2026-11-22, added on review — not part of the audit itself)

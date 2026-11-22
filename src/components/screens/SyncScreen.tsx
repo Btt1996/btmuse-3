@@ -352,8 +352,8 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
         try {
           await navigator.share({
             files: [new File([blob], filename, { type: 'application/json' })],
-            title: 'btmu Database',
-            text: 'Here is my btmu library backup.',
+            title: 'Btmus Database',
+            text: 'Here is my Btmus library backup.',
           });
           showToast('Shared database successfully!');
           return;
@@ -424,7 +424,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
       {/* Screen Title */}
       <div>
         <div className="text-[10px] uppercase tracking-widest text-[var(--btt-accent)] font-black font-mono">
-          btmu by Ahmed
+          Btmus by Taboubi Ahmed
         </div>
         <h1 className="text-2xl font-extrabold text-black dark:text-white tracking-tight font-display">Sync & Import</h1>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -433,12 +433,12 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
       </div>
 
       {/* Sub Tabs: 5 Options with Liquid Pill Feel */}
-      <div className="grid grid-cols-5 rounded-2xl bg-zinc-100 dark:bg-[#024E5B]/20 p-1 border border-zinc-200 dark:border-[#02ABB0]/20 text-[10.5px]">
+      <div className="grid grid-cols-5 rounded-2xl bg-zinc-100 dark:bg-[#6202E1]/20 p-1 border border-zinc-200 dark:border-[#F70E42]/20 text-[10.5px]">
         <button
           onClick={() => setActiveTab('import')}
           className={`py-2 rounded-xl font-semibold transition flex flex-col items-center justify-center gap-0.5 ${
             activeTab === 'import'
-              ? 'bg-[#02ABB0] text-black shadow-sm font-bold'
+              ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm font-bold'
               : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
           }`}
         >
@@ -449,7 +449,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           onClick={() => setActiveTab('bot')}
           className={`py-2 rounded-xl font-semibold transition flex flex-col items-center justify-center gap-0.5 ${
             activeTab === 'bot'
-              ? 'bg-[#02ABB0] text-black shadow-sm font-bold'
+              ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm font-bold'
               : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
           }`}
         >
@@ -460,7 +460,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           onClick={() => setActiveTab('manual')}
           className={`py-2 rounded-xl font-semibold transition flex flex-col items-center justify-center gap-0.5 ${
             activeTab === 'manual'
-              ? 'bg-[#02ABB0] text-black shadow-sm font-bold'
+              ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm font-bold'
               : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
           }`}
         >
@@ -471,7 +471,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           onClick={() => setActiveTab('database')}
           className={`py-2 rounded-xl font-semibold transition flex flex-col items-center justify-center gap-0.5 ${
             activeTab === 'database'
-              ? 'bg-[#02ABB0] text-black shadow-sm font-bold'
+              ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm font-bold'
               : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
           }`}
         >
@@ -482,7 +482,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           onClick={() => setActiveTab('guide')}
           className={`py-2 rounded-xl font-semibold transition flex flex-col items-center justify-center gap-0.5 ${
             activeTab === 'guide'
-              ? 'bg-[#02ABB0] text-black shadow-sm font-bold'
+              ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-sm font-bold'
               : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
           }`}
         >
@@ -495,7 +495,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
       {activeTab === 'import' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* 1. SPOTIFY PLAYLIST REVIEW & TRACK DOWNLOAD CARD */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/75 border border-[#0E8B9C]/25 dark:border-[#24C7DB]/30 space-y-4 shadow-sm backdrop-blur-xl">
+          <div className="p-4 sm:p-5 rounded-3xl bg-[#0D1524]/70 dark:bg-[#0D1524]/75 border border-[#6202E1]/25 dark:border-[#6202E1]/30 space-y-4 shadow-sm backdrop-blur-xl">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold shrink-0 shadow-xs">
                 <ListMusic className="w-6 h-6" />
@@ -509,7 +509,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
                     Keyless Embed
                   </span>
                 </div>
-                <h3 className="text-base font-bold text-[#070E1A] dark:text-[#F0F4FA] tracking-tight mt-0.5">
+                <h3 className="text-base font-bold text-[#05070B] dark:text-[#F0F4FA] tracking-tight mt-0.5">
                   Spotify Playlist Inspector & Downloader
                 </h3>
               </div>
@@ -534,7 +534,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
                 value={spotifyUrlInput}
                 onChange={(e) => setSpotifyUrlInput(e.target.value)}
                 placeholder="https://open.spotify.com/playlist/..."
-                className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-[#070E1A]/15 dark:border-white/15 text-xs font-mono text-[#070E1A] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-emerald-500"
+                className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-black/40 border border-[#05070B]/15 dark:border-white/15 text-xs font-mono text-[#05070B] dark:text-[#F0F4FA] placeholder:text-[#777267] focus:outline-none focus:border-emerald-500"
               />
               <button
                 type="submit"
@@ -558,13 +558,13 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           {/* 2. UNIFIED SEARCH & TELEGRAM HUB GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Telegram Music Hub */}
-            <div className="p-4 rounded-3xl bg-[#0D1524]/50 dark:bg-[#0D1524]/60 border border-[#070E1A]/10 dark:border-white/10 space-y-2.5">
+            <div className="p-4 rounded-3xl bg-[#0D1524]/50 dark:bg-[#0D1524]/60 border border-[#05070B]/10 dark:border-white/10 space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#02ABB0]/20 text-[#02ABB0] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#6202E1]/20 text-[#F70E42] flex items-center justify-center shrink-0">
                   <Send className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+                  <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">
                     Telegram Music Hub
                   </h4>
                   <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
@@ -577,7 +577,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               </p>
               <button
                 onClick={() => setIsTelegramDiscoveryOpen(true)}
-                className="w-full py-2 rounded-xl bg-[#02ABB0]/15 hover:bg-[#02ABB0]/25 text-[#02ABB0] text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full py-2 rounded-xl bg-[#6202E1]/15 hover:bg-[#6202E1]/25 text-[#F70E42] text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Open Telegram Hub</span>
@@ -585,13 +585,13 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
             </div>
 
             {/* Persistent Music History */}
-            <div className="p-4 rounded-3xl bg-[#0D1524]/50 dark:bg-[#0D1524]/60 border border-[#070E1A]/10 dark:border-white/10 space-y-2.5">
+            <div className="p-4 rounded-3xl bg-[#0D1524]/50 dark:bg-[#0D1524]/60 border border-[#05070B]/10 dark:border-white/10 space-y-2.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#0E8B9C]/20 text-[#0E8B9C] dark:bg-[#24C7DB]/20 dark:text-[#24C7DB] flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#6202E1]/20 text-[#6202E1] dark:bg-[#6202E1]/20 dark:text-[#F70E42] flex items-center justify-center shrink-0">
                   <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+                  <h4 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">
                     Music & Import History
                   </h4>
                   <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
@@ -604,7 +604,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               </p>
               <button
                 onClick={() => setIsHistoryModalOpen(true)}
-                className="w-full py-2 rounded-xl bg-[#0E8B9C]/15 dark:bg-[#24C7DB]/15 text-[#0E8B9C] dark:text-[#24C7DB] text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full py-2 rounded-xl bg-[#6202E1]/15 dark:bg-[#6202E1]/15 text-[#6202E1] dark:text-[#F70E42] text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5"
               >
                 <History className="w-3.5 h-3.5" />
                 <span>View Complete History</span>
@@ -613,9 +613,9 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           </div>
 
           {/* 3. ADVANCED BATCH IMPORT WIZARD */}
-          <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-black/20 border border-[#070E1A]/10 dark:border-white/10 flex items-center justify-between">
+          <div className="p-3.5 rounded-2xl bg-white/40 dark:bg-black/20 border border-[#05070B]/10 dark:border-white/10 flex items-center justify-between">
             <div>
-              <h5 className="text-xs font-bold text-[#070E1A] dark:text-[#F0F4FA]">
+              <h5 className="text-xs font-bold text-[#05070B] dark:text-[#F0F4FA]">
                 Advanced Batch Import Wizard
               </h5>
               <p className="text-[11px] text-[#777267] dark:text-[#92998F]">
@@ -624,7 +624,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
             </div>
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#070E1A]/10 dark:bg-white/10 hover:bg-[#0E8B9C] hover:text-white dark:hover:bg-[#24C7DB] dark:hover:text-[#070E1A] text-xs font-semibold active:scale-95 transition"
+              className="px-3 py-1.5 rounded-xl bg-[#05070B]/10 dark:bg-white/10 hover:bg-[#6202E1] hover:text-white dark:hover:bg-[#F70E42] dark:hover:text-white text-xs font-semibold active:scale-95 transition"
             >
               Launch Wizard
             </button>
@@ -688,7 +688,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
             </div>
 
             <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              <strong>How it works:</strong> Create a bot with @BotFather on Telegram. Add your bot as an admin to your music channel/chat, or forward music to your bot. btmu reads the audio updates and downloads them straight into your iPhone local storage!
+              <strong>How it works:</strong> Create a bot with @BotFather on Telegram. Add your bot as an admin to your music channel/chat, or forward music to your bot. Btmus reads the audio updates and downloads them straight into your iPhone local storage!
             </div>
           </div>
 
@@ -953,9 +953,9 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
       {activeTab === 'database' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* Card 1: Import DB from Files App */}
-          <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#024E5B]/20 border border-zinc-200 dark:border-[#02ABB0]/30 space-y-3 shadow-sm">
+          <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#6202E1]/20 border border-zinc-200 dark:border-[#F70E42]/30 space-y-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#02ABB0]/20 text-[#02ABB0] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-[#6202E1]/20 text-[#F70E42] flex items-center justify-center shrink-0">
                 <UploadCloud className="w-5 h-5" />
               </div>
               <div>
@@ -976,7 +976,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
             <button
               onClick={() => dbFileRef.current?.click()}
               disabled={isImportingDb}
-              className="w-full py-3 rounded-2xl bg-[#02ABB0] hover:bg-[#01A4BD] text-black text-xs font-bold transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#02ABB0]/20 disabled:opacity-50"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold transition flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#F70E42]/20 disabled:opacity-50"
             >
               {isImportingDb ? (
                 <>
@@ -993,9 +993,9 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
           </div>
 
           {/* Card 2: Export & Share DB */}
-          <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#024E5B]/20 border border-zinc-200 dark:border-[#02ABB0]/30 space-y-3 shadow-sm">
+          <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#6202E1]/20 border border-zinc-200 dark:border-[#F70E42]/30 space-y-3 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-[#035A69]/20 text-[#01A4BD] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-[#6202E1]/20 text-[#F70E42] flex items-center justify-center shrink-0">
                 <Share2 className="w-5 h-5" />
               </div>
               <div>
@@ -1013,7 +1013,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
                 <div className="font-bold text-black dark:text-white">Current Library</div>
                 <div className="text-[11px] text-zinc-500">{tracks.length} songs • {playlists.length} playlists</div>
               </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#02ABB0]/15 text-[#02ABB0] text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-[#6202E1]/15 text-[#F70E42] text-[10px] font-bold">
                 {formatFileSize(storageStats.trackBytes)}
               </span>
             </div>
@@ -1022,18 +1022,18 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               <button
                 onClick={() => handleExportDatabase(false)}
                 disabled={isExportingDb}
-                className="py-2.5 px-3 rounded-xl bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 text-black dark:text-white hover:border-[#02ABB0] text-xs font-semibold transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                className="py-2.5 px-3 rounded-xl bg-white dark:bg-black border border-zinc-300 dark:border-zinc-700 text-black dark:text-white hover:border-[#F70E42] text-xs font-semibold transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
               >
-                <FileText className="w-4 h-4 text-[#02ABB0]" />
+                <FileText className="w-4 h-4 text-[#F70E42]" />
                 <span>Export Metadata (.json)</span>
               </button>
 
               <button
                 onClick={() => handleExportDatabase(true)}
                 disabled={isExportingDb}
-                className="py-2.5 px-3 rounded-xl bg-[#024E5B] text-white hover:bg-[#035A69] text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-sm disabled:opacity-50"
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 shadow-sm disabled:opacity-50"
               >
-                <Share2 className="w-4 h-4 text-[#01A4BD]" />
+                <Share2 className="w-4 h-4 text-[#F70E42]" />
                 <span>Share Full Vault (with Audio)</span>
               </button>
             </div>
@@ -1050,7 +1050,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               <span>Privacy & Telegram Architecture</span>
             </div>
             <p className="leading-relaxed text-zinc-600 dark:text-zinc-400">
-              btmu was architected with privacy and iOS offline-first capabilities as top priorities:
+              Btmus was architected with privacy and iOS offline-first capabilities as top priorities:
             </p>
             <ul className="space-y-2 list-disc list-inside text-zinc-700 dark:text-zinc-300">
               <li>
@@ -1073,7 +1073,7 @@ export const SyncScreen: React.FC<SyncScreenProps> = ({ fileInputRef }) => {
               IndexedDB on iOS supports hundreds of gigabytes depending on your iPhone's free storage. To keep music cached permanently:
             </p>
             <ol className="space-y-1.5 list-decimal list-inside text-zinc-700 dark:text-zinc-300">
-              <li>Add btmu to your Home Screen from Safari.</li>
+              <li>Add Btmus to your Home Screen from Safari.</li>
               <li>Open the app periodically to keep Safari’s persistent storage flag active.</li>
               <li>Check the Settings screen to monitor storage usage and export library metadata backups anytime.</li>
             </ol>

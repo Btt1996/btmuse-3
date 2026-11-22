@@ -49,12 +49,12 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.92 }}
         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-        className="relative w-18 h-18 rounded-full p-1 bg-[#0D1626]/90 backdrop-blur-3xl border border-[#24C7DB]/30 shadow-[0_8px_32px_rgba(0,0,0,0.7)] flex items-center justify-center cursor-pointer select-none group"
+        className="relative w-18 h-18 rounded-full p-1 bg-[#0D1626]/90 backdrop-blur-3xl border border-[#6202E1]/30 shadow-[0_8px_32px_rgba(0,0,0,0.7)] flex items-center justify-center cursor-pointer select-none group"
         title="Tap to adjust Volume & Audio Booster"
         aria-label="Audio dial - tap to expand"
       >
         {/* Specular glass highlight */}
-        <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-[#24C7DB]/20 via-transparent to-white/20 pointer-events-none" />
+        <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-[#6202E1]/20 via-transparent to-white/20 pointer-events-none" />
 
         {/* Semicircle SVG Arcs */}
         <svg className="w-16 h-16 -rotate-90 pointer-events-none" viewBox="0 0 72 72">
@@ -67,16 +67,16 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
             strokeWidth="4"
             strokeLinecap="round"
           />
-          {/* Upper Active (Volume Value - Cyan) */}
+          {/* Upper Active (Volume Value - Pink) */}
           <path
             d="M 36,8 A 28,28 0 0,1 36,64"
             fill="none"
-            stroke="#24C7DB"
+            stroke="#F70E42"
             strokeWidth="4"
             strokeDasharray={circumference}
             strokeDashoffset={volDashoffset}
             strokeLinecap="round"
-            className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(36,199,219,0.5)]"
+            className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(247,14,66,0.5)]"
           />
 
           {/* Lower Track (Booster Background) */}
@@ -88,27 +88,27 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
             strokeWidth="4"
             strokeLinecap="round"
           />
-          {/* Lower Active (Booster Value - Gold) */}
+          {/* Lower Active (Booster Value - Magenta) */}
           <path
             d="M 36,64 A 28,28 0 0,1 36,8"
             fill="none"
-            stroke={isBoosterActive ? '#E5B842' : '#7E8F9E'}
+            stroke={isBoosterActive ? '#C4009B' : '#7E8F9E'}
             strokeWidth="4"
             strokeDasharray={circumference}
             strokeDashoffset={boosterDashoffset}
             strokeLinecap="round"
-            className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(229,184,66,0.5)]"
+            className="transition-all duration-200 drop-shadow-[0_0_6px_rgba(196,0,155,0.5)]"
           />
         </svg>
 
         {/* Center Glass Core */}
-        <div className="absolute inset-3.5 rounded-full bg-[#070E1A]/95 border border-[#24C7DB]/20 shadow-inner flex flex-col items-center justify-center text-center">
+        <div className="absolute inset-3.5 rounded-full bg-[#05070B]/95 border border-[#6202E1]/20 shadow-inner flex flex-col items-center justify-center text-center">
           {isBoosterActive && volumeBooster > 1.05 ? (
             <div className="flex flex-col items-center leading-none">
-              <span className="text-[10px] font-mono font-black text-[#E5B842]">
+              <span className="text-[10px] font-mono font-black text-[#F70E42]">
                 {volumeBooster.toFixed(1)}x
               </span>
-              <span className="text-[7.5px] font-mono font-bold text-[#E5B842] mt-0.5">
+              <span className="text-[7.5px] font-mono font-bold text-[#F70E42] mt-0.5">
                 BOOST
               </span>
             </div>
@@ -144,20 +144,20 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                   exit={{ opacity: 0, y: 40, scale: 0.94 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full max-w-sm rounded-[2.2rem] bg-[#0A1322]/95 backdrop-blur-3xl border border-[#24C7DB]/30 shadow-[0_24px_70px_rgba(0,0,0,0.85)] p-4 sm:p-5 space-y-4 max-h-[85vh] overflow-y-auto"
+                  className="w-full max-w-sm rounded-[2.2rem] bg-[#0A1322]/95 backdrop-blur-3xl border border-[#6202E1]/30 shadow-[0_24px_70px_rgba(0,0,0,0.85)] p-4 sm:p-5 space-y-4 max-h-[85vh] overflow-y-auto"
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between pb-2 border-b border-white/10">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#24C7DB] to-[#0E8B9C] text-[#070E1A] flex items-center justify-center font-bold shadow-md">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white flex items-center justify-center font-bold shadow-md">
                         <Sliders className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="text-xs font-black tracking-wide uppercase text-[#F0F4FA] font-mono">
                           Audio Dial & Booster
                         </div>
-                        <p className="text-[10px] text-[#24C7DB] font-medium flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-[#24C7DB]" />
+                        <p className="text-[10px] text-[#F70E42] font-medium flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-[#F70E42]" />
                           DSP Soft-Knee Limiter Active
                         </p>
                       </div>
@@ -180,10 +180,10 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                   <div className="p-3.5 rounded-2xl bg-[#0D1524]/80 border border-white/10 space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold text-[#F0F4FA]">
                       <span className="flex items-center gap-1.5">
-                        <Volume2 className="w-4 h-4 text-[#24C7DB]" />
+                        <Volume2 className="w-4 h-4 text-[#F70E42]" />
                         <span>Master Volume</span>
                       </span>
-                      <span className="font-mono text-xs font-black text-[#24C7DB]">
+                      <span className="font-mono text-xs font-black text-[#F70E42]">
                         {Math.round(volume * 100)}%
                       </span>
                     </div>
@@ -199,20 +199,20 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                         onMouseUp={() => setIsDraggingSlider(false)}
                         onTouchEnd={() => setIsDraggingSlider(false)}
                         onChange={(e) => setVolume(Number(e.target.value) / 100)}
-                        className="w-full h-3 rounded-full appearance-none cursor-pointer bg-white/15 accent-[#24C7DB]"
+                        className="w-full h-3 rounded-full appearance-none cursor-pointer bg-white/15 accent-[#F70E42]"
                       />
                     </div>
                   </div>
 
                   {/* REAL 3X DIGITAL AUDIO BOOSTER STAGE */}
-                  <div className="p-3.5 rounded-2xl bg-[#0D1524]/80 border border-[#E5B842]/25 space-y-3">
+                  <div className="p-3.5 rounded-2xl bg-[#0D1524]/80 border border-[#F70E42]/25 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-[#F0F4FA]">
-                          <Zap className="w-4 h-4 text-[#E5B842]" />
+                          <Zap className="w-4 h-4 text-[#F70E42]" />
                           <span>Volume Booster (1.0x – 3.0x)</span>
                         </div>
-                        <span className="text-[10px] text-[#E5B842] font-mono">
+                        <span className="text-[10px] text-[#F70E42] font-mono">
                           {isBoosterActive && volumeBooster > 1.0
                             ? `Amplified to ${(volumeBooster * 100).toFixed(0)}%`
                             : 'Standard Line Output'}
@@ -224,7 +224,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                         onClick={() => toggleVolumeBooster()}
                         className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 ${
                           isBoosterActive && volumeBooster > 1.0
-                            ? 'bg-[#E5B842] text-[#070E1A] shadow-[0_0_12px_rgba(229,184,66,0.4)]'
+                            ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white shadow-[0_0_16px_rgba(247,14,66,0.5)]'
                             : 'bg-white/10 text-[#7E8F9E] hover:text-[#F0F4FA]'
                         }`}
                         title="Toggle volume booster"
@@ -238,7 +238,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                     <div className="space-y-1">
                       <div className="flex justify-between text-[11px] font-mono text-[#7E8F9E]">
                         <span>1.0x (100%)</span>
-                        <span className="font-bold text-[#E5B842]">
+                        <span className="font-bold text-[#F70E42]">
                           {(volumeBooster * 100).toFixed(0)}%
                         </span>
                         <span>3.0x (300%)</span>
@@ -254,7 +254,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                         onMouseUp={() => setIsDraggingSlider(false)}
                         onTouchEnd={() => setIsDraggingSlider(false)}
                         onChange={(e) => setVolumeBooster(Number(e.target.value) / 100)}
-                        className="w-full h-3 rounded-full appearance-none cursor-pointer bg-white/15 accent-[#E5B842]"
+                        className="w-full h-3 rounded-full appearance-none cursor-pointer bg-white/15 accent-[#F70E42]"
                       />
                     </div>
 
@@ -269,7 +269,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                             onClick={() => setVolumeBooster(mult)}
                             className={`flex-1 py-1 rounded-lg text-[10.5px] font-mono font-bold transition active:scale-90 border ${
                               isSelected
-                                ? 'bg-[#E5B842] text-[#070E1A] border-[#E5B842] shadow-sm'
+                                ? 'bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white border-transparent shadow-sm'
                                 : 'bg-white/5 text-[#7E8F9E] border-white/10 hover:text-[#F0F4FA]'
                             }`}
                           >
@@ -291,7 +291,7 @@ export const CircularVolumeDial: React.FC<CircularVolumeDialProps> = ({ classNam
                       triggerHaptic();
                       setIsExpanded(false);
                     }}
-                    className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#24C7DB] to-[#0E8B9C] text-[#070E1A] font-bold text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white font-bold text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
                     <span>Done</span>

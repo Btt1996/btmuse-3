@@ -31,8 +31,8 @@ const SettingsScreen = React.lazy(() =>
 function ScreenLoadingFallback() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[50vh] text-center select-none">
-      <div className="w-12 h-12 rounded-2xl bg-[#DFE8F2]/70 dark:bg-[#0E1726]/70 border border-[#0E8B9C]/20 dark:border-[#24C7DB]/30 flex items-center justify-center animate-pulse shadow-sm mb-3">
-        <div className="w-5 h-5 rounded-full border-2 border-[#0E8B9C] dark:border-[#24C7DB] border-t-transparent animate-spin" />
+      <div className="w-12 h-12 rounded-2xl bg-[#DFE8F2]/70 dark:bg-[#0C111B]/70 border border-[#6202E1]/20 dark:border-[#6202E1]/30 flex items-center justify-center animate-pulse shadow-sm mb-3">
+        <div className="w-5 h-5 rounded-full border-2 border-[#6202E1] dark:border-[#6202E1] border-t-transparent animate-spin" />
       </div>
       <p className="text-xs font-mono uppercase tracking-wider text-[#52657A] dark:text-[#7E8F9E]">
         Loading screen...
@@ -155,7 +155,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#EEF3F8] dark:bg-[#070E1A] text-[#0A131F] dark:text-[#F0F4FA] flex flex-col justify-between selection:bg-[#E5B842] selection:text-[#070E1A] dark:selection:bg-[#E5B842] dark:selection:text-[#070E1A] transition-colors duration-300">
+    <div className="min-h-screen min-h-[100dvh] bg-[#EEF3F8] dark:bg-[#05070B] text-[#0A131F] dark:text-[#F0F4FA] flex flex-col justify-between selection:bg-[#F70E42] selection:text-[#05070B] dark:selection:bg-[#F70E42] dark:selection:text-[#05070B] transition-colors duration-300">
       {/* Cold-Start Fast Fluid SplashScreen (dismissed on 1s timer, app renders underneath) */}
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
@@ -169,15 +169,15 @@ function MainLayout() {
         className="hidden"
       />
 
-      {/* iOS Liquid Glass Top Header Bar: btmu by Ahmed */}
-      <header className="sticky top-0 z-30 pt-safe bg-[#DFE8F2]/80 dark:bg-[#0E1726]/85 backdrop-blur-3xl border-b border-[#0A131F]/10 dark:border-white/10 px-4 py-2.5 flex items-center justify-between select-none transition-colors">
+      {/* iOS Liquid Glass Top Header Bar: Btmus by Taboubi Ahmed */}
+      <header className="sticky top-0 z-30 pt-safe bg-[#DFE8F2]/80 dark:bg-[#0C111B]/85 backdrop-blur-3xl border-b border-[#0A131F]/10 dark:border-white/10 px-4 py-2.5 flex items-center justify-between select-none transition-colors">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl overflow-hidden border border-[#24C7DB]/30 shadow-xs shrink-0 bg-[#070E1A]">
+          <div className="w-7 h-7 rounded-xl overflow-hidden border border-[#6202E1]/30 shadow-xs shrink-0 bg-[#05070B]">
             <img src="/app-logo.png" alt="btmu" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
             <span className="font-display font-bold tracking-tight text-[13px] text-[#0A131F] dark:text-[#F0F4FA]">
-              btmu <span className="font-normal text-[11px] text-[#52657A] dark:text-[#7E8F9E]">by Ahmed</span>
+              Btmus <span className="font-normal text-[11px] text-[#52657A] dark:text-[#7E8F9E]">by Taboubi Ahmed</span>
             </span>
           </div>
         </div>
@@ -187,31 +187,31 @@ function MainLayout() {
           {/* Quick Add Audio Button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0E1726] hover:bg-[#24C7DB]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
+            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0C111B] hover:bg-[#6202E1]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
             title="Import audio file"
             aria-label="Import audio"
           >
-            <Plus className="w-4 h-4 text-[#0E8B9C] dark:text-[#24C7DB]" />
+            <Plus className="w-4 h-4 text-[#6202E1] dark:text-[#F70E42]" />
           </button>
 
           {/* Theme Toggle (Light / Dark) */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0E1726] hover:bg-[#24C7DB]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
+            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0C111B] hover:bg-[#6202E1]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle theme"
           >
             {isDarkMode ? (
-              <Sun className="w-4 h-4 text-[#E5B842]" />
+              <Sun className="w-4 h-4 text-[#F70E42]" />
             ) : (
-              <Moon className="w-4 h-4 text-[#0E8B9C]" />
+              <Moon className="w-4 h-4 text-[#6202E1]" />
             )}
           </button>
 
           {/* Settings Drawer Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0E1726] hover:bg-[#24C7DB]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
+            className="p-2 rounded-xl bg-[#DFE8F2] dark:bg-[#0C111B] hover:bg-[#6202E1]/20 text-[#0A131F] dark:text-[#F0F4FA] border border-[#0A131F]/10 dark:border-white/10 transition active:scale-90"
             title="Settings & Preferences"
             aria-label="Settings"
           >
@@ -280,16 +280,16 @@ function MainLayout() {
 
       {/* Liquid Glass Settings Screen Modal */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#EEF3F8] dark:bg-[#070E1A] text-[#0A131F] dark:text-[#F0F4FA] animate-in fade-in slide-in-from-bottom-4 duration-200">
-          <div className="sticky top-0 z-30 pt-safe bg-[#DFE8F2]/90 dark:bg-[#0E1726]/90 backdrop-blur-3xl border-b border-[#0A131F]/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#EEF3F8] dark:bg-[#05070B] text-[#0A131F] dark:text-[#F0F4FA] animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="sticky top-0 z-30 pt-safe bg-[#DFE8F2]/90 dark:bg-[#0C111B]/90 backdrop-blur-3xl border-b border-[#0A131F]/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-display font-bold text-[#0E8B9C] dark:text-[#24C7DB] uppercase tracking-wider">
-                btmu Preferences
+              <span className="text-xs font-display font-bold text-[#6202E1] dark:text-[#F70E42] uppercase tracking-wider">
+                Btmus Preferences
               </span>
             </div>
             <button
               onClick={() => setIsSettingsOpen(false)}
-              className="p-2 rounded-full bg-[#DFE8F2] dark:bg-[#0E1726] border border-[#0A131F]/10 dark:border-white/10 text-[#0A131F] dark:text-[#F0F4FA] active:scale-90 transition"
+              className="p-2 rounded-full bg-[#DFE8F2] dark:bg-[#0C111B] border border-[#0A131F]/10 dark:border-white/10 text-[#0A131F] dark:text-[#F0F4FA] active:scale-90 transition"
               aria-label="Close Settings"
             >
               <X className="w-5 h-5" />

@@ -329,12 +329,12 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
         {/* Modal Top Glass Bar */}
         <div className="p-4 border-b border-zinc-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/50 dark:bg-black/30 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#02ABB0] text-black flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white flex items-center justify-center font-bold">
               <Download className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black tracking-widest text-[#02ABB0] uppercase font-mono">
+                <span className="text-[10px] font-black tracking-widest text-[#F70E42] uppercase font-mono">
                   X1 / X2 ARCHITECTURE
                 </span>
                 <span className="text-[10px] text-zinc-400">• Modular Audio Engine</span>
@@ -348,7 +348,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsBenchmarkOpen(true)}
-              className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-[#02ABB0] transition active:scale-90"
+              className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-[#F70E42] transition active:scale-90"
               title="Run Real Track Benchmark"
             >
               <BarChart3 className="w-4 h-4" />
@@ -372,7 +372,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             <div>
               <label className="text-xs font-bold text-black dark:text-white flex items-center gap-1.5 mb-1.5">
-                <Music className="w-3.5 h-3.5 text-[#02ABB0]" />
+                <Music className="w-3.5 h-3.5 text-[#F70E42]" />
                 Enter Spotify Playlist URL
               </label>
               <div className="space-y-2">
@@ -381,7 +381,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                   placeholder="https://open.spotify.com/playlist/..."
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  className="w-full px-3.5 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs text-black dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#02ABB0] font-mono transition"
+                  className="w-full px-3.5 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-xs text-black dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#F70E42] font-mono transition"
                 />
 
                 <div className="flex items-center justify-between text-[11px] text-zinc-500">
@@ -389,7 +389,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
                       Keyless Resolver Active
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#0E8B9C]/15 text-[#0E8B9C] dark:text-[#24C7DB] text-[10px] font-semibold">
+                    <span className="px-2 py-0.5 rounded-full bg-[#6202E1]/15 text-[#6202E1] dark:text-[#F70E42] text-[10px] font-semibold">
                       SoundCloud Metadata Only
                     </span>
                   </div>
@@ -409,13 +409,13 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
               <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 space-y-2.5 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-black dark:text-white flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5 text-[#02ABB0]" /> Custom Developer Keys (Optional)
+                    <Info className="w-3.5 h-3.5 text-[#F70E42]" /> Custom Developer Keys (Optional)
                   </span>
                   <a
                     href="https://developer.spotify.com/dashboard"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[10px] text-[#02ABB0] hover:underline flex items-center gap-0.5"
+                    className="text-[10px] text-[#F70E42] hover:underline flex items-center gap-0.5"
                   >
                     Spotify Dashboard <ExternalLink className="w-2.5 h-2.5" />
                   </a>
@@ -460,10 +460,10 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
             )}
 
             {/* Benchmark Quick Action Card */}
-            <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-[#024E5B]/20 border border-zinc-200 dark:border-[#02ABB0]/30 flex items-center justify-between">
+            <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-[#6202E1]/10 border border-zinc-200 dark:border-[#F70E42]/30 flex items-center justify-between">
               <div>
                 <div className="font-bold text-black dark:text-white flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5 text-[#02ABB0]" />
+                  <BarChart3 className="w-3.5 h-3.5 text-[#F70E42]" />
                   <span>Test Real Tracks (Requirement 6)</span>
                 </div>
                 <p className="text-[10px] text-zinc-500">Live benchmark across commercial & CC tracks without fake data</p>
@@ -483,7 +483,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                 className="w-full p-3.5 flex items-center justify-between text-xs font-bold text-black dark:text-white bg-zinc-50 dark:bg-zinc-900/60"
               >
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#02ABB0]" />
+                  <Sliders className="w-4 h-4 text-[#F70E42]" />
                   <span>Modular X2 Audio Adapters</span>
                 </div>
                 {showSettingsDrawer ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -512,7 +512,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                           matchingThreshold: parseInt(e.target.value, 10),
                         }))
                       }
-                      className="w-full accent-[#02ABB0]"
+                      className="w-full accent-[#F70E42]"
                     />
                     <p className="text-[10px] text-zinc-500">
                       Matches above threshold download automatically. Medium matches pause for review.
@@ -524,7 +524,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <div className="font-semibold text-black dark:text-white flex items-center gap-1.5">
-                          <Database className="w-3.5 h-3.5 text-[#02ABB0]" />
+                          <Database className="w-3.5 h-3.5 text-[#F70E42]" />
                           <span>Local Library Cache (Priority 1)</span>
                         </div>
                         <div className="text-[10px] text-zinc-500">Reuses existing audio blobs with 0 network usage</div>
@@ -535,14 +535,14 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                         onChange={(e) =>
                           setSettings((prev) => ({ ...prev, preferLocalCache: e.target.checked }))
                         }
-                        className="w-4 h-4 accent-[#02ABB0]"
+                        className="w-4 h-4 accent-[#F70E42]"
                       />
                     </label>
 
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <div className="font-semibold text-black dark:text-white flex items-center gap-1.5">
-                          <Send className="w-3.5 h-3.5 text-[#02ABB0]" />
+                          <Send className="w-3.5 h-3.5 text-[#F70E42]" />
                           <span>Telegram Audio Hub</span>
                         </div>
                         <div className="text-[10px] text-zinc-500">Matches from connected Telegram bot & sync library</div>
@@ -553,7 +553,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                         onChange={(e) =>
                           setSettings((prev) => ({ ...prev, enableTelegramMatch: e.target.checked }))
                         }
-                        className="w-4 h-4 accent-[#02ABB0]"
+                        className="w-4 h-4 accent-[#F70E42]"
                       />
                     </label>
 
@@ -568,7 +568,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                         onChange={(e) =>
                           setSettings((prev) => ({ ...prev, enableJamendo: e.target.checked }))
                         }
-                        className="w-4 h-4 accent-[#02ABB0]"
+                        className="w-4 h-4 accent-[#F70E42]"
                       />
                     </label>
 
@@ -586,7 +586,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                             enableInternetArchive: e.target.checked,
                           }))
                         }
-                        className="w-4 h-4 accent-[#02ABB0]"
+                        className="w-4 h-4 accent-[#F70E42]"
                       />
                     </label>
 
@@ -604,7 +604,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                             enableFMA: e.target.checked,
                           }))
                         }
-                        className="w-4 h-4 accent-[#02ABB0]"
+                        className="w-4 h-4 accent-[#F70E42]"
                       />
                     </label>
 
@@ -641,7 +641,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
             >
               {isLoadingX1 ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#02ABB0]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#F70E42]" />
                   <span>Fetching Playlist Metadata via Official API...</span>
                 </>
               ) : (
@@ -658,7 +658,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
         {step === 'preview' && normalizedPlaylist && (
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {/* Playlist Header Card */}
-            <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#024E5B]/20 border border-zinc-200 dark:border-[#02ABB0]/30 flex items-center gap-3.5">
+            <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-[#6202E1]/10 border border-zinc-200 dark:border-[#F70E42]/30 flex items-center gap-3.5">
               <div className="w-16 h-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 overflow-hidden shrink-0 shadow-md">
                 {normalizedPlaylist.playlistCoverUrl ? (
                   <img
@@ -675,7 +675,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded-full bg-[#02ABB0] text-black text-[9px] font-black uppercase font-mono">
+                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-[9px] font-black uppercase font-mono">
                     {normalizedPlaylist.source.toUpperCase()}
                   </span>
                   <span className="text-[10px] text-zinc-500">
@@ -741,7 +741,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
               </button>
               <button
                 onClick={handleStartX2Import}
-                className="flex-1 py-3 rounded-2xl bg-[#02ABB0] hover:bg-[#01A4BD] text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#02ABB0]/20 active:scale-95 transition"
+                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#F70E42]/25 active:scale-95 transition"
               >
                 <Download className="w-4 h-4" />
                 <span>Start Audio Matching & Download</span>
@@ -757,7 +757,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
             <div className="p-4 rounded-3xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-extrabold text-black dark:text-white flex items-center gap-1.5">
-                  {isExecutingX2 ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02ABB0]" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
+                  {isExecutingX2 ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F70E42]" /> : <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
                   <span>Retrieving Audio Recordings...</span>
                 </span>
                 <span className="font-mono text-zinc-500 text-[11px]">
@@ -768,7 +768,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
               {/* Progress bar */}
               <div className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#02ABB0] transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] transition-all duration-300"
                   style={{
                     width: `${
                       summary.total > 0
@@ -784,7 +784,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                 <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   {summary.completed} Saved
                 </div>
-                <div className="p-1.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                <div className="p-1.5 rounded-xl bg-[#F70E42]/10 text-[#F70E42] dark:text-[#F70E42]">
                   {summary.alreadyLocal} Local
                 </div>
                 <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -808,7 +808,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                       item.status === 'completed'
                         ? 'bg-emerald-500/5 border-emerald-500/30'
                         : item.status === 'already_local'
-                        ? 'bg-cyan-500/5 border-cyan-500/30'
+                        ? 'bg-[#F70E42]/5 border-[#F70E42]/30'
                         : isReview
                         ? 'bg-amber-500/10 border-amber-500/40'
                         : item.status === 'unavailable'
@@ -836,12 +836,12 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                           </span>
                         )}
                         {item.status === 'already_local' && (
-                          <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#F70E42]/20 text-[#F70E42] dark:text-[#F70E42] text-[10px] font-bold">
                             Cached
                           </span>
                         )}
                         {item.status === 'downloading' && (
-                          <span className="px-2 py-0.5 rounded-full bg-[#02ABB0]/20 text-[#02ABB0] text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#6202E1]/20 text-[#F70E42] text-[10px] font-bold">
                             {item.downloadProgress}%
                           </span>
                         )}
@@ -865,7 +865,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                         {canRetry && !isExecutingX2 && (
                           <button
                             onClick={() => handleRetryTrack(item)}
-                            className="p-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-[#02ABB0] hover:text-black transition active:scale-95"
+                            className="p-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 hover:bg-[#6202E1]/20 hover:text-[#F70E42] transition active:scale-95"
                             title="Retry this track individually"
                           >
                             <RefreshCw className="w-3 h-3" />
@@ -961,7 +961,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
         {/* STEP 4: FINAL SUMMARY REPORT */}
         {step === 'summary' && (
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            <div className="p-5 rounded-3xl bg-zinc-100 dark:bg-[#024E5B]/20 border border-zinc-200 dark:border-[#02ABB0]/30 text-center space-y-2">
+            <div className="p-5 rounded-3xl bg-zinc-100 dark:bg-[#6202E1]/10 border border-zinc-200 dark:border-[#F70E42]/30 text-center space-y-2">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
@@ -986,7 +986,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                   <span>Downloaded & Saved:</span>
                   <span className="font-mono font-bold">+{summary.completed - summary.alreadyLocal}</span>
                 </div>
-                <div className="flex justify-between items-center text-cyan-600 dark:text-cyan-400">
+                <div className="flex justify-between items-center text-[#F70E42] dark:text-[#F70E42]">
                   <span>Reused from Verified Local Cache:</span>
                   <span className="font-mono font-bold">{summary.alreadyLocal}</span>
                 </div>
@@ -1037,7 +1037,7 @@ export const PlaylistImportModal: React.FC<PlaylistImportModalProps> = ({
                   }
                   onClose();
                 }}
-                className="flex-1 py-3 rounded-2xl bg-[#02ABB0] text-black font-extrabold text-xs active:scale-95 transition shadow-md shadow-[#02ABB0]/20"
+                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white font-extrabold text-xs active:scale-95 transition shadow-md shadow-[#F70E42]/20"
               >
                 Open Playlist in Library &rarr;
               </button>

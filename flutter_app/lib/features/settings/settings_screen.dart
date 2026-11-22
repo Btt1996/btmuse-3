@@ -5,6 +5,7 @@ import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_logo_mark.dart';
 import 'package:btmu/core/config/x2_config.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
+import 'package:btmu/features/backup/backup_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
 import 'package:btmu/features/storage/storage_dashboard.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
@@ -163,6 +164,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            tileColor: BttColors.bgCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            leading: const Icon(Icons.backup_rounded, color: BttColors.goldAccent),
+            title: const Text('Backup & Restore'),
+            subtitle: const Text('Export your library as JSON or restore from a backup'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BackupScreen()),
             ),
           ),
           const SizedBox(height: 20),

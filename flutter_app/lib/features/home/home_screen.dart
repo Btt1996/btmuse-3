@@ -10,6 +10,7 @@ import 'package:btmu/app/widgets/staggered_entrance.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
+import 'package:btmu/features/history/playback_history_screen.dart';
 import 'package:btmu/features/search/search_screen.dart';
 import 'package:btmu/features/settings/settings_screen.dart';
 import 'package:btmu/features/smart_remix/smart_remix_screen.dart';
@@ -316,9 +317,22 @@ class HomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (recentlyPlayed.isNotEmpty) ...[
-                        Text(
-                          'Recently Played',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Recently Played',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).push(
+                                BttPageRoute<void>(
+                                  builder: (_) => const PlaybackHistoryScreen(),
+                                ),
+                              ),
+                              child: const Text('See all'),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         SizedBox(

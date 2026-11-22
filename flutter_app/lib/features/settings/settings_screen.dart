@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_logo_mark.dart';
 import 'package:btmu/core/config/x2_config.dart';
+import 'package:btmu/core/services/update_service.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/backup/backup_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
@@ -139,6 +141,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          // Phase 6, item 27 — update-check card. Flutter had no update
+          // checking; this card checks GitHub releases via UpdateService.
+          // Honest copy throughout: iOS cannot self-update, so an
+          // available update is a sideload-the-new-IPA pointer, never a
+          // fake install button. Nothing else on this screen changed.
+          const _UpdateCheckCard(),
           const SizedBox(height: 16),
           ListTile(
             tileColor: BttColors.bgCard,
@@ -420,5 +429,244 @@ class _DiagnosticsCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Update-check card (Phase 6, item 27). Checks GitHub releases for
+/// Btt Music 2.00 via [UpdateService] and renders every state honestly:
+///
+/// * up-to-date — current version is the latest release.
+/// * update available — latest tag + release notes + the sideload truth:
+///   iOS cannot self-update, so the card shows the release link (copy
+///   button; `url_launcher` is NOT a dependency) and says to sideload
+///   the new unsigned IPA. There is no install button.
+/// * offline / error — the reason, with a retry.
+/// * no releases yet — GitHub has no releases for the repo; the card
+///   says so instead of claiming "up to date".
+///
+/// The service instance is local: no new provider was added (the
+/// providers file is outside this item's scope); a coordinator can move
+/// it to a provider later without changing this card's behaviour.
+class _UpdateCheckCard extends StatefulWidget {
+  const _UpdateCheckCard();
+
+  @override
+  State<_UpdateCheckCard> createState() => _UpdateCheckCardState();
+}
+
+class _UpdateCheckCardState extends State<_UpdateCheckCard> {
+  final UpdateService _service = UpdateService();
+  UpdateCheckResult? _result;
+  bool _checking = false;
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    try {
+      final result = await _service.checkForUpdates();
+      if (mounted) setState(() => _result = result);
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _copyReleaseLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Release link copied.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: BttColors.bgCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: BttColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.system_update_rounded, color: BttColors.accentViolet),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'App Updates',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: BttColors.bgCardHighlight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Current ${UpdateService.currentVersion}',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_checking) ...[
+            const Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Text('Checking GitHub releases…'),
+              ],
+            ),
+          ] else if (result == null) ...[
+            Text(
+              'Check whether a newer Btt Music release is published on GitHub.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ] else
+            _statusBody(context, result),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _checking ? null : _check,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(
+                    result == null ? 'Check for Updates' : 'Check Again',
+                  ),
+                ),
+              ),
+              if (result?.status == UpdateCheckStatus.updateAvailable &&
+                  result?.releaseUrl != null) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _copyReleaseLink(result!.releaseUrl!),
+                    icon: const Icon(Icons.link_rounded, size: 18),
+                    label: const Text('Copy Release Link'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (result != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Last checked ${_formatCheckedAt(result.checkedAt)}',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _statusBody(BuildContext context, UpdateCheckResult result) {
+    switch (result.status) {
+      case UpdateCheckStatus.upToDate:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.check_circle_rounded, size: 18, color: BttColors.success),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'You’re up to date — ${result.latestTag ?? result.currentVersion} '
+                'is the latest release on GitHub.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+      case UpdateCheckStatus.updateAvailable:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.new_releases_rounded, size: 18, color: BttColors.accentPink),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Update available: ${result.latestTag}'
+                    '${result.releaseName != null ? ' — ${result.releaseName}' : ''}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'iOS cannot self-update — there is no in-app install. '
+              'Sideload the new unsigned IPA from the release page, '
+              'the same way this build was installed.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            if (result.releaseNotes != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 160),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: BttColors.bgCardHighlight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    result.releaseNotes!,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontSize: 12.5),
+                  ),
+                ),
+              ),
+            ],
+            if (result.releaseUrl != null) ...[
+              const SizedBox(height: 8),
+              SelectableText(
+                result.releaseUrl!,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ],
+          ],
+        );
+      case UpdateCheckStatus.offline:
+      case UpdateCheckStatus.error:
+      case UpdateCheckStatus.noReleases:
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline_rounded, size: 18, color: BttColors.warning),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                result.errorMessage ?? 'Could not check for updates.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  String _formatCheckedAt(DateTime at) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final local = at.toLocal();
+    return '${local.year}-${two(local.month)}-${two(local.day)} '
+        '${two(local.hour)}:${two(local.minute)}';
   }
 }

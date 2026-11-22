@@ -4,15 +4,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
+import 'package:btmu/core/services/btt_audio_handler.dart';
 import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
+import 'package:btmu/features/lyrics/lyrics_service.dart';
+import 'package:btmu/features/lyrics/lyrics_view.dart';
 import 'package:btmu/features/smart_remix/smart_remix_screen.dart';
 
-class FullScreenPlayer extends ConsumerWidget {
+enum _PlayerTab { player, lyrics }
+
+class FullScreenPlayer extends ConsumerStatefulWidget {
   const FullScreenPlayer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FullScreenPlayer> createState() => _FullScreenPlayerState();
+}
+
+class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer> {
+  _PlayerTab _tab = _PlayerTab.player;
+
+  // Created once per player lifetime; no provider registration exists for
+  // lyrics yet (app_providers.dart is untouched by this change). Wiring a
+  // lyricsServiceProvider there is a one-line follow-up for the coordinator.
+  final LyricsService _lyricsService = LyricsService();
+
+  @override
+  Widget build(BuildContext context) {
     final handler = ref.watch(audioHandlerProvider);
     final audioSettings = ref.watch(audioSettingsProvider);
 
@@ -86,148 +103,95 @@ class FullScreenPlayer extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const Spacer(),
-                      BttArtwork(
-                        artworkPath: track.artworkPath,
-                        artworkUrl: track.artworkUrl,
-                        size: MediaQuery.of(context).size.width * 0.74,
-                        radius: 26,
-                      ),
-                      const Spacer(),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          track.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.displayMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${track.artist}  ·  ${track.album}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Slider(
-                        value: currentMs,
-                        min: 0.0,
-                        max: maxMs,
-                        onChanged: (v) => handler.seek(Duration(milliseconds: v.round())),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_fmt(position), style: Theme.of(context).textTheme.labelSmall),
-                          Text(
-                            _fmt(Duration(milliseconds: maxMs.round())),
-                            style: Theme.of(context).textTheme.labelSmall,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.shuffle_rounded,
-                              color: handler.isShuffleEnabled
-                                  ? BttColors.cyanAccent
-                                  : BttColors.textMuted,
-                            ),
-                            onPressed: () => handler.setShuffleMode(
-                              handler.isShuffleEnabled
-                                  ? AudioServiceShuffleMode.none
-                                  : AudioServiceShuffleMode.all,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.skip_previous_rounded, size: 38),
-                            onPressed: () => handler.skipToPrevious(),
-                          ),
-                          Container(
-                            width: 68,
-                            height: 68,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [BttColors.cyanAccent, BttColors.greenAccent],
-                              ),
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                color: BttColors.bgObsidian,
-                                size: 36,
-                              ),
-                              onPressed: () => playing ? handler.pause() : handler.play(),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.skip_next_rounded, size: 38),
-                            onPressed: () => handler.skipToNext(),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              handler.repeatMode == AudioServiceRepeatMode.one
-                                  ? Icons.repeat_one_rounded
-                                  : Icons.repeat_rounded,
-                              color: handler.repeatMode == AudioServiceRepeatMode.none
-                                  ? BttColors.textMuted
-                                  : BttColors.goldAccent,
-                            ),
-                            onPressed: () {
-                              final next = switch (handler.repeatMode) {
-                                AudioServiceRepeatMode.none => AudioServiceRepeatMode.all,
-                                AudioServiceRepeatMode.all => AudioServiceRepeatMode.one,
-                                _ => AudioServiceRepeatMode.none,
-                              };
-                              handler.setRepeatMode(next);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const AudioSettingsScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.graphic_eq_rounded, color: BttColors.goldAccent),
-                            label: Text(
-                              'Boost ${audioSettings.boostPercent}%',
-                              style: const TextStyle(color: BttColors.textPrimary),
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const SmartRemixScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.cyanAccent),
-                            label: const Text(
-                              'Smart Remix',
-                              style: TextStyle(color: BttColors.textPrimary),
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 10),
+                      _buildTabSwitcher(context),
+                      const SizedBox(height: 14),
+                      if (_tab == _PlayerTab.player) ...[
+                        const Spacer(),
+                        BttArtwork(
+                          artworkPath: track.artworkPath,
+                          artworkUrl: track.artworkUrl,
+                          size: MediaQuery.of(context).size.width * 0.74,
+                          radius: 26,
+                        ),
+                        const Spacer(),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            track.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.displayMedium,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${track.artist}  ·  ${track.album}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _buildSeekSection(context, handler, position, maxMs, currentMs),
+                        const SizedBox(height: 14),
+                        _buildTransportRow(handler, playing),
+                        const SizedBox(height: 18),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const AudioSettingsScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.graphic_eq_rounded, color: BttColors.goldAccent),
+                              label: Text(
+                                'Boost ${audioSettings.boostPercent}%',
+                                style: const TextStyle(color: BttColors.textPrimary),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => const SmartRemixScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.cyanAccent),
+                              label: const Text(
+                                'Smart Remix',
+                                style: TextStyle(color: BttColors.textPrimary),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ] else ...[
+                        // Lyrics load lazily: LyricsView is only built (and
+                        // only fetches) once this tab is opened.
+                        Expanded(
+                          child: LyricsView(
+                            track: track,
+                            position: position,
+                            duration: Duration(seconds: totalSeconds),
+                            onSeek: (target) => handler.seek(target),
+                            lyricsService: _lyricsService,
+                            onClose: () => setState(() => _tab = _PlayerTab.player),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildSeekSection(context, handler, position, maxMs, currentMs),
+                        const SizedBox(height: 14),
+                        _buildTransportRow(handler, playing),
+                        const SizedBox(height: 10),
+                      ],
                     ],
                   ),
                 );
@@ -236,6 +200,168 @@ class FullScreenPlayer extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildTabSwitcher(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: BttColors.bgCard,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: BttColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          _buildTabButton(
+            label: 'Player',
+            icon: Icons.music_note_rounded,
+            selected: _tab == _PlayerTab.player,
+            onTap: () => setState(() => _tab = _PlayerTab.player),
+          ),
+          _buildTabButton(
+            label: 'Lyrics',
+            icon: Icons.mic_rounded,
+            selected: _tab == _PlayerTab.lyrics,
+            onTap: () => setState(() => _tab = _PlayerTab.lyrics),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? BttColors.cyanAccent.withValues(alpha: 0.18)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeekSection(
+    BuildContext context,
+    BttAudioHandler handler,
+    Duration position,
+    double maxMs,
+    double currentMs,
+  ) {
+    return Column(
+      children: [
+        Slider(
+          value: currentMs,
+          min: 0.0,
+          max: maxMs,
+          onChanged: (v) => handler.seek(Duration(milliseconds: v.round())),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(_fmt(position), style: Theme.of(context).textTheme.labelSmall),
+            Text(
+              _fmt(Duration(milliseconds: maxMs.round())),
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransportRow(BttAudioHandler handler, bool playing) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.shuffle_rounded,
+            color: handler.isShuffleEnabled
+                ? BttColors.cyanAccent
+                : BttColors.textMuted,
+          ),
+          onPressed: () => handler.setShuffleMode(
+            handler.isShuffleEnabled
+                ? AudioServiceShuffleMode.none
+                : AudioServiceShuffleMode.all,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.skip_previous_rounded, size: 38),
+          onPressed: () => handler.skipToPrevious(),
+        ),
+        Container(
+          width: 68,
+          height: 68,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [BttColors.cyanAccent, BttColors.greenAccent],
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+              color: BttColors.bgObsidian,
+              size: 36,
+            ),
+            onPressed: () => playing ? handler.pause() : handler.play(),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.skip_next_rounded, size: 38),
+          onPressed: () => handler.skipToNext(),
+        ),
+        IconButton(
+          icon: Icon(
+            handler.repeatMode == AudioServiceRepeatMode.one
+                ? Icons.repeat_one_rounded
+                : Icons.repeat_rounded,
+            color: handler.repeatMode == AudioServiceRepeatMode.none
+                ? BttColors.textMuted
+                : BttColors.goldAccent,
+          ),
+          onPressed: () {
+            final next = switch (handler.repeatMode) {
+              AudioServiceRepeatMode.none => AudioServiceRepeatMode.all,
+              AudioServiceRepeatMode.all => AudioServiceRepeatMode.one,
+              _ => AudioServiceRepeatMode.none,
+            };
+            handler.setRepeatMode(next);
+          },
+        ),
+      ],
     );
   }
 

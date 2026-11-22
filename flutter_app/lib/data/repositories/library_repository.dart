@@ -32,7 +32,7 @@ class DuplicateTrackFailure extends ValidationFailure {
   final Track existingTrack;
   final String sha256;
 
-  const DuplicateTrackFailure(this.existingTrack, this.sha256)
+  DuplicateTrackFailure(this.existingTrack, this.sha256)
       : super(
           'Already in library: "${existingTrack.title}" by '
           '${existingTrack.artist}.',

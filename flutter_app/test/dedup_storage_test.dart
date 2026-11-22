@@ -81,8 +81,8 @@ void main() {
 
   group('groupTracksBySha256 duplicate detection', () {
     test('groups tracks sharing a hash, ignores singletons', () {
-      const hashA = 'a' * 64;
-      const hashB = 'b' * 64;
+      const hashA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const hashB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
       final groups = groupTracksBySha256([
         _track(id: '1', sha256: hashA),
         _track(id: '2', sha256: hashA),
@@ -103,8 +103,8 @@ void main() {
     });
 
     test('a remaster / re-encode (different hash) is not a duplicate', () {
-      const hashA = 'a' * 64;
-      const hashB = 'c' * 64;
+      const hashA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const hashB = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
       final groups = groupTracksBySha256([
         _track(id: '1', sha256: hashA, title: 'Song', artist: 'Artist'),
         _track(id: '2', sha256: hashB, title: 'Song', artist: 'Artist'),
@@ -113,8 +113,8 @@ void main() {
     });
 
     test('groups are ordered by reclaimable bytes, largest first', () {
-      const hashSmall = 's' * 64;
-      const hashBig = 'l' * 64;
+      const hashSmall = 'ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss';
+      const hashBig = 'llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll';
       final groups = groupTracksBySha256([
         _track(id: '1', sha256: hashSmall, fileSizeBytes: 1000),
         _track(id: '2', sha256: hashSmall, fileSizeBytes: 1000),
@@ -131,7 +131,7 @@ void main() {
 
   group('DuplicateGroup space and keeper rules', () {
     test('reclaimableBytes is total minus the largest copy', () {
-      const hash = 'd' * 64;
+      const hash = 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
       final group = DuplicateGroup(sha256: hash, tracks: [
         _track(id: '1', sha256: hash, fileSizeBytes: 5000),
         _track(id: '2', sha256: hash, fileSizeBytes: 5000),
@@ -142,7 +142,7 @@ void main() {
     });
 
     test('suggested keeper is most-played, newest breaks ties', () {
-      const hash = 'e' * 64;
+      const hash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
       final group = DuplicateGroup(sha256: hash, tracks: [
         _track(id: 'old-played', sha256: hash, playCount: 5, addedAtMs: 1000),
         _track(id: 'new-played', sha256: hash, playCount: 5, addedAtMs: 2000),
@@ -160,7 +160,7 @@ void main() {
 
   group('Duplicate result / failure contract', () {
     test('DuplicateTrackFailure names the existing track and is a ValidationFailure', () {
-      const hash = 'f' * 64;
+      const hash = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
       final existing = _track(id: '1', sha256: hash, title: 'Skyline', artist: 'Btt');
       final failure = DuplicateTrackFailure(existing, hash);
       expect(failure, isA<ValidationFailure>());
@@ -172,10 +172,10 @@ void main() {
     });
 
     test('ImportResult distinguishes imported from duplicate', () {
-      const hash = 'a' * 64;
+      const hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       final existing = _track(id: '1', sha256: hash);
       final ImportResult dup = Duplicate(existing, hash);
-      final ImportResult imported = Imported(_track(id: '2', sha256: 'b' * 64));
+      final ImportResult imported = Imported(_track(id: '2', sha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'));
 
       expect(dup, isA<Duplicate>());
       expect(imported, isA<Imported>());

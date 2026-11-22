@@ -502,8 +502,8 @@ class BackupTrackEntry {
   /// [BackupFormatException]; a missing/empty title or artist is kept and
   /// counted as skipped at restore time, as in Swift.
   factory BackupTrackEntry.fromJson(Map<String, dynamic> json, {required int index}) {
-    String reqString(String key, {String fallback = ''}) {
-      final v = json[key];
+    String reqString(String key, {String fallback = '', String? alias}) {
+      final v = json[key] ?? (alias != null ? json[alias] : null);
       if (v == null) return fallback;
       if (v is! String) {
         throw BackupFormatException('Track #$index: "$key" must be a string.');

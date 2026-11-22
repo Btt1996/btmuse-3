@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
@@ -144,7 +145,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             tooltip: 'Universal Search',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+                BttPageRoute<void>(builder: (_) => const SearchScreen()),
               );
             },
             icon: const Icon(Icons.search_rounded),
@@ -153,7 +154,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             tooltip: 'Downloads Queue',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
+                BttPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
               );
             },
             icon: Badge(
@@ -238,7 +239,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             trailingLabel: 'Bot API',
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const TelegramScreen()),
+                BttPageRoute<void>(builder: (_) => const TelegramScreen()),
               );
             },
           ),
@@ -627,7 +628,7 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
                   onPressed: () {
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+                      BttPageRoute<void>(builder: (_) => const SettingsScreen()),
                     );
                   },
                   icon: const Icon(Icons.tune_rounded),

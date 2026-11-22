@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/app/widgets/btt_logo_mark.dart';
+import 'package:btmu/app/widgets/btt_press_scale.dart';
+import 'package:btmu/app/widgets/staggered_entrance.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
@@ -52,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
               tooltip: 'Universal Search',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+                  BttPageRoute<void>(builder: (_) => const SearchScreen()),
                 );
               },
               icon: const Icon(Icons.search_rounded),
@@ -61,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
               tooltip: 'Downloads',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
+                  BttPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
                 );
               },
               icon: Badge(
@@ -74,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
               tooltip: 'Settings',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+                  BttPageRoute<void>(builder: (_) => const SettingsScreen()),
                 );
               },
               icon: const Icon(Icons.tune_rounded),
@@ -121,7 +124,7 @@ class HomeScreen extends ConsumerWidget {
                       accent: BttColors.greenAccent,
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => const TelegramScreen()),
+                          BttPageRoute<void>(builder: (_) => const TelegramScreen()),
                         );
                       },
                     ),
@@ -135,7 +138,7 @@ class HomeScreen extends ConsumerWidget {
                       accent: BttColors.cyanAccent,
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => const SmartRemixScreen()),
+                          BttPageRoute<void>(builder: (_) => const SmartRemixScreen()),
                         );
                       },
                     ),
@@ -186,7 +189,7 @@ class HomeScreen extends ConsumerWidget {
               InkWell(
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const AudioSettingsScreen()),
+                    BttPageRoute<void>(builder: (_) => const AudioSettingsScreen()),
                   );
                 },
                 borderRadius: BorderRadius.circular(16),
@@ -298,42 +301,48 @@ class HomeScreen extends ConsumerWidget {
                             separatorBuilder: (_, __) => const SizedBox(width: 12),
                             itemBuilder: (context, idx) {
                               final t = recentlyPlayed[idx];
-                              return GestureDetector(
-                                onTap: () => audioHandler.setTrackQueueAndPlay(
-                                  recentlyPlayed,
-                                  initialIndex: idx,
-                                ),
-                                child: SizedBox(
-                                  width: 112,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      BttArtwork(
-                                        artworkPath: t.artworkPath,
-                                        artworkUrl: t.artworkUrl,
-                                        size: 112,
-                                        radius: 16,
+                              return StaggeredEntrance(
+                                index: idx,
+                                key: ValueKey(t.id),
+                                child: BttPressScale(
+                                  child: GestureDetector(
+                                    onTap: () => audioHandler.setTrackQueueAndPlay(
+                                      recentlyPlayed,
+                                      initialIndex: idx,
+                                    ),
+                                    child: SizedBox(
+                                      width: 112,
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          BttArtwork(
+                                            artworkPath: t.artworkPath,
+                                            artworkUrl: t.artworkUrl,
+                                            size: 112,
+                                            radius: 16,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            t.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(fontSize: 13.5),
+                                          ),
+                                          Text(
+                                            t.artist,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(fontSize: 12),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        t.title,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(fontSize: 13.5),
-                                      ),
-                                      Text(
-                                        t.artist,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(fontSize: 12),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -359,19 +368,25 @@ class HomeScreen extends ConsumerWidget {
                       ...tracks.take(10).toList().asMap().entries.map((entry) {
                         final idx = entry.key;
                         final track = entry.value;
-                        return TrackTile(
-                          track: track,
-                          isCurrent: audioHandler.currentTrack?.id == track.id,
-                          onTap: () => audioHandler.setTrackQueueAndPlay(
-                            tracks,
-                            initialIndex: idx,
+                        return StaggeredEntrance(
+                          index: idx,
+                          key: ValueKey(track.id),
+                          child: BttPressScale(
+                            child: TrackTile(
+                              track: track,
+                              isCurrent: audioHandler.currentTrack?.id == track.id,
+                              onTap: () => audioHandler.setTrackQueueAndPlay(
+                                tracks,
+                                initialIndex: idx,
+                              ),
+                              onFavoriteToggle: () async {
+                                await ref
+                                    .read(libraryRepositoryProvider)
+                                    .toggleFavorite(track.id, !track.isFavorite);
+                                ref.invalidate(libraryTracksProvider);
+                              },
+                            ),
                           ),
-                          onFavoriteToggle: () async {
-                            await ref
-                                .read(libraryRepositoryProvider)
-                                .toggleFavorite(track.id, !track.isFavorite);
-                            ref.invalidate(libraryTracksProvider);
-                          },
                         );
                       }),
                     ],

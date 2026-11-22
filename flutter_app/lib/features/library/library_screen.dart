@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
+import 'package:btmu/app/widgets/btt_press_scale.dart';
+import 'package:btmu/app/widgets/staggered_entrance.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
 import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/library/metadata_editor_sheet.dart';
@@ -316,17 +318,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, idx) {
                     final t = filtered[idx];
-                    return TrackTile(
-                      track: t,
-                      isCurrent: handler.currentTrack?.id == t.id,
-                      onTap: () => handler.setTrackQueueAndPlay(filtered, initialIndex: idx),
-                      onFavoriteToggle: () async {
-                        await ref
-                            .read(libraryRepositoryProvider)
-                            .toggleFavorite(t.id, !t.isFavorite);
-                        ref.invalidate(libraryTracksProvider);
-                      },
-                      onMorePressed: () => _showTrackOptions(t),
+                    return StaggeredEntrance(
+                      index: idx,
+                      key: ValueKey(t.id),
+                      child: BttPressScale(
+                        child: TrackTile(
+                          track: t,
+                          isCurrent: handler.currentTrack?.id == t.id,
+                          onTap: () => handler.setTrackQueueAndPlay(filtered, initialIndex: idx),
+                          onFavoriteToggle: () async {
+                            await ref
+                                .read(libraryRepositoryProvider)
+                                .toggleFavorite(t.id, !t.isFavorite);
+                            ref.invalidate(libraryTracksProvider);
+                          },
+                          onMorePressed: () => _showTrackOptions(t),
+                        ),
+                      ),
                     );
                   },
                 );

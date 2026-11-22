@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
@@ -105,7 +106,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
             icon: const Icon(Icons.send_rounded, color: BttColors.greenAccent),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const TelegramScreen()),
+                BttPageRoute<void>(builder: (_) => const TelegramScreen()),
               );
             },
           ),
@@ -202,7 +203,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                             OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
+                                  BttPageRoute<void>(
                                     builder: (_) => const TelegramScreen(),
                                   ),
                                 );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_logo_mark.dart';
@@ -141,7 +142,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Audio Engine & Extreme Boost (300%)'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const AudioSettingsScreen()),
+              BttPageRoute<void>(builder: (_) => const AudioSettingsScreen()),
             ),
           ),
           const SizedBox(height: 8),
@@ -152,7 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Telegram Bot Sync'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const TelegramScreen()),
+              BttPageRoute<void>(builder: (_) => const TelegramScreen()),
             ),
           ),
           const SizedBox(height: 8),
@@ -163,7 +164,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Download Queue & History'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
+              BttPageRoute<void>(builder: (_) => const DownloadHistoryScreen()),
             ),
           ),
           const SizedBox(height: 8),
@@ -175,7 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Export your library as JSON or restore from a backup'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const BackupScreen()),
+              BttPageRoute<void>(builder: (_) => const BackupScreen()),
             ),
           ),
           const SizedBox(height: 20),
@@ -291,7 +292,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const StorageDashboardScreen()),
+              BttPageRoute<void>(builder: (_) => const StorageDashboardScreen()),
             ),
           ),
         ],

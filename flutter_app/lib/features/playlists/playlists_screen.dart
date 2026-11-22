@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/features/playlists/playlist_detail_screen.dart';
@@ -118,7 +119,7 @@ class PlaylistsScreen extends ConsumerWidget {
                 ),
                 onTap: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute<void>(
+                    BttPageRoute<void>(
                       builder: (_) => PlaylistDetailScreen(playlist: pl),
                     ),
                   );

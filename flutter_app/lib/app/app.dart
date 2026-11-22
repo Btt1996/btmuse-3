@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
@@ -59,8 +60,12 @@ class AppShell extends ConsumerWidget {
         backgroundColor: BttColors.bgElevated,
         indicatorColor: BttColors.cyanAccent.withValues(alpha: 0.18),
         selectedIndex: tabIdx,
-        onDestinationSelected: (idx) =>
-            ref.read(currentTabIndexProvider.notifier).state = idx,
+        onDestinationSelected: (idx) {
+          // One light tick per real tab change only — tapping the tab
+          // you are already on stays silent.
+          if (idx != tabIdx) HapticFeedback.selectionClick();
+          ref.read(currentTabIndexProvider.notifier).state = idx;
+        },
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
           NavigationDestination(

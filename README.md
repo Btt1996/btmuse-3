@@ -25,9 +25,10 @@ Telegram sync, Smart Remix, 5-band native EQ, and a native 300% volume boost
 
 **Reference / fallback: the React + Capacitor app** (`src/`, `ios/`, `server.ts`).
 It is the previous generation's web app kept in this repo as a reference
-implementation and a fallback web build — not a second app to ship. It is the
-only path that currently has lyrics (`lyricsService.ts` + `LyricsView.tsx`);
-porting lyrics into the Flutter app is planned work.
+implementation and a fallback web build — not a second app to ship. Lyrics
+live in both paths now: the React `lyricsService.ts` + `LyricsView.tsx`
+(LRCLIB) and the Flutter port (`flutter_app/lib/features/lyrics/`, same
+LRCLIB two-strategy flow with a SQLite cache).
 
 **Native reference (not in this repo):**
 [`Btt1996/BttMusic`](https://github.com/Btt1996/BttMusic) — the parallel SwiftUI
@@ -45,19 +46,19 @@ flutter_app/            Flutter app — the canonical 2.00 app
     data/               models + repositories (library, playlist, history)
     features/           home, library, player, playlists, search, settings,
                         import_center, telegram, x1, x2, smart_remix,
-                        downloads, audio_settings
+                        downloads, audio_settings, lyrics, storage, backup
   ios/Runner/           iOS shell — AudioEnginePlugin.swift (native AVAudioEngine:
                         5-band EQ, DynamicsProcessor boost + limiter, crossfade,
                         MPNowPlayingInfoCenter), Info.plist (UIBackgroundModes: audio)
-  test/                 9 Dart unit tests
+  test/                 12 Dart unit tests
 src/                    React 19 + TypeScript + Vite 8 + Capacitor 8 app (reference)
 ios/                    Capacitor iOS shell + AudioBridgePlugin.swift
 server.ts               Express proxy + X2 backend (Telegram, Spotify, SoundCloud,
                         iTunes, YouTube metadata; SSRF guards; rate limits)
 server/                 X2 provider router
 scripts/                icon generation, full-audit + X2 connectivity verification
-.github/workflows/      flutter-ios-ipa.yml (analyze, test, unsigned IPA;
-                        signed IPA when signing secrets are present)
+.github/workflows/      flutter-ios-ipa.yml (analyze, test, unsigned IPA only;
+                        no signed IPA is built — see Release sequencing)
 ```
 
 ## Features
@@ -75,11 +76,12 @@ scripts/                icon generation, full-audit + X2 connectivity verificati
 | X1 song identification (mic → local fingerprint + MusicBrainz/Deezer/iTunes) | Implemented (Flutter); no ShazamKit/ACRCloud/AudD keys needed |
 | X2 audio acquisition (Audius, Internet Archive, Jamendo, direct URL, RSS, Piped/Invidious via backend) | Implemented; needs a deployed `server.ts` for the relay paths |
 | Smart Remix (BPM/energy DSP, energy-arc sequences) | Implemented |
-| Lyrics (synced LRC + cache) | React only — port to Flutter planned |
+| Lyrics (synced LRC + cache) | Implemented (Flutter + React) |
 | EQ (5-band, native) | Flutter only |
 | 300% volume boost (native gain + limiter, +9.54 dB max, off by default) | Flutter only; **never** via Web Audio in the Capacitor path (it breaks iOS background audio — see commit `7627d41` in the lineage) |
 | Swipe-down to dismiss the fullscreen player | **Not yet implemented** — Phase 2 work |
-| Backup / restore | Planned (port the `BttMusic` JSON backup/restore design) |
+| Backup / restore | Implemented (Flutter; one-JSON export, preview before restore, never-overwrite, metadata-only flagging) |
+| Storage dashboard (per-source usage, SHA-256 duplicate scan, confirmed-only cleanup) | Implemented (Flutter) |
 
 ## What this app does NOT do (honest scope)
 
@@ -109,9 +111,22 @@ flutter test
 
 CI (`.github/workflows/flutter-ios-ipa.yml`, macOS runner) runs `flutter
 analyze`, `flutter test`, verifies `PRODUCT_BUNDLE_IDENTIFIER =
-com.ahmed.btmu`, builds an **unsigned** IPA (`btmu-2.00-unsigned.ipa`), and —
-only when the signing secrets exist — a signed IPA. It runs on pushes and pull
+com.ahmed.btmu`, and builds an **unsigned** IPA (`btmu-2.00-unsigned.ipa`) as
+a check artifact. No signed IPA is built. It runs on pushes and pull
 requests touching `flutter_app/**`.
+
+## Release sequencing — DECISION (Ahmed, 2026-11-22)
+
+**The final deliverable is a REGULAR UNSIGNED IPA. No Apple signing secrets
+are needed and no signed IPA will be pursued.**
+
+- CI checks (`flutter analyze`, `flutter test`) may run on PRs along the way —
+  they are checks, not releases.
+- Do NOT treat any early CI IPA artifact as the release, and do NOT push for a
+  release build mid-way through the phases.
+- The final unsigned IPA (`btmu-2.00-unsigned.ipa`) is built at the END, after
+  all phases are complete and their gates pass.
+- Install via sideloading (AltStore / Sideloadly / TrollStore).
 
 ### React / Capacitor reference app
 
@@ -127,7 +142,7 @@ to `.env` and fill in the backend URLs; never invent a backend URL.
 
 ## Testing — what is verified and what is not
 
-- 9 Dart unit tests exist (`flutter_app/test/`). No test run has been recorded
+- 12 Dart unit tests exist (`flutter_app/test/`). No test run has been recorded
   yet in this repo; CI runs them on every PR.
 - `BttMusic` (SwiftUI) is the only sibling repo with any test evidence, and
   even there audio output was never verified on a device.
@@ -139,19 +154,18 @@ to `.env` and fill in the backend URLs; never invent a backend URL.
 
 ## Blockers (need Ahmed)
 
-1. **Apple signing secrets** (`BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`,
-   `PROVISIONING_PROFILE_BASE64` for `com.ahmed.btmu`, `KEYCHAIN_PASSWORD`,
-   `APPLE_TEAM_ID`) — without them CI can only produce an unsigned IPA
-   (sideload via AltStore / Sideloadly / TrollStore).
-2. **Physical iPhone test** — the device pass above.
-3. **Credentials** (all optional, all server-side or Keychain-only): Spotify
+1. **Physical iPhone test** — the device pass above.
+2. **Credentials** (all optional, all server-side or Keychain-only): Spotify
    developer app, SoundCloud client id, Jamendo client id, Telegram bot token.
-4. **X2 backend deployment** (`X2_BACKEND_URL`) — a Node host for `server.ts`.
+3. **X2 backend deployment** (`X2_BACKEND_URL`) — a Node host for `server.ts`.
    Without it the Piped/Invidious relay and CORS-free proxy paths report
    "Not Configured".
-5. **Logo check** — confirm the v5 Triforce mark (gold-to-cyan gradient,
+4. **Logo check** — confirm the v5 Triforce mark (gold-to-cyan gradient,
    "BTmu by Ahmed") is the artwork in `flutter_app/assets/images/app_logo.png`
    and the app icons before release.
+
+No Apple signing secrets are needed: the release is a regular unsigned IPA
+(see Release sequencing above).
 
 ## Lineage
 

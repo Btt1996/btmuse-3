@@ -36,7 +36,7 @@ class AudioSettingsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: settings.isExtremeBoost
-                    ? BttColors.goldAccent.withValues(alpha: 0.6)
+                    ? BttColors.accentMagenta.withValues(alpha: 0.6)
                     : BttColors.borderSubtle,
               ),
             ),
@@ -51,8 +51,8 @@ class AudioSettingsScreen extends ConsumerWidget {
                       '${settings.boostPercent}%',
                       style: Theme.of(context).textTheme.displayMedium?.copyWith(
                             color: settings.isExtremeBoost
-                                ? BttColors.goldAccent
-                                : BttColors.cyanAccent,
+                                ? BttColors.accentMagenta
+                                : BttColors.accentPink,
                           ),
                     ),
                   ],
@@ -69,7 +69,7 @@ class AudioSettingsScreen extends ConsumerWidget {
                   divisions: 40,
                   value: settings.volumeMultiplier.clamp(1.0, 3.0),
                   activeColor:
-                      settings.isExtremeBoost ? BttColors.goldAccent : BttColors.cyanAccent,
+                      settings.isExtremeBoost ? BttColors.accentMagenta : BttColors.accentPink,
                   onChanged: (v) => apply(settings.copyWith(volumeMultiplier: v)),
                 ),
                 const SizedBox(height: 8),
@@ -82,7 +82,7 @@ class AudioSettingsScreen extends ConsumerWidget {
                       label: Text('${(preset * 100).round()}%'),
                       selected: active,
                       onSelected: (_) => apply(settings.copyWith(volumeMultiplier: preset)),
-                      selectedColor: BttColors.goldAccent.withValues(alpha: 0.25),
+                      selectedColor: BttColors.accentMagenta.withValues(alpha: 0.25),
                     );
                   }).toList(),
                 ),
@@ -142,7 +142,7 @@ class AudioSettingsScreen extends ConsumerWidget {
             title: const Text('Soft-Knee Peak Limiter'),
             subtitle: const Text('Uses native AudioUnit DynamicsProcessor above 100%'),
             value: settings.limiterEnabled,
-            activeThumbColor: BttColors.greenAccent,
+            activeThumbColor: BttColors.success,
             onChanged: (val) => apply(settings.copyWith(limiterEnabled: val)),
           ),
           const SizedBox(height: 10),
@@ -152,7 +152,7 @@ class AudioSettingsScreen extends ConsumerWidget {
             title: const Text('Volume Normalization'),
             subtitle: const Text('Balances loudness differences across quiet tracks'),
             value: settings.normalizeVolume,
-            activeThumbColor: BttColors.cyanAccent,
+            activeThumbColor: BttColors.accentPink,
             onChanged: (val) => apply(settings.copyWith(normalizeVolume: val)),
           ),
           const SizedBox(height: 18),

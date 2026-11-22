@@ -1,5 +1,9 @@
-// ─── Btt Music 2.00 theme tokens ──────────────────────────────────────────
+// ─── Btmus 2.00 theme tokens ────────────────────────────────────────────────
 // Phase 2, Stream C — typography / spacing normalization.
+// Redesign (2026-11-22): BT monogram brand — violet → magenta → pink-red
+// gradient sampled from the new logo. The old cyan / gold / green brand
+// accents are retired; green survives only as the functional `success`
+// color (downloaded / synced / complete states), never as brand.
 //
 // FONTS (unchanged — do not change families, colors, layout, or content):
 //   Body    — Plus Jakarta Sans (GoogleFonts.plusJakartaSansTextTheme)
@@ -45,10 +49,27 @@ class BttColors {
   static const Color borderSubtle = Color(0x1FFFFFFF);
   static const Color borderStrong = Color(0x33FFFFFF);
 
-  // Brand palette extracted directly from original geometric Btt Music logo
-  static const Color cyanAccent = Color(0xFF24C7DB);
-  static const Color goldAccent = Color(0xFFE5B842);
-  static const Color greenAccent = Color(0xFF34D399);
+  // BT monogram brand — gradient sampled from the new logo pixels:
+  // violet #6202E1 → magenta #C4009B → pink-red #F70E42.
+  // accentPink is the primary accent; accentViolet the secondary;
+  // accentMagenta the warm highlight. Use accentGradient wherever the
+  // widget supports a gradient (progress bars, play buttons, primary
+  // surfaces); otherwise use the single accent that fits the context.
+  static const Color accentViolet = Color(0xFF6202E1);
+  static const Color accentMagenta = Color(0xFFC4009B);
+  static const Color accentPink = Color(0xFFF70E42);
+  static const LinearGradient accentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [accentViolet, accentMagenta, accentPink],
+  );
+
+  // Glass surface: white at ~6% over the dark background.
+  static const Color glassSurface = Color(0x0FFFFFFF);
+
+  // Functional state colors — not brand. `success` keeps the old green
+  // value for downloaded / synced / complete states only.
+  static const Color success = Color(0xFF34D399);
 
   static const Color textPrimary = Color(0xFFF8FAFC);
   static const Color textSecondary = Color(0xFF94A3B8);
@@ -56,9 +77,19 @@ class BttColors {
 
   static const Color danger = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
+
+  /// Card depth: black 40%, blur 24, offset (0, 8). Apply to featured /
+  /// playing cards and elevated surfaces; keep flat cards border-only.
+  static const List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: Color(0x66000000),
+      blurRadius: 24,
+      offset: Offset(0, 8),
+    ),
+  ];
 }
 
-/// Spacing scale for Btt Music 2.00 (Phase 2, Stream C).
+/// Spacing scale for Btmus 2.00 (Phase 2, Stream C).
 ///
 /// The only spacing values in the app: 4 / 8 / 12 / 16 / 24 / 32.
 /// Theme-level spacing in this file uses these constants; screen-level
@@ -86,9 +117,9 @@ class BttTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: BttColors.bgObsidian,
       colorScheme: const ColorScheme.dark(
-        primary: BttColors.cyanAccent,
-        secondary: BttColors.goldAccent,
-        tertiary: BttColors.greenAccent,
+        primary: BttColors.accentPink,
+        secondary: BttColors.accentViolet,
+        tertiary: BttColors.accentMagenta,
         surface: BttColors.bgElevated,
         error: BttColors.danger,
         onPrimary: BttColors.bgObsidian,
@@ -129,6 +160,7 @@ class BttTheme {
       cardTheme: CardThemeData(
         color: BttColors.bgCard,
         elevation: 0,
+        shadowColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: BttColors.borderSubtle, width: 1),
@@ -153,14 +185,17 @@ class BttTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: BttColors.cyanAccent, width: 1.5),
+          borderSide: const BorderSide(color: BttColors.accentViolet, width: 1.5),
         ),
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: BttColors.cyanAccent,
+        // SliderThemeData has no gradient-track slot: the solid primary
+        // accent is used here. Custom progress bars (fullscreen player,
+        // mini-player) paint BttColors.accentGradient themselves.
+        activeTrackColor: BttColors.accentPink,
         inactiveTrackColor: BttColors.borderStrong,
-        thumbColor: BttColors.textPrimary,
-        overlayColor: BttColors.cyanAccent.withValues(alpha: 0.18),
+        thumbColor: Colors.white,
+        overlayColor: BttColors.accentPink.withValues(alpha: 0.18),
         trackHeight: BttSpacing.s4,
       ),
       snackBarTheme: SnackBarThemeData(

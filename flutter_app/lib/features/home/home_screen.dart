@@ -30,23 +30,51 @@ class HomeScreen extends ConsumerWidget {
         SliverAppBar(
           pinned: true,
           backgroundColor: BttColors.bgObsidian,
+          toolbarHeight: 64,
           titleSpacing: 16,
           title: Row(
             children: [
               const BttLogoMark(size: 36, rounded: true),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Btt Music', style: Theme.of(context).textTheme.titleLarge),
-                  Text(
-                    'BTmu 2.00 · Offline Hi-Fi',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: BttColors.cyanAccent,
-                        ),
+              Expanded(
+                child: Semantics(
+                  label: 'Btmus by Taboubi Ahmed',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Btmus', style: Theme.of(context).textTheme.displayLarge),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: BttColors.accentPink.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: BttColors.accentPink.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Text(
+                              '2.00',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: BttColors.accentPink,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'by Taboubi Ahmed',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: BttColors.accentPink,
+                            ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -97,7 +125,7 @@ class HomeScreen extends ConsumerWidget {
                       title: 'X1 Recognize',
                       subtitle: 'Identify playing audio',
                       icon: Icons.mic_rounded,
-                      accent: BttColors.cyanAccent,
+                      accent: BttColors.accentPink,
                       onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x1,
                     ),
                   ),
@@ -107,7 +135,7 @@ class HomeScreen extends ConsumerWidget {
                       title: 'X2 Discover',
                       subtitle: 'Multi-source search & URL',
                       icon: Icons.travel_explore_rounded,
-                      accent: BttColors.goldAccent,
+                      accent: BttColors.accentViolet,
                       onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x2,
                     ),
                   ),
@@ -121,7 +149,7 @@ class HomeScreen extends ConsumerWidget {
                       title: 'Telegram Sync',
                       subtitle: 'Import bot audio',
                       icon: Icons.send_rounded,
-                      accent: BttColors.greenAccent,
+                      accent: BttColors.accentMagenta,
                       onTap: () {
                         Navigator.of(context).push(
                           BttPageRoute<void>(builder: (_) => const TelegramScreen()),
@@ -135,7 +163,7 @@ class HomeScreen extends ConsumerWidget {
                       title: 'Smart Remix',
                       subtitle: 'Equal-power DJ flow',
                       icon: Icons.auto_awesome_rounded,
-                      accent: BttColors.cyanAccent,
+                      accent: BttColors.accentPink,
                       onTap: () {
                         Navigator.of(context).push(
                           BttPageRoute<void>(builder: (_) => const SmartRemixScreen()),
@@ -156,12 +184,12 @@ class HomeScreen extends ConsumerWidget {
                     color: BttColors.bgCardHighlight,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: BttColors.greenAccent.withValues(alpha: 0.4),
+                      color: BttColors.accentPink.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.add_circle_rounded, color: BttColors.greenAccent),
+                      const Icon(Icons.add_circle_rounded, color: BttColors.accentPink),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -202,7 +230,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.graphic_eq_rounded, color: BttColors.goldAccent),
+                      const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -421,6 +449,8 @@ class _EngineCard extends StatelessWidget {
     return Material(
       color: BttColors.bgCard,
       borderRadius: BorderRadius.circular(18),
+      elevation: 4,
+      shadowColor: const Color(0x66000000),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),

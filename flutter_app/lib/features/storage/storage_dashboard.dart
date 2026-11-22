@@ -211,7 +211,7 @@ class _StorageSummaryCard extends StatelessWidget {
               Text(
                 formatBytes(stats.totalBytes),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: BttColors.cyanAccent,
+                      color: BttColors.accentPink,
                     ),
               ),
             ],
@@ -222,7 +222,7 @@ class _StorageSummaryCard extends StatelessWidget {
             count: localCount,
             bytes: localBytes,
             totalBytes: stats.totalBytes,
-            color: BttColors.cyanAccent,
+            color: BttColors.accentPink,
           ),
           const SizedBox(height: 8),
           _SourceRow(
@@ -230,7 +230,7 @@ class _StorageSummaryCard extends StatelessWidget {
             count: telegramCount,
             bytes: telegramBytes,
             totalBytes: stats.totalBytes,
-            color: BttColors.greenAccent,
+            color: BttColors.accentMagenta,
           ),
           const SizedBox(height: 8),
           _SourceRow(
@@ -238,7 +238,7 @@ class _StorageSummaryCard extends StatelessWidget {
             count: x2Count,
             bytes: x2Bytes,
             totalBytes: stats.totalBytes,
-            color: BttColors.goldAccent,
+            color: BttColors.accentViolet,
           ),
           const Divider(height: 24),
           Row(
@@ -280,7 +280,7 @@ class _StorageSummaryCard extends StatelessWidget {
               '${formatBytes(stats.duplicateBytesReclaimable)} reclaimable',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontSize: 12,
-                    color: BttColors.goldAccent,
+                    color: BttColors.warning,
                   ),
             ),
           ],
@@ -346,7 +346,7 @@ class _EmptyDuplicatesCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: BttColors.greenAccent),
+          const Icon(Icons.check_circle_rounded, color: BttColors.success),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -487,7 +487,7 @@ class _GroupMemberTile extends StatelessWidget {
                     ' · played ${track.playCount}x'
                     '${isKeeper ? ' · KEEP' : ''}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: isKeeper ? BttColors.greenAccent : null,
+                          color: isKeeper ? BttColors.success : null,
                         ),
                   ),
                 ],

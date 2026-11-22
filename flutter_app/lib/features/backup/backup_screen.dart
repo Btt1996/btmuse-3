@@ -200,7 +200,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.file_upload_rounded, color: BttColors.cyanAccent),
+            leading: const Icon(Icons.file_upload_rounded, color: BttColors.accentPink),
             title: const Text('Export Library Backup'),
             subtitle: const Text('Save the whole library as one .json file'),
             trailing: _busy
@@ -218,7 +218,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.file_download_rounded, color: BttColors.goldAccent),
+            leading: const Icon(Icons.file_download_rounded, color: BttColors.accentViolet),
             title: const Text('Import Backup File'),
             subtitle: const Text('Pick a .json backup to preview before restoring'),
             trailing: const Icon(Icons.chevron_right_rounded),
@@ -244,7 +244,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               style: Theme.of(context)
                   .textTheme
                   .labelSmall
-                  ?.copyWith(color: BttColors.greenAccent),
+                  ?.copyWith(color: BttColors.success),
             ),
           ],
           if (_error != null) ...[
@@ -313,7 +313,7 @@ class _PreviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: BttColors.bgCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: BttColors.cyanAccent.withValues(alpha: 0.45)),
+        border: Border.all(color: BttColors.accentPink.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +363,7 @@ class _PreviewCard extends StatelessWidget {
                       size: 16,
                       color: pl.alreadyExists
                           ? BttColors.textMuted
-                          : BttColors.greenAccent,
+                          : BttColors.accentPink,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -429,7 +429,7 @@ class _PreviewCard extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onConfirm,
                   style: FilledButton.styleFrom(
-                    backgroundColor: BttColors.cyanAccent,
+                    backgroundColor: BttColors.accentPink,
                     foregroundColor: BttColors.bgObsidian,
                   ),
                   child: Text(busy ? 'Restoring…' : 'Restore Backup'),
@@ -481,7 +481,7 @@ class _ReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: BttColors.bgCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: BttColors.greenAccent.withValues(alpha: 0.45)),
+        border: Border.all(color: BttColors.success.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +490,7 @@ class _ReportCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.check_circle_rounded,
-                color: BttColors.greenAccent,
+                color: BttColors.success,
                 size: 20,
               ),
               const SizedBox(width: 8),

@@ -23,67 +23,78 @@ class TrackTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final durStr = _formatDuration(track.durationSeconds);
 
-    return Material(
-      color: isCurrent ? BttColors.bgCardHighlight : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              BttArtwork(
-                artworkPath: track.artworkPath,
-                artworkUrl: track.artworkUrl,
-                size: 52,
-                radius: 12,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: isCurrent
-                                ? BttColors.cyanAccent
-                                : BttColors.textPrimary,
-                          ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${track.artist}  ·  ${track.format}$durStr',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+    // Playing card: 1.5 px gradient border + card depth. The wrapper is
+    // always present (transparent when not playing) so a track becoming
+    // current never shifts the list by the border width.
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isCurrent ? BttColors.accentGradient : null,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: isCurrent ? BttColors.cardShadow : null,
+      ),
+      padding: const EdgeInsets.all(1.5),
+      child: Material(
+        color: isCurrent ? BttColors.bgCardHighlight : Colors.transparent,
+        borderRadius: BorderRadius.circular(16.5),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16.5),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                BttArtwork(
+                  artworkPath: track.artworkPath,
+                  artworkUrl: track.artworkUrl,
+                  size: 52,
+                  radius: 12,
                 ),
-              ),
-              if (onFavoriteToggle != null)
-                IconButton(
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: Icon(
-                    track.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: track.isFavorite ? BttColors.goldAccent : BttColors.textMuted,
-                    size: 21,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        track.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: isCurrent
+                                  ? BttColors.accentPink
+                                  : BttColors.textPrimary,
+                            ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${track.artist}  ·  ${track.format}$durStr',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                  onPressed: onFavoriteToggle,
                 ),
-              if (onMorePressed != null)
-                IconButton(
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  icon: const Icon(
-                    Icons.more_horiz_rounded,
-                    color: BttColors.textSecondary,
+                if (onFavoriteToggle != null)
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    icon: Icon(
+                      track.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: track.isFavorite ? BttColors.accentMagenta : BttColors.textMuted,
+                      size: 21,
+                    ),
+                    onPressed: onFavoriteToggle,
                   ),
-                  onPressed: onMorePressed,
-                ),
-            ],
+                if (onMorePressed != null)
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                    icon: const Icon(
+                      Icons.more_horiz_rounded,
+                      color: BttColors.textSecondary,
+                    ),
+                    onPressed: onMorePressed,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

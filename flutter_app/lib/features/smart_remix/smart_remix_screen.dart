@@ -46,7 +46,7 @@ class SmartRemixScreen extends ConsumerWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Enable Continuous Equal-Power Crossfade'),
             subtitle: Text('Crossfade overlap: ${config.crossfadeSeconds}s'),
-            activeThumbColor: BttColors.cyanAccent,
+            activeThumbColor: BttColors.accentPink,
             value: config.enabled,
             onChanged: (val) => updateConfig(config.copyWith(enabled: val)),
           ),
@@ -88,13 +88,13 @@ class SmartRemixScreen extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                   side: BorderSide(
-                    color: selected ? BttColors.cyanAccent : BttColors.borderSubtle,
+                    color: selected ? BttColors.accentPink : BttColors.borderSubtle,
                   ),
                 ),
                 title: Text(_modeLabel(m)),
                 subtitle: Text(_modeDesc(m)),
                 trailing: selected
-                    ? const Icon(Icons.check_circle_rounded, color: BttColors.cyanAccent)
+                    ? const Icon(Icons.check_circle_rounded, color: BttColors.accentPink)
                     : null,
                 onTap: () => updateConfig(config.copyWith(mode: m)),
               ),
@@ -120,7 +120,7 @@ class SmartRemixScreen extends ConsumerWidget {
                     }
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: BttColors.cyanAccent,
+              backgroundColor: BttColors.accentPink,
               foregroundColor: BttColors.bgObsidian,
               minimumSize: const Size.fromHeight(50),
             ),

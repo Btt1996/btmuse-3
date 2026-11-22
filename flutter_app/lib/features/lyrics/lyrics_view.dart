@@ -146,7 +146,7 @@ class _LyricsViewState extends State<LyricsView> {
       decoration: BoxDecoration(
         color: BttColors.bgElevated,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: BttColors.cyanAccent.withValues(alpha: 0.25)),
+        border: Border.all(color: BttColors.accentPink.withValues(alpha: 0.25)),
       ),
       child: Column(
         children: [
@@ -167,7 +167,7 @@ class _LyricsViewState extends State<LyricsView> {
             width: 26,
             height: 26,
             decoration: BoxDecoration(
-              color: BttColors.cyanAccent,
+              color: BttColors.accentPink,
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
@@ -181,7 +181,7 @@ class _LyricsViewState extends State<LyricsView> {
             'LYRICS',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   letterSpacing: 1.6,
-                  color: BttColors.cyanAccent,
+                  color: BttColors.accentPink,
                 ),
           ),
           if (_lyrics?.hasSyncedLyrics ?? false) ...[
@@ -189,7 +189,7 @@ class _LyricsViewState extends State<LyricsView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: BttColors.cyanAccent,
+                color: BttColors.accentPink,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: const Text(
@@ -209,7 +209,7 @@ class _LyricsViewState extends State<LyricsView> {
               Icons.refresh_rounded,
               color: _isLoading
                   ? BttColors.textMuted
-                  : BttColors.cyanAccent,
+                  : BttColors.accentPink,
             ),
             tooltip: 'Refresh lyrics',
             onPressed:
@@ -236,7 +236,7 @@ class _LyricsViewState extends State<LyricsView> {
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
-                color: BttColors.cyanAccent,
+                color: BttColors.accentPink,
                 strokeWidth: 3,
               ),
             ),
@@ -276,7 +276,7 @@ class _LyricsViewState extends State<LyricsView> {
                 ),
                 decoration: isActive
                     ? BoxDecoration(
-                        color: BttColors.cyanAccent.withValues(alpha: 0.14),
+                        color: BttColors.accentPink.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(12),
                       )
                     : null,
@@ -288,7 +288,7 @@ class _LyricsViewState extends State<LyricsView> {
                         isActive ? FontWeight.w800 : FontWeight.w500,
                     height: 1.4,
                     color: isActive
-                        ? BttColors.cyanAccent
+                        ? BttColors.accentPink
                         : isPast
                             ? BttColors.textSecondary
                             : BttColors.textMuted,
@@ -338,13 +338,13 @@ class _LyricsViewState extends State<LyricsView> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: BttColors.cyanAccent.withValues(alpha: 0.14),
+                color: BttColors.accentPink.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 offline ? Icons.wifi_off_rounded : Icons.music_note_rounded,
                 size: 26,
-                color: BttColors.cyanAccent,
+                color: BttColors.accentPink,
               ),
             ),
             const SizedBox(height: 14),
@@ -364,7 +364,7 @@ class _LyricsViewState extends State<LyricsView> {
             FilledButton(
               onPressed: _isLoading ? null : () => _loadLyrics(forceRefresh: true),
               style: FilledButton.styleFrom(
-                backgroundColor: BttColors.cyanAccent,
+                backgroundColor: BttColors.accentPink,
                 foregroundColor: BttColors.bgObsidian,
               ),
               child: Text(offline ? 'Try Again' : 'Search Again'),
@@ -395,7 +395,7 @@ class _LyricsViewState extends State<LyricsView> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: BttColors.cyanAccent,
+                color: BttColors.accentPink,
               ),
             ),
         ],

@@ -87,7 +87,7 @@ class DownloadHistoryScreen extends ConsumerWidget {
                           else if (task.stage == DownloadStage.failed ||
                               task.stage == DownloadStage.cancelled)
                             IconButton(
-                              icon: const Icon(Icons.refresh_rounded, color: BttColors.cyanAccent),
+                              icon: const Icon(Icons.refresh_rounded, color: BttColors.accentPink),
                               tooltip: notifier.canRetry(task.id)
                                   ? 'Retry download'
                                   : 'Retry unavailable — this download is from a previous session. Re-queue it from its source.',
@@ -96,7 +96,7 @@ class DownloadHistoryScreen extends ConsumerWidget {
                                   : null,
                             )
                           else
-                            const Icon(Icons.check_circle_rounded, color: BttColors.greenAccent),
+                            const Icon(Icons.check_circle_rounded, color: BttColors.success),
                         ],
                       ),
                       if (task.isActive) ...[

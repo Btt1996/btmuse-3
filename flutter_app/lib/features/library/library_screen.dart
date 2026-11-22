@@ -88,7 +88,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_rounded, color: BttColors.cyanAccent),
+              leading: const Icon(Icons.edit_rounded, color: BttColors.accentPink),
               title: const Text('Edit Metadata'),
               onTap: () {
                 Navigator.of(ctx).pop();
@@ -107,7 +107,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.playlist_add_rounded, color: BttColors.goldAccent),
+              leading: const Icon(Icons.playlist_add_rounded, color: BttColors.accentViolet),
               title: const Text('Add to Playlist'),
               onTap: () {
                 Navigator.of(ctx).pop();
@@ -208,9 +208,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     label: Text(label),
                     selected: selected,
                     onSelected: (_) => setState(() => _segment = label),
-                    selectedColor: BttColors.cyanAccent.withValues(alpha: 0.2),
+                    selectedColor: BttColors.accentPink.withValues(alpha: 0.2),
                     labelStyle: TextStyle(
-                      color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+                      color: selected ? BttColors.accentPink : BttColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -234,7 +234,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       Text(
                         '${stats.duplicateGroupsCount} duplicate alert(s)',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: BttColors.goldAccent,
+                              color: BttColors.warning,
                             ),
                       ),
                   ],
@@ -301,7 +301,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           backgroundColor: BttColors.bgCard,
                           child: Icon(
                             _segment == 'Artists' ? Icons.person_rounded : Icons.album_rounded,
-                            color: BttColors.cyanAccent,
+                            color: BttColors.accentPink,
                           ),
                         ),
                         title: Text(name),

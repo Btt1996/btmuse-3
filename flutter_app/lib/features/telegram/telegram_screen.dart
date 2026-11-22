@@ -146,7 +146,7 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
                 FilledButton.icon(
                   onPressed: _loading ? null : _verifyAndScan,
                   style: FilledButton.styleFrom(
-                    backgroundColor: BttColors.greenAccent,
+                    backgroundColor: BttColors.accentPink,
                     foregroundColor: BttColors.bgObsidian,
                     minimumSize: const Size.fromHeight(48),
                   ),
@@ -176,7 +176,7 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
             ListTile(
               tileColor: BttColors.bgCardHighlight,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              leading: const Icon(Icons.verified_user_rounded, color: BttColors.greenAccent),
+              leading: const Icon(Icons.verified_user_rounded, color: BttColors.success),
               title: Text('@${_identity!.username}'),
               subtitle: Text('${_identity!.firstName} · ${_entries.length} audio file(s) found'),
             ),
@@ -211,7 +211,7 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
                           const Icon(Icons.block_rounded, color: BttColors.danger)
                         else if (progress == null)
                           IconButton(
-                            icon: const Icon(Icons.download_rounded, color: BttColors.cyanAccent),
+                            icon: const Icon(Icons.download_rounded, color: BttColors.accentPink),
                             onPressed: () => _downloadEntry(entry),
                           )
                         else

@@ -97,7 +97,7 @@ class _MetadataEditorSheetState extends State<MetadataEditorSheet> {
                     if (context.mounted) Navigator.of(context).pop();
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: BttColors.cyanAccent,
+              backgroundColor: BttColors.accentPink,
               foregroundColor: BttColors.bgObsidian,
               minimumSize: const Size.fromHeight(48),
             ),

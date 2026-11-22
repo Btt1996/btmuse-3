@@ -119,7 +119,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Btt Music (BTmu)', style: Theme.of(context).textTheme.titleLarge),
+                      Text('Btmus by Taboubi Ahmed', style: Theme.of(context).textTheme.titleLarge),
                       Text(
                         'Version 2.00 · com.ahmed.btmu',
                         style: Theme.of(context).textTheme.labelSmall,
@@ -138,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.graphic_eq_rounded, color: BttColors.goldAccent),
+            leading: const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
             title: const Text('Audio Engine & Extreme Boost (300%)'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -149,7 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.send_rounded, color: BttColors.greenAccent),
+            leading: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
             title: const Text('Telegram Bot Sync'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -160,7 +160,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.downloading_rounded, color: BttColors.cyanAccent),
+            leading: const Icon(Icons.downloading_rounded, color: BttColors.accentPink),
             title: const Text('Download Queue & History'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -171,7 +171,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.backup_rounded, color: BttColors.goldAccent),
+            leading: const Icon(Icons.backup_rounded, color: BttColors.accentViolet),
             title: const Text('Backup & Restore'),
             subtitle: const Text('Export your library as JSON or restore from a backup'),
             trailing: const Icon(Icons.chevron_right_rounded),
@@ -192,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: x2Config.isBackendConfigured
-                      ? BttColors.greenAccent.withValues(alpha: 0.16)
+                      ? BttColors.success.withValues(alpha: 0.16)
                       : BttColors.warning.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -201,7 +201,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: x2Config.isBackendConfigured ? BttColors.greenAccent : BttColors.warning,
+                    color: x2Config.isBackendConfigured ? BttColors.success : BttColors.warning,
                   ),
                 ),
               ),
@@ -217,7 +217,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             controller: _backendCtrl,
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
-              labelText: 'X2_BACKEND_URL (Deployed Btt Music Server)',
+              labelText: 'X2_BACKEND_URL (Deployed Btmus Server)',
               hintText: 'Leave empty if not deployed (never invented)',
             ),
           ),
@@ -383,7 +383,7 @@ class _DiagnosticsCard extends StatelessWidget {
         Icon(
           ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
           size: 16,
-          color: ok ? BttColors.greenAccent : BttColors.warning,
+          color: ok ? BttColors.success : BttColors.warning,
         ),
         const SizedBox(width: 8),
         Expanded(

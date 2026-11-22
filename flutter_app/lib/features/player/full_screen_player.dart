@@ -240,9 +240,36 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                         top: Radius.circular(28.0 + 8.0 * dragProgress),
                       ),
                     ),
-                    child: SafeArea(
-                      top: false,
-                      child: child!,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28.0 + 8.0 * dragProgress),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Premium gradient wash: soft violet (top-left)
+                          // and pink (bottom-right) fields behind the
+                          // content. RadialGradient falloff reads as a
+                          // blur with no extra packages and no blur pass.
+                          Positioned(
+                            top: -110,
+                            left: -110,
+                            child: IgnorePointer(
+                              child: _washBlob(BttColors.accentViolet),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: -130,
+                            right: -110,
+                            child: IgnorePointer(
+                              child: _washBlob(BttColors.accentPink),
+                            ),
+                          ),
+                          SafeArea(
+                            top: false,
+                            child: child!,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -306,7 +333,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                               IconButton(
                                 icon: Icon(
                                   track.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                  color: track.isFavorite ? BttColors.goldAccent : BttColors.textSecondary,
+                                  color: track.isFavorite ? BttColors.accentMagenta : BttColors.textSecondary,
                                 ),
                                 onPressed: () async {
                                   await ref
@@ -368,7 +395,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.graphic_eq_rounded, color: BttColors.goldAccent),
+                                    icon: const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
                                     label: Text(
                                       'Boost ${audioSettings.boostPercent}%',
                                       style: const TextStyle(color: BttColors.textPrimary),
@@ -382,7 +409,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.cyanAccent),
+                                    icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.accentPink),
                                     label: const Text(
                                       'Smart Remix',
                                       style: TextStyle(color: BttColors.textPrimary),
@@ -431,6 +458,24 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
             },
           );
         },
+      ),
+    );
+  }
+
+  /// Soft color field for the premium background wash: a 280 px circle
+  /// fading from the accent at low opacity to transparent.
+  static Widget _washBlob(Color color) {
+    return Container(
+      width: 280,
+      height: 280,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.20),
+            color.withValues(alpha: 0.0),
+          ],
+        ),
       ),
     );
   }
@@ -520,7 +565,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: selected
-                ? BttColors.cyanAccent.withValues(alpha: 0.18)
+                ? BttColors.accentPink.withValues(alpha: 0.18)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(999),
           ),
@@ -530,7 +575,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
               Icon(
                 icon,
                 size: 16,
-                color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+                color: selected ? BttColors.accentPink : BttColors.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -538,7 +583,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+                  color: selected ? BttColors.accentPink : BttColors.textSecondary,
                 ),
               ),
             ],
@@ -555,13 +600,56 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
     double maxMs,
     double currentMs,
   ) {
+    // SliderThemeData has no gradient-track slot, so the gradient fill is
+    // painted under a transparent-track Slider: the fill spans exactly the
+    // thumb-travel range (inset by the 10 px thumb radius on each side).
+    // Seek behavior is unchanged — the Slider still owns the gesture.
+    final progress = maxMs > 0 ? (currentMs / maxMs).clamp(0.0, 1.0) : 0.0;
     return Column(
       children: [
-        Slider(
-          value: currentMs,
-          min: 0.0,
-          max: maxMs,
-          onChanged: (v) => handler.seek(Duration(milliseconds: v.round())),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const thumbRadius = 10.0;
+            final trackWidth = (constraints.maxWidth - thumbRadius * 2)
+                .clamp(0.0, double.infinity);
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: thumbRadius),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: BttColors.borderStrong,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: thumbRadius),
+                    width: trackWidth * progress,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      gradient: BttColors.accentGradient,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: Colors.transparent,
+                    inactiveTrackColor: Colors.transparent,
+                  ),
+                  child: Slider(
+                    value: currentMs,
+                    min: 0.0,
+                    max: maxMs,
+                    onChanged: (v) => handler.seek(Duration(milliseconds: v.round())),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -585,7 +673,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
           icon: Icon(
             Icons.shuffle_rounded,
             color: handler.isShuffleEnabled
-                ? BttColors.cyanAccent
+                ? BttColors.accentPink
                 : BttColors.textMuted,
           ),
           onPressed: () => handler.setShuffleMode(
@@ -604,16 +692,21 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
         Container(
           width: 68,
           height: 68,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [BttColors.cyanAccent, BttColors.greenAccent],
-            ),
+            gradient: BttColors.accentGradient,
+            boxShadow: [
+              BoxShadow(
+                color: BttColors.accentPink.withValues(alpha: 0.35),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: IconButton(
             icon: Icon(
               playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: BttColors.bgObsidian,
+              color: Colors.white,
               size: 36,
             ),
             onPressed: () {
@@ -640,7 +733,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                 : Icons.repeat_rounded,
             color: handler.repeatMode == AudioServiceRepeatMode.none
                 ? BttColors.textMuted
-                : BttColors.goldAccent,
+                : BttColors.accentMagenta,
           ),
           onPressed: () {
             final next = switch (handler.repeatMode) {

@@ -56,6 +56,17 @@ class MiniPlayer extends ConsumerWidget {
           builder: (context, stateSnap) {
             final state = stateSnap.data;
             final playing = state?.playing ?? false;
+            // Gradient micro-scrubber progress (same duration fallback
+            // as the fullscreen player).
+            final position = state?.updatePosition ?? Duration.zero;
+            final totalSeconds = track.durationSeconds > 0
+                ? track.durationSeconds
+                : (handler.mediaItem.value?.duration?.inSeconds ?? 180);
+            final maxMs =
+                (totalSeconds * 1000).toDouble().clamp(1000.0, 36000000.0);
+            final progress = maxMs > 0
+                ? (position.inMilliseconds.toDouble().clamp(0.0, maxMs) / maxMs)
+                : 0.0;
 
             return GestureDetector(
               onTap: () {
@@ -85,66 +96,109 @@ class MiniPlayer extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Hero(
-                      tag: 'artwork-${track.id}',
-                      flightShuttleBuilder: _artworkFlightShuttle,
-                      child: BttArtwork(
-                        artworkPath: track.artworkPath,
-                        artworkUrl: track.artworkUrl,
-                        size: 44,
-                        radius: 10,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            track.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
+                    Row(
+                      children: [
+                        Hero(
+                          tag: 'artwork-${track.id}',
+                          flightShuttleBuilder: _artworkFlightShuttle,
+                          child: BttArtwork(
+                            artworkPath: track.artworkPath,
+                            artworkUrl: track.artworkUrl,
+                            size: 44,
+                            radius: 10,
                           ),
-                          Text(
-                            track.artist,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12.5),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                track.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
+                              ),
+                              Text(
+                                track.artist,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12.5),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: BttColors.accentGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x59F70E42),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                            padding: EdgeInsets.zero,
+                            icon: Icon(
+                              playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              if (playing) {
+                                handler.pause();
+                              } else {
+                                handler.play();
+                              }
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                          icon: const Icon(
+                            Icons.skip_next_rounded,
+                            color: BttColors.textSecondary,
+                            size: 26,
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            handler.skipToNext();
+                          },
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                      icon: Icon(
-                        playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        color: BttColors.textPrimary,
-                        size: 28,
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: Stack(
+                          children: [
+                            Container(height: 3, color: BttColors.borderStrong),
+                            FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: progress,
+                              child: Container(
+                                height: 3,
+                                decoration: const BoxDecoration(
+                                  gradient: BttColors.accentGradient,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        if (playing) {
-                          handler.pause();
-                        } else {
-                          handler.play();
-                        }
-                      },
-                    ),
-                    IconButton(
-                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                      icon: const Icon(
-                        Icons.skip_next_rounded,
-                        color: BttColors.textSecondary,
-                        size: 26,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        handler.skipToNext();
-                      },
                     ),
                   ],
                 ),

@@ -108,7 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 hintText: 'Search your library & X2 discovery',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward_rounded, color: BttColors.cyanAccent),
+                  icon: const Icon(Icons.arrow_forward_rounded, color: BttColors.accentPink),
                   onPressed: () => _runOnlineSearch(_ctrl.text),
                 ),
               ),
@@ -121,7 +121,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 Text(
                   'LOCAL OFFLINE LIBRARY (${localMatches.length})',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: BttColors.greenAccent,
+                        color: BttColors.accentViolet,
                         letterSpacing: 1.1,
                       ),
                 ),
@@ -149,7 +149,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     Text(
                       'ONLINE X2 DISCOVERY (${_onlineResults.length})',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: BttColors.cyanAccent,
+                            color: BttColors.accentPink,
                             letterSpacing: 1.1,
                           ),
                     ),
@@ -207,14 +207,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               tooltip: playing ? 'Stop 30s Preview' : 'Play 30s Preview',
                               icon: Icon(
                                 playing ? Icons.stop_circle_rounded : Icons.play_circle_rounded,
-                                color: BttColors.goldAccent,
+                                color: BttColors.accentMagenta,
                               ),
                               onPressed: () => _togglePreview(res.audioUrl!),
                             ),
                           if (res.downloadAuthorized)
                             IconButton(
                               tooltip: 'Download Offline',
-                              icon: const Icon(Icons.download_rounded, color: BttColors.cyanAccent),
+                              icon: const Icon(Icons.download_rounded, color: BttColors.accentPink),
                               onPressed: () {
                                 ref.read(downloadManagerProvider.notifier).enqueueX2Download(res);
                                 ScaffoldMessenger.of(context).showSnackBar(

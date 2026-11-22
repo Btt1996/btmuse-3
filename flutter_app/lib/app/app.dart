@@ -17,7 +17,7 @@ class BttMusicApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Btt Music',
+      title: 'Btmus',
       debugShowCheckedModeBanner: false,
       theme: BttTheme.buildDarkTheme(),
       home: const AppShell(),
@@ -58,7 +58,7 @@ class AppShell extends ConsumerWidget {
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: BttColors.bgElevated,
-        indicatorColor: BttColors.cyanAccent.withValues(alpha: 0.18),
+        indicatorColor: BttColors.accentPink.withValues(alpha: 0.18),
         selectedIndex: tabIdx,
         onDestinationSelected: (idx) {
           // One light tick per real tab change only — tapping the tab
@@ -70,32 +70,32 @@ class AppShell extends ConsumerWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded, color: BttColors.cyanAccent),
+            selectedIcon: Icon(Icons.home_rounded, color: BttColors.accentPink),
             label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.library_music_outlined),
-            selectedIcon: Icon(Icons.library_music_rounded, color: BttColors.cyanAccent),
+            selectedIcon: Icon(Icons.library_music_rounded, color: BttColors.accentPink),
             label: 'Library',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline_rounded),
-            selectedIcon: Icon(Icons.add_circle_rounded, color: BttColors.greenAccent),
+            selectedIcon: Icon(Icons.add_circle_rounded, color: BttColors.accentMagenta),
             label: 'Import',
           ),
           NavigationDestination(
             icon: Icon(Icons.travel_explore_outlined),
-            selectedIcon: Icon(Icons.travel_explore_rounded, color: BttColors.goldAccent),
+            selectedIcon: Icon(Icons.travel_explore_rounded, color: BttColors.accentViolet),
             label: 'X2',
           ),
           NavigationDestination(
             icon: Icon(Icons.mic_none_rounded),
-            selectedIcon: Icon(Icons.mic_rounded, color: BttColors.cyanAccent),
+            selectedIcon: Icon(Icons.mic_rounded, color: BttColors.accentPink),
             label: 'X1',
           ),
           NavigationDestination(
             icon: Icon(Icons.queue_music_outlined),
-            selectedIcon: Icon(Icons.queue_music_rounded, color: BttColors.goldAccent),
+            selectedIcon: Icon(Icons.queue_music_rounded, color: BttColors.accentViolet),
             label: 'Playlists',
           ),
         ],

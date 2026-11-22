@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:btmu/app/theme/btt_theme.dart';
 
 class BttLogoMark extends StatelessWidget {
   final double size;
@@ -20,11 +21,11 @@ class BttLogoMark extends StatelessWidget {
       errorBuilder: (_, __, ___) => Container(
         width: size,
         height: size,
-        color: const Color(0xFF0C111B),
+        color: BttColors.bgElevated,
         alignment: Alignment.center,
         child: Icon(
           Icons.music_note_rounded,
-          color: const Color(0xFF24C7DB),
+          color: BttColors.accentViolet,
           size: size * 0.55,
         ),
       ),

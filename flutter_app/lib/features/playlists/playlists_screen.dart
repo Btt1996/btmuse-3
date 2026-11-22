@@ -64,7 +64,7 @@ class PlaylistsScreen extends ConsumerWidget {
         title: const Text('Playlists'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded, color: BttColors.cyanAccent),
+            icon: const Icon(Icons.add_rounded, color: BttColors.accentPink),
             onPressed: () => _showCreateDialog(context, ref),
           ),
         ],
@@ -106,7 +106,7 @@ class PlaylistsScreen extends ConsumerWidget {
                 ),
                 leading: const CircleAvatar(
                   backgroundColor: BttColors.bgCardHighlight,
-                  child: Icon(Icons.queue_music_rounded, color: BttColors.goldAccent),
+                  child: Icon(Icons.queue_music_rounded, color: BttColors.accentViolet),
                 ),
                 title: Text(pl.name),
                 subtitle: Text('${pl.trackIds.length} track(s)'),

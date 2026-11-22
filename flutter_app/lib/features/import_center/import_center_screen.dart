@@ -201,7 +201,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
                   Text(
                     _lastStatus!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: BttColors.cyanAccent,
+                          color: BttColors.accentPink,
                         ),
                   ),
                 ],
@@ -213,7 +213,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.folder_open_rounded,
-            accent: BttColors.cyanAccent,
+            accent: BttColors.accentPink,
             title: 'Import from iPhone Files',
             subtitle: 'Pick a single MP3, M4A, AAC, FLAC, WAV, or OGG with ID3 & artwork extraction',
             trailingLabel: 'Single',
@@ -222,7 +222,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 10),
           _ImportOptionTile(
             icon: Icons.library_add_rounded,
-            accent: BttColors.greenAccent,
+            accent: BttColors.accentMagenta,
             title: 'Import Multiple Local Audio Files',
             subtitle: 'Batch import albums or folders with progress tracking and fingerprint indexing',
             trailingLabel: 'Batch',
@@ -233,7 +233,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.send_rounded,
-            accent: BttColors.greenAccent,
+            accent: BttColors.accentMagenta,
             title: 'Import from Telegram',
             subtitle: 'Connect your Telegram Bot token (iOS Keychain) and import bot audio & documents',
             trailingLabel: 'Bot API',
@@ -246,7 +246,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 10),
           _ImportOptionTile(
             icon: Icons.link_rounded,
-            accent: BttColors.cyanAccent,
+            accent: BttColors.accentPink,
             title: 'Import from Supported Direct Audio URLs',
             subtitle: 'Verify direct MP3/M4A/FLAC/WAV/OGG links or Podcast RSS XML feeds and save offline',
             trailingLabel: 'Direct / RSS',
@@ -257,7 +257,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.public_rounded,
-            accent: BttColors.goldAccent,
+            accent: BttColors.accentViolet,
             title: 'Search and Import from VK Music',
             subtitle: 'Inspect public VK audio links or search with your optional VK user session token',
             trailingLabel: 'VK',
@@ -266,7 +266,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 10),
           _ImportOptionTile(
             icon: Icons.ondemand_video_rounded,
-            accent: BttColors.goldAccent,
+            accent: BttColors.accentViolet,
             title: 'Search YouTube via Supported Providers',
             subtitle: 'Query configured Piped, Invidious, or X2 Companion instances + YouTube oEmbed links',
             trailingLabel: 'Piped / Inv',
@@ -275,7 +275,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 10),
           _ImportOptionTile(
             icon: Icons.cloud_queue_rounded,
-            accent: BttColors.cyanAccent,
+            accent: BttColors.accentPink,
             title: 'Search SoundCloud',
             subtitle: 'Resolve SoundCloud track URLs via zero-key oEmbed & view open-source alternatives',
             trailingLabel: 'oEmbed',
@@ -286,7 +286,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.mic_rounded,
-            accent: BttColors.cyanAccent,
+            accent: BttColors.accentPink,
             title: 'Identify Music Using X1',
             subtitle: 'On-device FFT constellation fingerprinting + zero-key public catalog verification',
             trailingLabel: 'X1 Engine',
@@ -295,7 +295,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
           const SizedBox(height: 10),
           _ImportOptionTile(
             icon: Icons.travel_explore_rounded,
-            accent: BttColors.goldAccent,
+            accent: BttColors.accentViolet,
             title: 'Obtain Music Using X2',
             subtitle: 'Multi-source search across Audius, Deezer, Apple Open Catalog & authorized downloads',
             trailingLabel: 'X2 Engine',
@@ -848,7 +848,7 @@ class _DirectUrlImportSheetState extends ConsumerState<_DirectUrlImportSheet> {
               FilledButton.icon(
                 onPressed: _loading ? null : _verifyUrl,
                 style: FilledButton.styleFrom(
-                  backgroundColor: BttColors.cyanAccent,
+                  backgroundColor: BttColors.accentPink,
                   foregroundColor: BttColors.bgObsidian,
                 ),
                 icon: const Icon(Icons.verified_rounded),
@@ -885,7 +885,7 @@ class _SheetResultCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: result.downloadAuthorized
-              ? BttColors.greenAccent.withValues(alpha: 0.45)
+              ? BttColors.success.withValues(alpha: 0.45)
               : BttColors.borderSubtle,
         ),
       ),
@@ -921,7 +921,7 @@ class _SheetResultCard extends ConsumerWidget {
           Text(
             result.authorizationNote,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: result.downloadAuthorized ? BttColors.greenAccent : BttColors.textMuted,
+                  color: result.downloadAuthorized ? BttColors.success : BttColors.textMuted,
                 ),
           ),
           const SizedBox(height: 8),
@@ -937,7 +937,7 @@ class _SheetResultCard extends ConsumerWidget {
                       );
                     },
                     style: FilledButton.styleFrom(
-                      backgroundColor: BttColors.cyanAccent,
+                      backgroundColor: BttColors.accentPink,
                       foregroundColor: BttColors.bgObsidian,
                     ),
                     icon: const Icon(Icons.download_rounded, size: 18),

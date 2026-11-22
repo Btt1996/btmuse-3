@@ -33,7 +33,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
         actions: [
           if (tracks.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.play_arrow_rounded, color: BttColors.cyanAccent),
+              icon: const Icon(Icons.play_arrow_rounded, color: BttColors.accentPink),
               onPressed: () => handler.setTrackQueueAndPlay(tracks),
             ),
         ],

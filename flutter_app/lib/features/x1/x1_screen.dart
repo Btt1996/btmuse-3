@@ -237,7 +237,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.fingerprint_rounded, color: BttColors.greenAccent, size: 18),
+                : const Icon(Icons.fingerprint_rounded, color: BttColors.success, size: 18),
             label: Text(
               '$_indexedCount Indexed',
               style: const TextStyle(color: BttColors.textPrimary),
@@ -254,7 +254,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               color: BttColors.bgCard,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: _recording ? BttColors.cyanAccent : BttColors.borderSubtle,
+                color: _recording ? BttColors.accentPink : BttColors.borderSubtle,
               ),
             ),
             child: Column(
@@ -268,8 +268,8 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: _recording
-                            ? const [BttColors.goldAccent, BttColors.danger]
-                            : const [BttColors.cyanAccent, BttColors.greenAccent],
+                            ? const [BttColors.accentMagenta, BttColors.danger]
+                            : const [BttColors.accentViolet, BttColors.accentMagenta, BttColors.accentPink],
                       ),
                     ),
                     child: Icon(
@@ -352,7 +352,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               hintText: 'Lyrics phrase, song title, or artist cue',
               prefixIcon: const Icon(Icons.music_note_rounded),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.search_rounded, color: BttColors.cyanAccent),
+                icon: const Icon(Icons.search_rounded, color: BttColors.accentPink),
                 onPressed: _searchOpenCatalogs,
               ),
             ),
@@ -400,8 +400,8 @@ class _MatchCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: match.isLocalLibraryMatch
-              ? BttColors.greenAccent.withValues(alpha: 0.5)
-              : BttColors.cyanAccent.withValues(alpha: 0.35),
+              ? BttColors.success.withValues(alpha: 0.5)
+              : BttColors.accentPink.withValues(alpha: 0.35),
         ),
       ),
       child: Column(
@@ -425,7 +425,7 @@ class _MatchCard extends StatelessWidget {
                     Text(
                       '${match.provider} · ${(match.confidence * 100).round()}% match',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: BttColors.cyanAccent,
+                            color: BttColors.accentPink,
                           ),
                     ),
                   ],
@@ -436,7 +436,7 @@ class _MatchCard extends StatelessWidget {
                   tooltip: 'Play 30s verification preview',
                   icon: Icon(
                     isPreviewPlaying ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
-                    color: BttColors.goldAccent,
+                    color: BttColors.accentMagenta,
                     size: 32,
                   ),
                   onPressed: onTogglePreview,
@@ -447,7 +447,7 @@ class _MatchCard extends StatelessWidget {
           FilledButton.icon(
             onPressed: onFindInX2,
             style: FilledButton.styleFrom(
-              backgroundColor: BttColors.goldAccent,
+              backgroundColor: BttColors.accentPink,
               foregroundColor: BttColors.bgObsidian,
               minimumSize: const Size.fromHeight(44),
             ),

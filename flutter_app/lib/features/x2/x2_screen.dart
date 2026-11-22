@@ -97,13 +97,13 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
         actions: [
           IconButton(
             tooltip: 'Open Import Center',
-            icon: const Icon(Icons.add_circle_outline_rounded, color: BttColors.cyanAccent),
+            icon: const Icon(Icons.add_circle_outline_rounded, color: BttColors.accentPink),
             onPressed: () =>
                 ref.read(currentTabIndexProvider.notifier).state = BttTab.importCenter,
           ),
           IconButton(
             tooltip: 'Telegram Audio Import',
-            icon: const Icon(Icons.send_rounded, color: BttColors.greenAccent),
+            icon: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
             onPressed: () {
               Navigator.of(context).push(
                 BttPageRoute<void>(builder: (_) => const TelegramScreen()),
@@ -124,7 +124,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                 hintText: 'Song, artist, VK / YouTube / SoundCloud / Audius / RSS URL',
                 prefixIcon: const Icon(Icons.travel_explore_rounded),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.search_rounded, color: BttColors.cyanAccent),
+                  icon: const Icon(Icons.search_rounded, color: BttColors.accentPink),
                   onPressed: () => _executeSearch(_queryCtrl.text),
                 ),
               ),
@@ -208,7 +208,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.send_rounded, color: BttColors.greenAccent),
+                              icon: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
                               label: const Text('Import From Telegram Bot'),
                             ),
                           ],
@@ -257,9 +257,9 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _selectedFilter = key),
-      selectedColor: BttColors.cyanAccent.withValues(alpha: 0.2),
+      selectedColor: BttColors.accentPink.withValues(alpha: 0.2),
       labelStyle: TextStyle(
-        color: selected ? BttColors.cyanAccent : BttColors.textSecondary,
+        color: selected ? BttColors.accentPink : BttColors.textSecondary,
         fontSize: 12.5,
       ),
     );
@@ -292,7 +292,7 @@ class _X2ResultCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: result.downloadAuthorized
-              ? BttColors.greenAccent.withValues(alpha: 0.35)
+              ? BttColors.success.withValues(alpha: 0.35)
               : BttColors.borderSubtle,
         ),
       ),
@@ -327,7 +327,7 @@ class _X2ResultCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: result.downloadAuthorized
-                                ? BttColors.greenAccent
+                                ? BttColors.success
                                 : BttColors.textMuted,
                           ),
                     ),
@@ -347,7 +347,7 @@ class _X2ResultCard extends StatelessWidget {
                   onPressed: onTogglePreview,
                   icon: Icon(
                     isPreviewPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                    color: BttColors.goldAccent,
+                    color: BttColors.accentMagenta,
                     size: 18,
                   ),
                   label: Text(isPreviewPlaying ? 'Stop Preview' : 'Play 30s Preview'),
@@ -356,7 +356,7 @@ class _X2ResultCard extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onDownload,
                   style: FilledButton.styleFrom(
-                    backgroundColor: BttColors.cyanAccent,
+                    backgroundColor: BttColors.accentPink,
                     foregroundColor: BttColors.bgObsidian,
                   ),
                   icon: const Icon(Icons.download_rounded, size: 18),

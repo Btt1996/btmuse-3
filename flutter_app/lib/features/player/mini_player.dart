@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
@@ -9,6 +10,35 @@ import 'package:btmu/features/player/full_screen_player.dart';
 
 class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
+
+  /// Same flight shuttle as FullScreenPlayer: renders the artwork without
+  /// any of the sheet's clipping, and morphs the corner radius 10 (mini)
+  /// ↔ 26 (fullscreen) along the flight so the morph reads as one
+  /// continuous shape change.
+  static Widget _artworkFlightShuttle(
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection flightDirection,
+    BuildContext fromHeroContext,
+    BuildContext toHeroContext,
+  ) {
+    final hero = toHeroContext.widget as Hero;
+    final radius = Tween<double>(
+      begin: flightDirection == HeroFlightDirection.push ? 10.0 : 26.0,
+      end: flightDirection == HeroFlightDirection.push ? 26.0 : 10.0,
+    ).animate(animation);
+    return AnimatedBuilder(
+      animation: radius,
+      builder: (context, child) => Material(
+        type: MaterialType.transparency,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius.value),
+          child: child,
+        ),
+      ),
+      child: hero.child,
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,12 +63,16 @@ class MiniPlayer extends ConsumerWidget {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
+                  // The fullscreen player owns the dismiss gesture itself
+                  // (spring snap-back / fling-out); the sheet's native drag
+                  // must not double-handle it.
+                  enableDrag: false,
                   builder: (_) => const FullScreenPlayer(),
                 );
               },
               child: Container(
                 margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: BttColors.bgCardHighlight,
                   borderRadius: BorderRadius.circular(18),
@@ -53,11 +87,15 @@ class MiniPlayer extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    BttArtwork(
-                      artworkPath: track.artworkPath,
-                      artworkUrl: track.artworkUrl,
-                      size: 44,
-                      radius: 10,
+                    Hero(
+                      tag: 'artwork-${track.id}',
+                      flightShuttleBuilder: _artworkFlightShuttle,
+                      child: BttArtwork(
+                        artworkPath: track.artworkPath,
+                        artworkUrl: track.artworkUrl,
+                        size: 44,
+                        radius: 10,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -87,7 +125,14 @@ class MiniPlayer extends ConsumerWidget {
                         color: BttColors.textPrimary,
                         size: 28,
                       ),
-                      onPressed: () => playing ? handler.pause() : handler.play(),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        if (playing) {
+                          handler.pause();
+                        } else {
+                          handler.play();
+                        }
+                      },
                     ),
                     IconButton(
                       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
@@ -96,7 +141,10 @@ class MiniPlayer extends ConsumerWidget {
                         color: BttColors.textSecondary,
                         size: 26,
                       ),
-                      onPressed: () => handler.skipToNext(),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        handler.skipToNext();
+                      },
                     ),
                   ],
                 ),

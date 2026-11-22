@@ -45,6 +45,71 @@ class SpotifyPlaylist {
   int get inLibraryCount => tracks.where((t) => t.isInLibrary).length;
 }
 
+/// One public playlist in a Spotify user's profile, as returned by
+/// `GET /api/spotify/user`. Metadata only — no audio and no tracklist
+/// (tap a playlist to resolve its tracks via [SpotifyMetadataProvider.fetchPlaylist]).
+class SpotifyUserPlaylistSummary {
+  final String id;
+  final String name;
+  final String description;
+  final int trackCount;
+  final String? coverUrl;
+  final String ownerName;
+  final String externalUrl;
+
+  const SpotifyUserPlaylistSummary({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.trackCount,
+    this.coverUrl,
+    required this.ownerName,
+    required this.externalUrl,
+  });
+
+  factory SpotifyUserPlaylistSummary.fromJson(Map<String, dynamic> json) {
+    return SpotifyUserPlaylistSummary(
+      id: (json['id'] as String?) ?? '',
+      name: (json['name'] as String?) ?? 'Untitled playlist',
+      description: (json['description'] as String?) ?? '',
+      trackCount: (json['trackCount'] as num?)?.toInt() ?? 0,
+      coverUrl: json['coverUrl'] as String?,
+      ownerName: (json['ownerName'] as String?) ?? '',
+      externalUrl: (json['externalUrl'] as String?) ?? '',
+    );
+  }
+}
+
+/// A Spotify user's public playlists, as returned by
+/// `GET /api/spotify/user`. Client-credentials tokens can only see
+/// public playlists; private ones never appear here.
+class SpotifyUserPlaylists {
+  final String userId;
+  final String displayName;
+  final String? avatarUrl;
+  final List<SpotifyUserPlaylistSummary> playlists;
+
+  const SpotifyUserPlaylists({
+    required this.userId,
+    required this.displayName,
+    this.avatarUrl,
+    required this.playlists,
+  });
+
+  factory SpotifyUserPlaylists.fromJson(String userId, Map<String, dynamic> json) {
+    final raw = (json['playlists'] as List<dynamic>?) ?? const [];
+    return SpotifyUserPlaylists(
+      userId: userId,
+      displayName: (json['displayName'] as String?) ?? userId,
+      avatarUrl: json['avatarUrl'] as String?,
+      playlists: raw
+          .whereType<Map<String, dynamic>>()
+          .map(SpotifyUserPlaylistSummary.fromJson)
+          .toList(),
+    );
+  }
+}
+
 class SpotifyMetadataProvider implements X2Provider {
   final ApiClient _apiClient;
 
@@ -99,6 +164,86 @@ class SpotifyMetadataProvider implements X2Provider {
       authorizationNote:
           'Spotify metadata resolved via official oEmbed. DRM-protected audio cannot be ripped; search X2 open sources instead.',
     );
+  }
+
+  /// Extracts a Spotify user ID from a plain username, an
+  /// `open.spotify.com/user/<id>` profile URL (query strings
+  /// ignored), a `spotify:user:<id>` URI, or an `@username`.
+  /// Returns null when the input is not any of those. Mirrors
+  /// `parseSpotifyUserId` in
+  /// `src/services/playlistImport/spotifyDiscoveryService.ts`.
+  static String? parseUserId(String input) {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return null;
+    final urlMatch = RegExp(
+      r'open\.spotify\.com/user/([a-zA-Z0-9_.\-]+)',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (urlMatch != null) return urlMatch.group(1);
+    final uriMatch = RegExp(
+      r'^spotify:user:([a-zA-Z0-9_.\-]+)',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    if (uriMatch != null) return uriMatch.group(1);
+    final clean = trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
+    if (RegExp(r'^[a-zA-Z0-9_.\-]+$').hasMatch(clean)) return clean;
+    return null;
+  }
+
+  /// Lists a Spotify user's PUBLIC playlists via the deployed Btt
+  /// Music backend (`GET /api/spotify/user?userId=<id>`).
+  ///
+  /// The server resolves this with its own `SPOTIFY_CLIENT_ID` /
+  /// `SPOTIFY_CLIENT_SECRET` environment credentials
+  /// (client-credentials flow): the app never holds Spotify
+  /// credentials and never sends any — the request carries only the
+  /// user ID. Client-credentials tokens cannot see private
+  /// playlists, so only public ones are ever returned.
+  ///
+  /// Requires a configured backend (`X2_BACKEND_URL` in Settings):
+  /// there is deliberately no client-side fallback and no
+  /// third-party proxy. A 422 from the server means the server has
+  /// no Spotify credentials configured; its `details` text names
+  /// the missing environment variables and is surfaced verbatim.
+  Future<SpotifyUserPlaylists> fetchUserPlaylists(String userIdOrUrl) async {
+    final userId = parseUserId(userIdOrUrl);
+    if (userId == null) {
+      throw const ValidationFailure(
+        'Enter a Spotify username or profile link (e.g. open.spotify.com/user/spotify).',
+        code: 'spotify_user_invalid',
+      );
+    }
+
+    if (!_apiClient.isBackendConfigured) {
+      throw const NetworkFailure(
+        'Browsing a Spotify user\'s public playlists needs your deployed Btt Music backend (set X2_BACKEND_URL in Settings).',
+        code: 'spotify_user_needs_backend',
+      );
+    }
+
+    final backendUri = _apiClient.buildBackendUri('/api/spotify/user');
+    final Map<String, dynamic> data;
+    try {
+      final res = await _apiClient.dio.get<Map<String, dynamic>>(
+        backendUri.replace(queryParameters: {'userId': userId}).toString(),
+        // Credentials are never sent from the app: the server uses its
+        // own environment credentials for this route.
+        options: Options(headers: _apiClient.backendHeaders()),
+      );
+      data = res.data ?? {};
+    } on DioException catch (e) {
+      final errData = e.response?.data;
+      final serverMessage = errData is Map
+          ? ((errData['details'] as String?) ?? (errData['error'] as String?))
+          : null;
+      throw NetworkFailure(
+        serverMessage ??
+            'Spotify user lookup failed (${e.response?.statusCode ?? 'network error'}).',
+        cause: e,
+      );
+    }
+
+    return SpotifyUserPlaylists.fromJson(userId, data);
   }
 
   /// Resolves a public Spotify playlist (or album) into its full

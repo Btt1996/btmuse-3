@@ -301,7 +301,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             icon: Icons.music_note_rounded,
             accent: BttColors.accentViolet,
             title: 'Import Spotify Playlist (Metadata)',
-            subtitle: 'Paste a public Spotify playlist or album link — metadata only, matched against your library',
+            subtitle: 'Paste a public Spotify playlist or album link, or browse a user\'s public playlists — metadata only, matched against your library',
             trailingLabel: 'Spotify',
             onTap: _openSpotifySheet,
           ),
@@ -730,6 +730,8 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
       _bridgeProgress = 0.05;
     });
 
+    X2Result? bridgeResult;
+
     try {
       final base = await ref.read(credentialsStoreProvider).getYoutubeBridgeUrl();
       if (base.isEmpty) {
@@ -757,7 +759,7 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
           .extension(Uri.parse(extraction.downloadUrl).path)
           .toLowerCase()
           .replaceFirst('.', '');
-      final result = X2Result(
+      final result = bridgeResult = X2Result(
         id: 'ytbridge_${uri.toString().hashCode}',
         providerId: 'youtube-bridge',
         providerLabel: 'YouTube (self-hosted bridge)',
@@ -792,6 +794,10 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
             },
           );
 
+      await ref.read(downloadManagerProvider.notifier).recordExternalDownload(
+            result: result,
+            importedTrackId: track.id,
+          );
       ref.invalidate(libraryTracksProvider);
       ref.invalidate(storageStatsProvider);
       if (mounted) {
@@ -805,8 +811,24 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
         );
       }
     } on AppFailure catch (e) {
+      final failed = bridgeResult;
+      if (failed != null) {
+        await ref.read(downloadManagerProvider.notifier).recordExternalDownload(
+              result: failed,
+              importedTrackId: null,
+              errorMessage: e.message,
+            );
+      }
       if (mounted) setState(() => _bridgeError = e.message);
     } catch (e) {
+      final failed = bridgeResult;
+      if (failed != null) {
+        await ref.read(downloadManagerProvider.notifier).recordExternalDownload(
+              result: failed,
+              importedTrackId: null,
+              errorMessage: e.toString(),
+            );
+      }
       if (mounted) setState(() => _bridgeError = e.toString());
     } finally {
       _bridgeCancelToken = null;
@@ -1142,6 +1164,14 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
   String? _error;
   SpotifyPlaylist? _playlist;
 
+  // Phase 5 (item 22): second mode — browse a user's public
+  // playlists. The paste-link flow above stays exactly as-is.
+  bool _browseUser = false;
+  final TextEditingController _userCtrl = TextEditingController();
+  bool _userLoading = false;
+  String? _userError;
+  SpotifyUserPlaylists? _userPlaylists;
+
   Future<void> _lookup() async {
     final q = _ctrl.text.trim();
     if (q.isEmpty) return;
@@ -1174,9 +1204,62 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
     }
   }
 
+  /// Lists a user's public playlists via the backend
+  /// (`GET /api/spotify/user`). Only public playlists are ever
+  /// returned — client-credentials access cannot see private ones.
+  Future<void> _fetchUserPlaylists() async {
+    final q = _userCtrl.text.trim();
+    if (q.isEmpty) return;
+
+    setState(() {
+      _userLoading = true;
+      _userError = null;
+      _userPlaylists = null;
+      _playlist = null;
+    });
+
+    try {
+      final provider = SpotifyMetadataProvider(ref.read(apiClientProvider));
+      final result = await provider.fetchUserPlaylists(q);
+      if (mounted) setState(() => _userPlaylists = result);
+    } catch (e) {
+      if (mounted) setState(() => _userError = e.toString());
+    } finally {
+      if (mounted) setState(() => _userLoading = false);
+    }
+  }
+
+  /// Tapping a browsed playlist runs the EXISTING fetchPlaylist flow
+  /// (same backend route, same per-track library matching and
+  /// "Already in library" chips as the paste-link mode).
+  Future<void> _openUserPlaylist(SpotifyUserPlaylistSummary summary) async {
+    final uri = Uri.tryParse(summary.externalUrl);
+    if (uri == null) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+      _playlist = null;
+    });
+
+    try {
+      final provider = SpotifyMetadataProvider(ref.read(apiClientProvider));
+      final playlist = await provider.fetchPlaylist(
+        uri,
+        libraryRepository: ref.read(libraryRepositoryProvider),
+      );
+      if (mounted) setState(() => _playlist = playlist);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   void dispose() {
     _ctrl.dispose();
+    _userCtrl.dispose();
     super.dispose();
   }
 
@@ -1206,36 +1289,161 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _ctrl,
-                decoration: const InputDecoration(
-                  hintText: 'https://open.spotify.com/playlist/...',
-                  prefixIcon: Icon(Icons.music_note_rounded),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: false,
+                    icon: Icon(Icons.link_rounded, size: 18),
+                    label: Text('Paste link'),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    icon: Icon(Icons.person_rounded, size: 18),
+                    label: Text('Browse user'),
+                  ),
+                ],
+                selected: {_browseUser},
+                onSelectionChanged: (selected) {
+                  setState(() {
+                    _browseUser = selected.first;
+                    _error = null;
+                    _userError = null;
+                  });
+                },
+              ),
+              if (!_browseUser) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _ctrl,
+                  decoration: const InputDecoration(
+                    hintText: 'https://open.spotify.com/playlist/...',
+                    prefixIcon: Icon(Icons.music_note_rounded),
+                  ),
+                  onSubmitted: (_) => _lookup(),
                 ),
-                onSubmitted: (_) => _lookup(),
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _loading ? null : _lookup,
-                icon: const Icon(Icons.search_rounded),
-                label: Text(_loading ? 'Fetching playlist...' : 'Fetch Playlist'),
-              ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _loading ? null : _lookup,
+                  icon: const Icon(Icons.search_rounded),
+                  label: Text(_loading ? 'Fetching playlist...' : 'Fetch Playlist'),
+                ),
+              ],
+              if (_browseUser) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Only public playlists are visible — private playlists cannot be seen through this lookup. Metadata only; Spotify audio is never downloaded.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _userCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'Username or open.spotify.com/user/...',
+                    prefixIcon: Icon(Icons.person_rounded),
+                  ),
+                  onSubmitted: (_) => _fetchUserPlaylists(),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _userLoading ? null : _fetchUserPlaylists,
+                  icon: const Icon(Icons.search_rounded),
+                  label: Text(_userLoading ? 'Fetching playlists...' : 'Fetch Public Playlists'),
+                ),
+                if (_userError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_userError!,
+                      style: const TextStyle(
+                          color: BttColors.warning, fontSize: 12.5)),
+                ],
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(_error!,
                     style: const TextStyle(
                         color: BttColors.warning, fontSize: 12.5)),
               ],
+              if (_userPlaylists != null && playlist == null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    BttArtwork(
+                      artworkUrl: _userPlaylists!.avatarUrl,
+                      size: 48,
+                      radius: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _userPlaylists!.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            '${_userPlaylists!.playlists.length} public playlists',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_userPlaylists!.playlists.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'This user has no public playlists.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+                ..._userPlaylists!.playlists.map(
+                  (s) => _UserPlaylistTile(
+                    summary: s,
+                    onTap: _loading ? null : () => _openUserPlaylist(s),
+                  ),
+                ),
+              ],
+              if (_userPlaylists != null && playlist != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _playlist = null),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                    label: Text(
+                        'Back to ${_userPlaylists!.displayName}\'s playlists'),
+                  ),
+                ),
+              ],
               if (playlist != null) ...[
                 const SizedBox(height: 16),
-                Text(
-                  playlist.title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${playlist.tracks.length} tracks · ${playlist.inLibraryCount} already in library',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                Row(
+                  children: [
+                    BttArtwork(
+                      artworkUrl: playlist.coverUrl,
+                      size: 56,
+                      radius: 12,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            playlist.title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${playlist.tracks.length} tracks · ${playlist.inLibraryCount} already in library',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 ...playlist.tracks.map(
                   (t) => Column(
@@ -1264,6 +1472,86 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One public playlist in the "Browse user" list: cover art, name,
+/// owner, and track count. Tapping it runs the existing
+/// fetchPlaylist flow for that playlist.
+class _UserPlaylistTile extends StatelessWidget {
+  final SpotifyUserPlaylistSummary summary;
+  final VoidCallback? onTap;
+
+  const _UserPlaylistTile({required this.summary, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: BttColors.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: BttColors.borderSubtle),
+            ),
+            child: Row(
+              children: [
+                BttArtwork(
+                  artworkUrl: summary.coverUrl,
+                  size: 56,
+                  radius: 10,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        summary.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${summary.ownerName} · ${summary.trackCount} tracks',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      if (summary.description.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          summary.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: BttColors.textMuted,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),

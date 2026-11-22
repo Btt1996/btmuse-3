@@ -242,6 +242,32 @@ function parseSpotifyTarget(input?: string): ParsedSpotifyTarget | null {
 }
 
 /**
+ * Clean and extract a Spotify username or user ID from input:
+ * - https://open.spotify.com/user/spotify?si=...
+ * - spotify:user:spotify
+ * - @spotify or just "spotify"
+ * Mirrors parseSpotifyUserId in src/services/playlistImport/spotifyDiscoveryService.ts.
+ */
+function parseSpotifyUserId(input?: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+
+  const urlMatch = trimmed.match(/open\.spotify\.com\/user\/([a-zA-Z0-9_.-]+)/i);
+  if (urlMatch) return urlMatch[1];
+
+  const uriMatch = trimmed.match(/^spotify:user:([a-zA-Z0-9_.-]+)/i);
+  if (uriMatch) return uriMatch[1];
+
+  // Plain username
+  const clean = trimmed.replace(/^@/, '');
+  if (/^[a-zA-Z0-9_.-]+$/.test(clean)) {
+    return clean;
+  }
+
+  return null;
+}
+
+/**
  * Keyless Spotify Public Embed Metadata Resolver
  * Resolves public playlist/album metadata directly from Spotify's official embed widget.
  * Does NOT require user credentials, client IDs, secrets, or API keys.
@@ -451,6 +477,104 @@ app.post('/api/spotify/playlist', async (req, res) => {
     });
   }
 });
+// 2b. Spotify User Public Playlists (server credentials only)
+//
+// GET /api/spotify/user?userId=<id>
+// Returns exactly { displayName, avatarUrl, playlists: [{ id, name,
+// description, trackCount, coverUrl, ownerName, externalUrl }] } —
+// the shape src/services/playlistImport/spotifyDiscoveryService.ts
+// (discoverUserPlaylists) already expects.
+//
+// Credentials come ONLY from the server's own SPOTIFY_CLIENT_ID /
+// SPOTIFY_CLIENT_SECRET environment variables (client-credentials
+// flow via fetchSpotifyToken with no arguments). This route never
+// accepts clientId / clientSecret from the request body or query.
+// Client-credentials tokens can only see PUBLIC playlists — a
+// user's private playlists are invisible to this endpoint by
+// design, and the error copy below says so.
+app.get('/api/spotify/user', async (req, res) => {
+  const userId = parseSpotifyUserId(req.query.userId as string);
+  if (!userId) {
+    return res.status(400).json({
+      error: 'Spotify user ID is required.',
+      details:
+        'Pass ?userId=<id>, a Spotify profile URL (https://open.spotify.com/user/<id>), or a spotify:user:<id> URI.',
+    });
+  }
+
+  const missingCreds: string[] = [];
+  if (!process.env.SPOTIFY_CLIENT_ID?.trim()) missingCreds.push('SPOTIFY_CLIENT_ID');
+  if (!process.env.SPOTIFY_CLIENT_SECRET?.trim()) missingCreds.push('SPOTIFY_CLIENT_SECRET');
+  if (missingCreds.length > 0) {
+    return res.status(422).json({
+      error: 'Spotify credentials not configured',
+      details: `The server has no Spotify API credentials configured (missing: ${missingCreds.join(', ')}). Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET on the server to enable Spotify user discovery.`,
+    });
+  }
+
+  let token: string;
+  try {
+    token = await fetchSpotifyToken();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Spotify authentication failed';
+    return res.status(502).json({ error: 'Spotify authentication failed', details: msg });
+  }
+
+  try {
+    const authHeaders = { Authorization: `Bearer ${token}` };
+    const [profileRes, playlistsRes] = await Promise.all([
+      fetch(`https://api.spotify.com/v1/users/${encodeURIComponent(userId)}`, {
+        headers: authHeaders,
+      }),
+      fetch(
+        `https://api.spotify.com/v1/users/${encodeURIComponent(userId)}/playlists?limit=50`,
+        { headers: authHeaders },
+      ),
+    ]);
+
+    if (playlistsRes.status === 404) {
+      return res.status(404).json({
+        error: 'Spotify user not found',
+        details: `No Spotify profile found for "${userId}". Check the username or profile link — only public profiles and their public playlists are visible here.`,
+      });
+    }
+    if (!playlistsRes.ok) {
+      return res.status(502).json({
+        error: 'Spotify user lookup failed',
+        details: `Spotify returned HTTP ${playlistsRes.status}.`,
+      });
+    }
+
+    const playlistsData: any = await playlistsRes.json().catch(() => ({}));
+    // The profile lookup is best-effort: a missing/blocked profile
+    // must not hide the playlists that did resolve.
+    const profileData: any = profileRes.ok
+      ? await profileRes.json().catch(() => ({}))
+      : {};
+
+    const displayName: string = profileData.display_name || userId;
+    const avatarUrl: string | undefined = profileData.images?.[0]?.url;
+
+    const playlists = (Array.isArray(playlistsData.items) ? playlistsData.items : []).map(
+      (p: any) => ({
+        id: p.id,
+        name: p.name || 'Untitled playlist',
+        description: p.description || '',
+        trackCount: p.tracks?.total ?? 0,
+        coverUrl: p.images?.[0]?.url,
+        ownerName: p.owner?.display_name || p.owner?.id || displayName,
+        externalUrl:
+          p.external_urls?.spotify || `https://open.spotify.com/playlist/${p.id}`,
+      }),
+    );
+
+    return res.json({ displayName, avatarUrl, playlists });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to reach Spotify';
+    return res.status(502).json({ error: 'Spotify user lookup failed', details: msg });
+  }
+});
+
 // 3. Apple iTunes Official Search API Proxy (No User Token Required)
 app.get('/api/itunes/search', async (req, res) => {
   const term = req.query.term as string;

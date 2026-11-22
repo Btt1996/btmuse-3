@@ -2,10 +2,23 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:btmu/core/utilities/sha256_helper.dart';
 
 class LocalDatabase {
   static final LocalDatabase instance = LocalDatabase._();
   LocalDatabase._();
+
+  /// Current schema version.
+  ///
+  /// v1: initial tracks / playlists / playlist_tracks / download_tasks.
+  /// v2: added `track_fingerprints` (X1 acoustic landmarks).
+  /// v3: content-hash column on `tracks` is guaranteed present, even for
+  /// databases created at v1. The v2 `onCreate` already created `tracks`
+  /// with a `sha256` column, but the v1 -> v2 `onUpgrade` never added it
+  /// to pre-existing databases, so v1 installs could reach v2 with no
+  /// `sha256` column at all. v3 closes that gap and backfills hashes
+  /// from the audio files still on disk.
+  static const int schemaVersion = 3;
 
   Database? _db;
   Directory? _audioDir;
@@ -23,7 +36,7 @@ class LocalDatabase {
 
     _db = await openDatabase(
       dbPath,
-      version: 2,
+      version: schemaVersion,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON;');
       },
@@ -102,6 +115,9 @@ class LocalDatabase {
         if (oldVersion < 2) {
           await _createFingerprintTable(db);
         }
+        if (oldVersion < 3) {
+          await _ensureSha256Column(db);
+        }
       },
     );
     return _db!;
@@ -119,6 +135,71 @@ class LocalDatabase {
     ''');
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_fp_hash ON track_fingerprints(hash);',
+    );
+  }
+
+  /// Guarantees the `tracks.sha256` column and its index exist, then
+  /// backfills hashes for rows that lack one, where the audio file is
+  /// still on disk. Other tables are untouched.
+  ///
+  /// Backfill is best-effort by design: a row whose file is missing or
+  /// unreadable keeps an empty hash (it is surfaced as a missing file by
+  /// [LibraryRepository.getStorageStats] instead of failing the whole
+  /// migration and leaving the app unable to open its library).
+  static Future<void> _ensureSha256Column(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info(tracks)');
+    final hasSha256 = columns.any((c) => c['name'] == 'sha256');
+    if (!hasSha256) {
+      await db.execute(
+        "ALTER TABLE tracks ADD COLUMN sha256 TEXT NOT NULL DEFAULT ''",
+      );
+    }
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_tracks_sha256 ON tracks(sha256);',
+    );
+    await _backfillSha256(db);
+  }
+
+  static Future<void> _backfillSha256(Database db) async {
+    final rows = await db.query(
+      'tracks',
+      columns: const ['id', 'local_file_path'],
+      where: "sha256 IS NULL OR sha256 = ''",
+    );
+    for (final row in rows) {
+      final id = row['id'] as String?;
+      final path = row['local_file_path'] as String?;
+      if (id == null || path == null || path.isEmpty) continue;
+      try {
+        final file = File(path);
+        if (!await file.exists()) continue;
+        final hash = await Sha256Helper.hashFile(file);
+        await db.update(
+          'tracks',
+          {'sha256': hash},
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+      } catch (_) {
+        // One unreadable file must not abort the migration for the rest
+        // of the library; the row keeps an empty hash.
+      }
+    }
+  }
+
+  /// Low-level lookup of track rows by content hash. Returns every row
+  /// with this exact hash (normally 0 or 1; more than 1 means duplicates
+  /// imported before dedup was enforced). The repository layer
+  /// ([LibraryRepository.findBySha256] / `findAllBySha256`) is the
+  /// typed API callers should use; this exists so the hash lookup lives
+  /// next to the schema that guarantees the column.
+  Future<List<Map<String, Object?>>> findTracksBySha256(String sha256) async {
+    final db = await database;
+    return db.query(
+      'tracks',
+      where: 'sha256 = ?',
+      whereArgs: [sha256],
+      orderBy: 'added_at_ms ASC',
     );
   }
 

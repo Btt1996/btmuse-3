@@ -6,6 +6,7 @@ import 'package:btmu/app/widgets/btt_logo_mark.dart';
 import 'package:btmu/core/config/x2_config.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
+import 'package:btmu/features/storage/storage_dashboard.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
 import 'package:btmu/features/x2/clients/x2_connectivity_tester.dart';
 
@@ -262,12 +263,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _DiagnosticsCard(report: _connectivityReport!),
           ],
           const SizedBox(height: 20),
+          // Storage dashboard entry point: the previously static
+          // "Offline Storage Footprint" tile is now tappable and opens
+          // StorageDashboardScreen (per-source usage + duplicate scan
+          // with confirmed-only cleanup). No other tile changed.
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             leading: const Icon(Icons.sd_storage_rounded, color: BttColors.textSecondary),
             title: const Text('Offline Storage Footprint'),
-            subtitle: Text('${stats?.trackCount ?? 0} tracks · $mb MB stored in App Documents'),
+            subtitle: Text(
+              '${stats?.trackCount ?? 0} tracks · $mb MB stored in App Documents'
+              '${(stats?.duplicateGroupsCount ?? 0) > 0 ? ' · ${stats!.duplicateGroupsCount} duplicate group(s) — tap to review' : ' · tap for breakdown & duplicates'}',
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const StorageDashboardScreen()),
+            ),
           ),
         ],
       ),

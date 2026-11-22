@@ -90,6 +90,7 @@ class _DuplicateLibraryRepository extends LibraryRepository {
     int durationSeconds = 0,
     required String sourceProvider,
     bool deleteSourceAfterCopy = false,
+    String? telegramFileUniqueId,
   }) async {
     throw DuplicateTrackFailure(_existingTrack(), _existingTrack().sha256);
   }
@@ -109,6 +110,7 @@ class _SucceedingLibraryRepository extends LibraryRepository {
     int durationSeconds = 0,
     required String sourceProvider,
     bool deleteSourceAfterCopy = false,
+    String? telegramFileUniqueId,
   }) async {
     return _importedTrack();
   }

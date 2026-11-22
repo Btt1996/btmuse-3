@@ -52,7 +52,8 @@ class X2AcquisitionEngine {
 
     final url = result.audioUrl;
     final parsedAudioUrl = url == null ? null : Uri.tryParse(url);
-    final urlIsUsable = parsedAudioUrl != null &&
+    final urlIsUsable = url != null &&
+        parsedAudioUrl != null &&
         (parsedAudioUrl.scheme == 'http' || parsedAudioUrl.scheme == 'https') &&
         parsedAudioUrl.host.isNotEmpty &&
         (allowPrivateHost || ApiClient.isSafeExternalUrl(url));

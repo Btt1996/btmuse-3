@@ -18,7 +18,14 @@ class LocalDatabase {
   /// to pre-existing databases, so v1 installs could reach v2 with no
   /// `sha256` column at all. v3 closes that gap and backfills hashes
   /// from the audio files still on disk.
-  static const int schemaVersion = 3;
+  /// v4: added `playback_queue` + `playback_state` (Phase 3, Q-1).
+  /// The queue is persisted as ordered track ids plus a single-row state
+  /// (current index, position, shuffle/repeat, source label). Migration
+  /// is purely additive: existing tables and rows are untouched, so a v3
+  /// library (tracks, lyrics cache, fingerprints, playlists, downloads)
+  /// upgrades without losing anything. An absent/empty queue means
+  /// "no saved queue", never a crash.
+  static const int schemaVersion = 4;
 
   Database? _db;
   Directory? _audioDir;
@@ -110,6 +117,7 @@ class LocalDatabase {
         ''');
 
         await _createFingerprintTable(db);
+        await _createQueueTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -117,6 +125,9 @@ class LocalDatabase {
         }
         if (oldVersion < 3) {
           await _ensureSha256Column(db);
+        }
+        if (oldVersion < 4) {
+          await _createQueueTables(db);
         }
       },
     );
@@ -185,6 +196,48 @@ class LocalDatabase {
         // of the library; the row keeps an empty hash.
       }
     }
+  }
+
+  /// Phase 3, Q-1 — persisted playback queue (schema v4).
+  ///
+  /// `playback_queue` holds the ordered queue: one row per track, `position`
+  /// is the 0-based play order (PRIMARY KEY, so re-saving the queue is a
+  /// delete + re-insert in one transaction). `track_id` references
+  /// `tracks(id) ON DELETE CASCADE`, so deleting a library track drops it
+  /// from the saved queue automatically.
+  ///
+  /// `playback_state` holds exactly one row (`id = 1`): the index of the
+  /// current track in the queue, the resume position in milliseconds, the
+  /// shuffle flag, the repeat mode (`'none'` | `'one'` | `'all'`, matching
+  /// `AudioServiceRepeatMode.name`), and an optional `source_label`
+  /// (e.g. the playlist name) so the UI can say what the queue came from.
+  /// The shuffled traversal order itself is NOT stored: it is rebuilt
+  /// deterministically on restore with the current track first (see
+  /// `TraversalOrder.shuffled`), which keeps the stored state small and
+  /// avoids persisting an order that would go stale on any queue edit.
+  ///
+  /// Both statements are `IF NOT EXISTS`, so the v3 -> v4 `onUpgrade`
+  /// and a fresh v4 `onCreate` converge on the same schema, and a
+  /// half-finished upgrade can safely re-run.
+  static Future<void> _createQueueTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playback_queue (
+        position INTEGER PRIMARY KEY,
+        track_id TEXT NOT NULL,
+        FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+      );
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playback_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        current_index INTEGER NOT NULL DEFAULT -1,
+        position_ms INTEGER NOT NULL DEFAULT 0,
+        shuffle INTEGER NOT NULL DEFAULT 0,
+        repeat_mode TEXT NOT NULL DEFAULT 'none',
+        source_label TEXT,
+        updated_at_ms INTEGER NOT NULL
+      );
+    ''');
   }
 
   /// Low-level lookup of track rows by content hash. Returns every row

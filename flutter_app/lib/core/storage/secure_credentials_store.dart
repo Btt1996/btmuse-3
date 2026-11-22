@@ -15,8 +15,16 @@ class SecureCredentialsStore {
   static const _limiterKey = 'btmu_audio_limiter';
   static const _normalizeKey = 'btmu_audio_normalize';
   static const _eqPresetKey = 'btmu_audio_eq_preset';
+  static const _playbackSpeedKey = 'btmu_audio_playback_speed';
+  static const _crossfadeEnabledKey = 'btmu_audio_crossfade_enabled';
+  static const _crossfadeSecondsKey = 'btmu_audio_crossfade_seconds';
+  // Legacy (Phase 3, S-3): read only by the crossfade migration in
+  // loadAudioSettings; `SmartRemixConfig.enabled` was dropped as vestigial.
   static const _remixEnabledKey = 'btmu_remix_enabled';
   static const _remixModeKey = 'btmu_remix_mode';
+  // Legacy (Phase 3, S-3): crossfade used to live on SmartRemixConfig.
+  // The key is kept only so loadAudioSettings can migrate existing users
+  // once (see below); nothing writes it anymore.
   static const _remixCrossfadeKey = 'btmu_remix_crossfade';
   static const _lastTrackIdKey = 'btmu_last_track_id';
   static const _lastPositionMsKey = 'btmu_last_position_ms';
@@ -125,12 +133,36 @@ class SecureCredentialsStore {
 
   Future<AudioSettings> loadAudioSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    return AudioSettings(
+    // One-time migration (Phase 3, S-3): crossfade used to be gated behind
+    // Smart Remix (`btmu_remix_enabled` + `btmu_remix_crossfade`). If the
+    // new keys have never been written, seed them from the legacy values
+    // so an existing user who had crossfade via Smart Remix keeps it, then
+    // persist the migrated values so this runs exactly once.
+    final hasNewCrossfadeKeys = prefs.containsKey(_crossfadeEnabledKey) ||
+        prefs.containsKey(_crossfadeSecondsKey);
+    final migratedCrossfadeEnabled = hasNewCrossfadeKeys
+        ? prefs.getBool(_crossfadeEnabledKey) ?? false
+        : prefs.getBool(_remixEnabledKey) ?? false;
+    final migratedCrossfadeSeconds = hasNewCrossfadeKeys
+        ? prefs.getDouble(_crossfadeSecondsKey) ?? 6.0
+        : (prefs.getInt(_remixCrossfadeKey) ?? 6).toDouble();
+    final settings = AudioSettings(
       volumeMultiplier: prefs.getDouble(_volumeMultKey) ?? 1.0,
       limiterEnabled: prefs.getBool(_limiterKey) ?? true,
       normalizeVolume: prefs.getBool(_normalizeKey) ?? true,
+      // Phase 3, C-3: playbackSpeed is persisted now; the native engine
+      // clamps it to 0.5–2.0, so clamp on load too. Previously it always
+      // reloaded as 1.0.
+      playbackSpeed:
+          (prefs.getDouble(_playbackSpeedKey) ?? 1.0).clamp(0.5, 2.0).toDouble(),
       eqPreset: prefs.getString(_eqPresetKey) ?? 'Balanced',
+      crossfadeEnabled: migratedCrossfadeEnabled,
+      crossfadeSeconds: migratedCrossfadeSeconds.clamp(1.0, 15.0).toDouble(),
     );
+    if (!hasNewCrossfadeKeys) {
+      await saveAudioSettings(settings);
+    }
+    return settings;
   }
 
   Future<void> saveAudioSettings(AudioSettings settings) async {
@@ -138,27 +170,28 @@ class SecureCredentialsStore {
     await prefs.setDouble(_volumeMultKey, settings.volumeMultiplier);
     await prefs.setBool(_limiterKey, settings.limiterEnabled);
     await prefs.setBool(_normalizeKey, settings.normalizeVolume);
+    await prefs.setDouble(
+        _playbackSpeedKey, settings.playbackSpeed.clamp(0.5, 2.0).toDouble());
     await prefs.setString(_eqPresetKey, settings.eqPreset);
+    await prefs.setBool(_crossfadeEnabledKey, settings.crossfadeEnabled);
+    await prefs.setDouble(_crossfadeSecondsKey,
+        settings.crossfadeSeconds.clamp(1.0, 15.0).toDouble());
   }
 
   Future<SmartRemixConfig> loadSmartRemixConfig() async {
     final prefs = await SharedPreferences.getInstance();
     final modeName = prefs.getString(_remixModeKey) ?? SmartRemixMode.smoothMix.name;
     return SmartRemixConfig(
-      enabled: prefs.getBool(_remixEnabledKey) ?? false,
       mode: SmartRemixMode.values.firstWhere(
         (m) => m.name == modeName,
         orElse: () => SmartRemixMode.smoothMix,
       ),
-      crossfadeSeconds: prefs.getInt(_remixCrossfadeKey) ?? 6,
     );
   }
 
   Future<void> saveSmartRemixConfig(SmartRemixConfig config) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_remixEnabledKey, config.enabled);
     await prefs.setString(_remixModeKey, config.mode.name);
-    await prefs.setInt(_remixCrossfadeKey, config.crossfadeSeconds);
   }
 
   Future<({String? trackId, int positionMs})> loadPlaybackCheckpoint() async {

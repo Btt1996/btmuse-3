@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ArrowLeft,
   Play,
@@ -12,12 +12,26 @@ import {
   Send,
   ListMusic,
   Sparkles,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { useMusic } from '../../context/MusicContext';
 import { Playlist, Track } from '../../types/music';
 import { formatDuration } from '../../utils/id3Parser';
 import { ConfirmModal } from '../common/ConfirmModal';
 import { SmartMixDrawer } from '../player/SmartMixDrawer';
+import {
+  buildPlaylistExportJson,
+  buildPlaylistExportM3u,
+  exportPlaylistFileNameJson,
+  exportPlaylistFileNameM3u,
+  importSummary,
+  parsePlaylistExportJson,
+  parsePlaylistExportM3u,
+  PlaylistFormatError,
+  resolvePlaylistImport,
+  uniquePlaylistName,
+} from '../../services/playlistExport';
 
 interface PlaylistDetailViewProps {
   playlist: Playlist;
@@ -27,18 +41,23 @@ interface PlaylistDetailViewProps {
 export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({ playlist, onBack }) => {
   const {
     tracks,
+    playlists,
     playTrack,
+    createPlaylist,
     updatePlaylist,
     deletePlaylist,
     removeTrackFromPlaylist,
     reorderPlaylistTracks,
     trackAnalyses,
+    showToast,
   } = useMusic();
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(playlist.name);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSmartMixOpen, setIsSmartMixOpen] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   const playlistTracks: Track[] = playlist.trackIds
     .map((id) => tracks.find((t) => t.id === id))
@@ -61,6 +80,99 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({ playlist
     const [moved] = copy.splice(index, 1);
     copy.splice(targetIndex, 0, moved);
     reorderPlaylistTracks(playlist.id, copy);
+  };
+
+  // Per-playlist export / import in the btmu-playlist v1 format (the
+  // same format the Flutter app uses — see services/playlistExport).
+  // Export downloads this playlist; import reads a .json or .m3u
+  // export and creates a NEW playlist from it (never overwrites an
+  // existing one), matching entries against this library by
+  // title/artist. Download uses the Blob + anchor pattern from
+  // SettingsScreen's backup export.
+  const downloadTextFile = (text: string, filename: string, mime: string) => {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExport = (format: 'json' | 'm3u') => {
+    try {
+      if (format === 'json') {
+        downloadTextFile(
+          buildPlaylistExportJson(playlist, playlistTracks),
+          exportPlaylistFileNameJson(playlist.name),
+          'application/json',
+        );
+      } else {
+        downloadTextFile(
+          buildPlaylistExportM3u(playlist, playlistTracks),
+          exportPlaylistFileNameM3u(playlist.name),
+          'audio/x-mpegurl',
+        );
+      }
+      showToast(
+        `Exported "${playlist.name}" (${playlistTracks.length} track${playlistTracks.length === 1 ? '' : 's'}).`,
+      );
+    } catch (err) {
+      console.error('Playlist export failed:', err);
+      showToast('Failed to export playlist');
+    }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset so picking the same file again still fires onChange.
+    e.target.value = '';
+    if (!file) return;
+    setImportStatus(null);
+    try {
+      const text = await file.text();
+      const lowerName = file.name.toLowerCase();
+      let doc;
+      if (lowerName.endsWith('.m3u') || lowerName.endsWith('.m3u8')) {
+        doc = parsePlaylistExportM3u(text, file.name.replace(/\.[^.]+$/, ''));
+      } else {
+        try {
+          doc = parsePlaylistExportJson(text);
+        } catch (err) {
+          // A .json-named (or extension-less) file that is actually an
+          // M3U playlist still imports instead of failing outright.
+          if (err instanceof PlaylistFormatError && text.trimStart().startsWith('#EXTM3U')) {
+            doc = parsePlaylistExportM3u(text, file.name.replace(/\.[^.]+$/, ''));
+          } else {
+            throw err;
+          }
+        }
+      }
+      const resolution = resolvePlaylistImport(doc, tracks);
+      const name = uniquePlaylistName(
+        doc.name,
+        playlists.map((p) => p.name),
+      );
+      await createPlaylist(name, doc.description, resolution.matchedTrackIds);
+      const summary = importSummary(name, resolution);
+      setImportStatus(summary);
+      showToast(
+        resolution.matchedTrackIds.length > 0
+          ? `Imported "${name}" (${resolution.matchedTrackIds.length} track${resolution.matchedTrackIds.length === 1 ? '' : 's'}).`
+          : `Nothing to import — no tracks in "${name}" matched your library.`,
+      );
+    } catch (err) {
+      const msg =
+        err instanceof PlaylistFormatError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not import playlist file.';
+      setImportStatus(`Import failed: ${msg}`);
+      showToast('Failed to import playlist file');
+    }
   };
 
   return (
@@ -185,6 +297,47 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({ playlist
             <Sparkles className="w-4 h-4" />
             <span>Smart Mix: Optimize Flow</span>
           </button>
+        )}
+
+        {/* Per-playlist export / import (btmu-playlist v1 — same format
+            the Flutter app uses). Import creates a NEW playlist from the
+            file; it never overwrites this one. */}
+        <input
+          ref={importFileInputRef}
+          type="file"
+          accept=".json,.m3u,.m3u8,application/json,audio/x-mpegurl"
+          onChange={handleImportFile}
+          className="hidden"
+        />
+        <div className="flex items-center gap-2 pt-1 w-full max-w-xs">
+          <button
+            onClick={() => handleExport('json')}
+            disabled={playlistTracks.length === 0}
+            className="flex-1 py-2.5 px-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-black dark:text-white disabled:opacity-50 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export JSON</span>
+          </button>
+          <button
+            onClick={() => handleExport('m3u')}
+            disabled={playlistTracks.length === 0}
+            className="flex-1 py-2.5 px-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-black dark:text-white disabled:opacity-50 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export M3U</span>
+          </button>
+          <button
+            onClick={() => importFileInputRef.current?.click()}
+            className="flex-1 py-2.5 px-3 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-black dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <Upload className="w-4 h-4" />
+            <span>Import</span>
+          </button>
+        </div>
+        {importStatus && (
+          <p className="w-full max-w-xs text-left text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 whitespace-pre-line">
+            {importStatus}
+          </p>
         )}
       </div>
 

@@ -69,17 +69,16 @@ class SmartRemixScreen extends ConsumerWidget {
       if (name == null || name.isEmpty) return;
       try {
         final repo = ref.read(playlistRepositoryProvider);
-        final playlist = await repo.createPlaylist(
+        // One transaction: the playlist row and every track row commit
+        // together, so a mid-save failure leaves no partial playlist
+        // behind (Phase 7 cleanup of the Phase 6 open item). Track
+        // order is the computed energy-arc order in `plan`.
+        await repo.createPlaylistWithTracks(
           name: name,
           description:
               'Smart Remix · ${_modeLabel(config.mode)} · ${plan.length} tracks',
+          trackIds: plan.map((entry) => entry.track.id).toList(),
         );
-        // Sequential awaits: addTrackToPlaylist appends at
-        // MAX(position) + 1, so awaiting each insert in plan order
-        // preserves the computed energy-arc order in the playlist.
-        for (final entry in plan) {
-          await repo.addTrackToPlaylist(playlist.id, entry.track.id);
-        }
         ref.invalidate(playlistsProvider);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

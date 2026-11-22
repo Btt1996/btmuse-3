@@ -49,6 +49,45 @@ class PlaylistRepository {
     return playlist;
   }
 
+  /// Creates a playlist and adds [trackIds] to it in a single
+  /// transaction (Phase 7 cleanup of the Phase 6 save-as-playlist
+  /// open item). Previously `SmartRemixScreen` called
+  /// [createPlaylist] and then [addTrackToPlaylist] once per track:
+  /// a failure mid-loop left a partial playlist behind with no
+  /// rollback. Here the playlist row and every track row commit
+  /// together or not at all — sqflite rolls the transaction back
+  /// when the callback throws, so a failed save leaves no playlist
+  /// row and no orphan track rows. Positions are assigned 0..n-1 in
+  /// [trackIds] order, so the caller's order (e.g. the Smart Remix
+  /// energy arc) is preserved exactly as the sequential awaits did.
+  Future<Playlist> createPlaylistWithTracks({
+    required String name,
+    String description = '',
+    required List<String> trackIds,
+  }) async {
+    final db = await _db.database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final playlist = Playlist(
+      id: _uuid.v4(),
+      name: name.trim(),
+      description: description.trim(),
+      createdAtMs: now,
+      updatedAtMs: now,
+    );
+    await db.transaction((txn) async {
+      await txn.insert('playlists', playlist.toMap());
+      var position = 0;
+      for (final trackId in trackIds) {
+        await txn.rawInsert(
+          'INSERT OR IGNORE INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)',
+          [playlist.id, trackId, position],
+        );
+        position++;
+      }
+    });
+    return playlist;
+  }
+
   Future<void> addTrackToPlaylist(String playlistId, String trackId) async {
     final db = await _db.database;
     final countRow = await db.rawQuery(

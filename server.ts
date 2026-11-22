@@ -94,17 +94,20 @@ function optionalBackendAuth(req: express.Request, res: express.Response, next: 
 }
 
 // Version endpoint for PWA & mobile update checks
+// Keep in step with public/version.json — that file is the version
+// record and this endpoint mirrors it (name / version / buildDate /
+// releaseNotes / minSupportedVersion), so the two sources never drift.
 app.get('/api/version', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json({
-    name: 'Btt Music',
+    name: 'Btmus by Taboubi Ahmed',
     shortName: 'BTmu',
     developer: 'Ahmed Taboubi',
     bundleId: 'com.ahmed.btmu',
     version: '2.00',
-    buildDate: '2026-11-14',
+    buildDate: '2026-11-07',
     releaseNotes:
-      'Btt Music 2.00: Zero-key Flutter iOS rebuild, independent X1 local/open acoustic fingerprinting, X2 VK/Telegram/YouTube/SoundCloud/Audius/RSS acquisition, Smart Remix, and 300% limited boost.',
+      'btmu 2.00: Milestone release with complete iOS dark liquid redesign; X1 intelligent song identification; X2 music discovery engine; automated Smart Synchro metadata repair and artwork matching; real DSP volume booster with soft-knee limiting; Spotify public playlist & profile discovery; and enhanced background audio stability.',
     minSupportedVersion: '1.0.0',
   });
 });

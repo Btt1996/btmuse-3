@@ -60,12 +60,12 @@ export const BttPlaybackAnimation: React.FC<BttPlaybackAnimationProps> = ({
           }}
           className="flex items-center justify-center"
         >
-          {/* Liquid Glass Badge with BTT Letters */}
-          <div className="px-3.5 py-1 rounded-2xl bg-[#E8DDC9]/90 dark:bg-[#141815]/95 backdrop-blur-2xl border border-[#C8F169]/50 shadow-[0_4px_24px_rgba(200,241,105,0.45)] dark:shadow-[0_4px_28px_rgba(200,241,105,0.6)] flex items-center gap-1">
-            <span className="font-mono font-black text-sm tracking-widest text-[#176B67] dark:text-[#C8F169] drop-shadow-xs">
+          {/* Liquid Glass Badge with BTT Letters — BT gradient system */}
+          <div className="px-3.5 py-1 rounded-2xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] backdrop-blur-2xl border border-white/25 shadow-[0_4px_24px_rgba(196,0,155,0.45)] dark:shadow-[0_4px_28px_rgba(247,14,66,0.6)] flex items-center gap-1">
+            <span className="font-mono font-black text-sm tracking-widest text-white drop-shadow-xs">
               BTT
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C8F169] animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           </div>
         </motion.div>
       </AnimatePresence>

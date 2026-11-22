@@ -840,6 +840,13 @@ export async function executeX2Import(
       playlistTrackIds.push(localTrackId);
       summary.alreadyLocal++;
       summary.completed++;
+      // Same history shape as resolveAndDownloadSingleTrack: an
+      // already-local track is a duplicate detection, not a download.
+      await recordDuplicateDetection({
+        title: trackMeta.title,
+        artist: trackMeta.artists.join(', ') || bestMatch.artist || 'Unknown Artist',
+        matchedTrackId: localTrackId,
+      });
       onItemUpdate(itemProgress);
       onSummaryUpdate({ ...summary });
       continue;
@@ -853,6 +860,19 @@ export async function executeX2Import(
         searchResult.failureCategory === 'network_failure'
           ? 'Network timeout or connection error during search.'
           : 'No authorized audio match found across open repositories or Telegram sync.';
+      // Same history shape as resolveAndDownloadSingleTrack: one failed
+      // import entry per unavailable track (not one per batch).
+      await recordFailedImport({
+        title: trackMeta.title,
+        artist: trackMeta.artists.join(', ') || bestMatch?.artist || 'Unknown Artist',
+        album: trackMeta.album,
+        source: bestMatch?.provider || 'x2_engine',
+        errorReason:
+          itemProgress.errorMessage ??
+          'No authorized audio match found across open repositories or Telegram sync.',
+        durationMs: trackMeta.durationMs,
+        isrc: trackMeta.isrc,
+      });
       summary.unavailable++;
       onItemUpdate(itemProgress);
       onSummaryUpdate({ ...summary });
@@ -913,6 +933,20 @@ export async function executeX2Import(
       await saveTrack(newTrack, blob);
       playlistTrackIds.push(trackId);
 
+      // Same history shape as resolveAndDownloadSingleTrack (line ~1159):
+      // one completed download entry per successfully imported track.
+      await recordDownloadHistory({
+        title: newTrack.title,
+        artist: newTrack.artist,
+        album: newTrack.album,
+        source: bestMatch.provider,
+        status: 'completed',
+        localTrackId: trackId,
+        artworkUrl: newTrack.artworkUrl,
+        durationSeconds: newTrack.duration,
+        fileSizeBytes: blob.size,
+      });
+
       itemProgress.status = 'completed';
       itemProgress.savedTrackId = trackId;
       summary.completed++;
@@ -922,6 +956,17 @@ export async function executeX2Import(
       itemProgress.status = 'failed';
       itemProgress.failureCategory = 'stream_invalid';
       itemProgress.errorMessage = err instanceof Error ? err.message : 'Download failed';
+      // Same history shape as resolveAndDownloadSingleTrack: one failed
+      // import entry per track whose download/validation failed.
+      await recordFailedImport({
+        title: trackMeta.title,
+        artist: trackMeta.artists.join(', ') || bestMatch.artist || 'Unknown Artist',
+        album: trackMeta.album,
+        source: bestMatch.provider,
+        errorReason: itemProgress.errorMessage ?? 'Download failed',
+        durationMs: trackMeta.durationMs,
+        isrc: trackMeta.isrc,
+      });
       summary.failed++;
       onItemUpdate(itemProgress);
       onSummaryUpdate({ ...summary });
@@ -968,6 +1013,17 @@ export async function retryIndividualTrack(
     item.status = 'unavailable';
     item.failureCategory = searchResult.failureCategory;
     item.errorMessage = 'Still unavailable across configured audio providers.';
+    // Same history shape as resolveAndDownloadSingleTrack: the retried
+    // track stays visible in history as a failed import.
+    await recordFailedImport({
+      title: item.track.title,
+      artist: item.track.artists.join(', ') || bestMatch?.artist || 'Unknown Artist',
+      album: item.track.album,
+      source: bestMatch?.provider || 'x2_engine',
+      errorReason: item.errorMessage ?? 'Still unavailable across configured audio providers.',
+      durationMs: item.track.durationMs,
+      isrc: item.track.isrc,
+    });
     onItemUpdate({ ...item });
     return { success: false, error: item.errorMessage };
   }
@@ -978,6 +1034,13 @@ export async function retryIndividualTrack(
     item.status = 'already_local';
     item.savedTrackId = localId;
     item.selectedMatch = bestMatch;
+    // Same history shape as resolveAndDownloadSingleTrack: an
+    // already-local track is a duplicate detection, not a download.
+    await recordDuplicateDetection({
+      title: item.track.title,
+      artist: item.track.artists.join(', ') || bestMatch.artist || 'Unknown Artist',
+      matchedTrackId: localId,
+    });
     onItemUpdate({ ...item });
     return { success: true, trackId: localId };
   }
@@ -1022,6 +1085,20 @@ export async function retryIndividualTrack(
 
     await saveTrack(newTrack, blob);
 
+    // Same history shape as resolveAndDownloadSingleTrack (line ~1159):
+    // one completed download entry for the retried track.
+    await recordDownloadHistory({
+      title: newTrack.title,
+      artist: newTrack.artist,
+      album: newTrack.album,
+      source: bestMatch.provider,
+      status: 'completed',
+      localTrackId: trackId,
+      artworkUrl: newTrack.artworkUrl,
+      durationSeconds: newTrack.duration,
+      fileSizeBytes: blob.size,
+    });
+
     // If target playlist ID is provided, append to it
     if (targetPlaylistId) {
       const { getAllPlaylists, savePlaylist } = await import('../db');
@@ -1044,6 +1121,17 @@ export async function retryIndividualTrack(
     item.status = 'failed';
     item.errorMessage = msg;
     item.failureCategory = 'stream_invalid';
+    // Same history shape as resolveAndDownloadSingleTrack: one failed
+    // import entry for the retried track whose download/validation failed.
+    await recordFailedImport({
+      title: item.track.title,
+      artist: item.track.artists.join(', ') || bestMatch.artist || 'Unknown Artist',
+      album: item.track.album,
+      source: bestMatch.provider,
+      errorReason: msg,
+      durationMs: item.track.durationMs,
+      isrc: item.track.isrc,
+    });
     onItemUpdate({ ...item });
     return { success: false, error: msg };
   }

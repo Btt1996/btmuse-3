@@ -66,12 +66,12 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/50 dark:bg-black/30 backdrop-blur-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#02ABB0]/20 text-[#02ABB0] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-2xl bg-[#6202E1]/20 text-[#F70E42] flex items-center justify-center">
               <BarChart3 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black tracking-widest text-[#02ABB0] uppercase font-mono">
+                <span className="text-[10px] font-black tracking-widest text-[#F70E42] uppercase font-mono">
                   REQUIREMENT 6
                 </span>
                 <span className="text-[10px] text-zinc-400">• Real Track Benchmark</span>
@@ -95,7 +95,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
           {/* Explanation Banner */}
           <div className="p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1.5 text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
             <div className="font-bold text-black dark:text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#02ABB0]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#F70E42]" />
               <span>Real Track Testing (Zero Mocks)</span>
             </div>
             <p>
@@ -107,7 +107,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
           {isRunning && currentProgress && (
             <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-2 text-center">
               <div className="flex items-center justify-center gap-2 font-bold text-black dark:text-white">
-                <Loader2 className="w-4 h-4 animate-spin text-[#02ABB0]" />
+                <Loader2 className="w-4 h-4 animate-spin text-[#F70E42]" />
                 <span>Testing Track {currentProgress.current} of {currentProgress.total}</span>
               </div>
               <p className="text-[11px] text-zinc-500 font-mono truncate">
@@ -115,7 +115,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
               </p>
               <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#02ABB0] transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] transition-all duration-300"
                   style={{ width: `${(currentProgress.current / currentProgress.total) * 100}%` }}
                 />
               </div>
@@ -129,7 +129,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
               <div className="grid grid-cols-4 gap-2 text-center">
                 <div className="p-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                   <div className="text-[10px] text-zinc-500">Search Success</div>
-                  <div className="text-base font-extrabold text-[#02ABB0] font-mono mt-0.5">
+                  <div className="text-base font-extrabold text-[#F70E42] font-mono mt-0.5">
                     {report.searchSuccessRate}%
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export const X2BenchmarkModal: React.FC<X2BenchmarkModalProps> = ({
               disabled={isRunning}
               className="px-4 py-2 rounded-xl bg-black text-white dark:bg-white dark:text-black font-extrabold text-xs active:scale-95 transition disabled:opacity-40 flex items-center gap-1.5"
             >
-              {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02ABB0]" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#F70E42]" /> : <Play className="w-3.5 h-3.5 fill-current" />}
               <span>{report ? 'Rerun Benchmark' : 'Run Live Benchmark'}</span>
             </button>
           </div>

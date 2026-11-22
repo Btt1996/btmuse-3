@@ -83,7 +83,7 @@ export const SpotDLInfoModal: React.FC<SpotDLInfoModalProps> = ({
 
             <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
               <div className="font-bold text-black dark:text-white flex items-center gap-1.5">
-                <Send className="w-3.5 h-3.5 text-[#02ABB0]" />
+                <Send className="w-3.5 h-3.5 text-[#F70E42]" />
                 <span>Telegram Audio Hub</span>
               </div>
               <p className="text-[11px] text-zinc-500 pl-5.5">
@@ -94,7 +94,7 @@ export const SpotDLInfoModal: React.FC<SpotDLInfoModalProps> = ({
 
             <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
               <div className="font-bold text-black dark:text-white flex items-center gap-1.5">
-                <FolderPlus className="w-3.5 h-3.5 text-[#02ABB0]" />
+                <FolderPlus className="w-3.5 h-3.5 text-[#F70E42]" />
                 <span>Local file import</span>
               </div>
               <p className="text-[11px] text-zinc-500 pl-5.5">
@@ -104,7 +104,7 @@ export const SpotDLInfoModal: React.FC<SpotDLInfoModalProps> = ({
 
             <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
               <div className="font-bold text-black dark:text-white flex items-center gap-1.5">
-                <Library className="w-3.5 h-3.5 text-[#02ABB0]" />
+                <Library className="w-3.5 h-3.5 text-[#F70E42]" />
                 <span>Open catalogs (X2)</span>
               </div>
               <p className="text-[11px] text-zinc-500 pl-5.5">
@@ -120,7 +120,7 @@ export const SpotDLInfoModal: React.FC<SpotDLInfoModalProps> = ({
           <span>Quarantined pending legal audit — Phase 0 item 5</span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#02ABB0] text-black font-extrabold text-xs active:scale-95 transition"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white font-extrabold text-xs active:scale-95 transition"
           >
             Done
           </button>

@@ -51,11 +51,11 @@ export const DuplicatesModal: React.FC<DuplicatesModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 select-none">
-      <div className="bg-white dark:bg-[#030708] border border-[#02ABB0]/30 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-white dark:bg-[#030708] border border-[#F70E42]/30 rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#02ABB0]/15 text-[#02ABB0] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[#6202E1]/15 text-[#F70E42] flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -76,14 +76,14 @@ export const DuplicatesModal: React.FC<DuplicatesModalProps> = ({
         </div>
 
         {/* Storage Recovery Summary Card */}
-        <div className="px-6 py-4 bg-[#035A69]/10 dark:bg-[#024E5B]/20 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#6202E1]/10 dark:bg-[#6202E1]/20 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <HardDrive className="w-5 h-5 text-[#02ABB0]" />
+            <HardDrive className="w-5 h-5 text-[#F70E42]" />
             <div>
               <div className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">
                 Reclaimable Storage
               </div>
-              <div className="text-base font-extrabold text-[#02ABB0]">
+              <div className="text-base font-extrabold text-[#F70E42]">
                 {formatFileSize(totalWastedBytes)}
               </div>
             </div>
@@ -102,7 +102,7 @@ export const DuplicatesModal: React.FC<DuplicatesModalProps> = ({
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {duplicateGroups.length === 0 ? (
             <div className="text-center py-12 space-y-3">
-              <CheckCircle2 className="w-12 h-12 text-[#02ABB0] mx-auto" />
+              <CheckCircle2 className="w-12 h-12 text-[#F70E42] mx-auto" />
               <h4 className="text-base font-bold text-black dark:text-white">
                 Your Library is Clean!
               </h4>
@@ -126,15 +126,15 @@ export const DuplicatesModal: React.FC<DuplicatesModalProps> = ({
                       {group.artistName}
                     </p>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full bg-[#02ABB0]/15 text-[#02ABB0] text-[10px] font-bold shrink-0">
+                  <span className="px-2 py-0.5 rounded-full bg-[#6202E1]/15 text-[#F70E42] text-[10px] font-bold shrink-0">
                     +{group.duplicateTracks.length} copy
                   </span>
                 </div>
 
                 {/* Primary version kept */}
-                <div className="p-2 rounded-xl bg-white dark:bg-black border border-[#02ABB0]/30 flex items-center justify-between text-xs">
+                <div className="p-2 rounded-xl bg-white dark:bg-black border border-[#F70E42]/30 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="px-1.5 py-0.5 rounded bg-[#02ABB0] text-black font-extrabold text-[9px] uppercase">
+                    <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white font-extrabold text-[9px] uppercase">
                       Keep
                     </span>
                     <span className="truncate text-black dark:text-white font-medium">
@@ -182,7 +182,7 @@ export const DuplicatesModal: React.FC<DuplicatesModalProps> = ({
             <button
               onClick={handleCleanAll}
               disabled={isDeleting}
-              className="px-5 py-2.5 rounded-xl bg-[#02ABB0] hover:bg-[#01A4BD] text-black text-xs font-bold transition flex items-center gap-2 active:scale-95 shadow-md shadow-[#02ABB0]/20 disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#6202E1] via-[#C4009B] to-[#F70E42] text-white text-xs font-bold transition flex items-center gap-2 active:scale-95 shadow-md shadow-[#F70E42]/20 disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
               <span>

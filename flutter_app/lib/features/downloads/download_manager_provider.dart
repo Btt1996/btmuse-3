@@ -121,6 +121,59 @@ class DownloadManagerNotifier extends StateNotifier<List<DownloadTask>> {
     }
   }
 
+  /// Records a download that ran OUTSIDE the manager as a finished row
+  /// in Downloads history, so it appears alongside queued downloads.
+  ///
+  /// The only such caller is the self-hosted YouTube bridge import in
+  /// ImportCenter (`_importViaBridge`): it drives its own stage/progress
+  /// UI and CancelToken and must pass `allowPrivateHost: true` to the
+  /// acquisition engine (the bridge URL is the user's own host, often a
+  /// LAN address), so it cannot go through [enqueueX2Download], which
+  /// owns its token, swallows errors into the task row, and has no
+  /// `allowPrivateHost` parameter. Routing the bridge through the
+  /// manager would also orphan the sheet's Cancel button (which drives
+  /// `_bridgeCancelToken`) and its `_bridgeError` handling.
+  ///
+  /// No payload is persisted: a bridge result points at the user's own
+  /// bridge host, which [enqueueX2Download] must not re-fetch without
+  /// the bridge's `allowPrivateHost` verification, so the row is not
+  /// retryable from history ([canRetry] stays false) — re-import from
+  /// the Import Center instead. The row is prepended newest-first and
+  /// persisted with [HistoryRepository.upsertTask], like every other
+  /// task. Never throws: history recording must not fail the import
+  /// that already succeeded (or the error path that already reported).
+  /// Does not call the library-changed callback: the bridge caller
+  /// already invalidates the library providers itself.
+  Future<void> recordExternalDownload({
+    required X2Result result,
+    required String? importedTrackId,
+    String? errorMessage,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final task = DownloadTask(
+      id: _uuid.v4(),
+      title: result.title,
+      artist: result.artist,
+      providerId: result.providerId,
+      sourceUrl: result.audioUrl ?? result.externalPageUrl ?? '',
+      artworkUrl: result.artworkUrl,
+      stage:
+          errorMessage == null ? DownloadStage.completed : DownloadStage.failed,
+      progress: errorMessage == null ? 1.0 : 0.0,
+      importedTrackId: importedTrackId,
+      errorMessage: errorMessage,
+      createdAtMs: now,
+      updatedAtMs: now,
+    );
+    state = [task, ...state];
+    try {
+      await _historyRepo.upsertTask(task);
+    } catch (_) {
+      // History is best-effort: the import already happened (or its
+      // error is already shown); never fail the caller over storage.
+    }
+  }
+
   void cancelTask(String taskId) {
     final token = _cancelTokens[taskId];
     if (token != null && !token.isCancelled) {

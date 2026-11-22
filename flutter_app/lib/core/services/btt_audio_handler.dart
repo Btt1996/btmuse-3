@@ -56,7 +56,6 @@ class BttAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   TraversalOrder _traversal = TraversalOrder.sequential(0, -1);
 
   AudioSettings _audioSettings = const AudioSettings();
-  SmartRemixConfig _remixConfig = const SmartRemixConfig();
   bool _isCrossfading = false;
 
   // Live native iOS playback state mirrored into audio_service streams.
@@ -123,7 +122,6 @@ class BttAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     await IosAudioBridge.configureAudioSession();
 
     _audioSettings = await _store.loadAudioSettings();
-    _remixConfig = await _store.loadSmartRemixConfig();
     await applyAudioSettings(_audioSettings);
 
     if (_useNativeIosEngine) {
@@ -815,7 +813,7 @@ class BttAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         _traversal.moveTo(nextIdx);
         _nativePosition = Duration.zero;
         _nativeDuration = Duration(
-          milliseconds: ((nextDur ?? nextTrack.durationSeconds.toDouble()) * 1000).round(),
+          milliseconds: (nextDur * 1000).round(),
         );
         _nativePlaying = true;
         _currentTrackController.add(nextTrack);
@@ -882,7 +880,6 @@ class BttAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   }
 
   Future<void> updateRemixConfig(SmartRemixConfig config) async {
-    _remixConfig = config;
     await _store.saveSmartRemixConfig(config);
   }
 

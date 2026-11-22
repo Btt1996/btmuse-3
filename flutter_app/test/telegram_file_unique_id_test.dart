@@ -298,7 +298,7 @@ void main() {
         caught = e;
       }
       expect(caught, isNotNull);
-      expect(caught!.message, contains('Already in library'));
+      expect(caught.message, contains('Already in library'));
       expect(caught.existingTrack.id, 't-existing');
       expect(networkCalls, 0);
       expect(repo.importCalled, isFalse);

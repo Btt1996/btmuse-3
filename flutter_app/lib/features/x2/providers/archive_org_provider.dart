@@ -231,7 +231,7 @@ class ArchiveOrgProvider implements X2Provider {
     } else {
       return null;
     }
-    if (identifier == null || identifier.isEmpty) return null;
+    if (identifier.isEmpty) return null;
     final metadata = await _fetchMetadata(identifier);
     if (metadata == null) return null;
     return _resultFromMetadata(

@@ -13,6 +13,7 @@ import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/lyrics/lyrics_service.dart';
 import 'package:btmu/features/lyrics/lyrics_view.dart';
+import 'package:btmu/features/player/up_next_sheet.dart';
 import 'package:btmu/features/smart_remix/smart_remix_screen.dart';
 
 enum _PlayerTab { player, lyrics }
@@ -412,6 +413,14 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                     icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.accentPink),
                                     label: const Text(
                                       'Smart Remix',
+                                      style: TextStyle(color: BttColors.textPrimary),
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () => showUpNextSheet(context),
+                                    icon: const Icon(Icons.queue_music_rounded, color: BttColors.accentMagenta),
+                                    label: const Text(
+                                      'Up Next',
                                       style: TextStyle(color: BttColors.textPrimary),
                                     ),
                                   ),

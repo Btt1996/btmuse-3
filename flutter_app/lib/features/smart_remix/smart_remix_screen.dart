@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/data/models/smart_remix_config.dart';
+import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/smart_remix/smart_remix_engine.dart';
 
 class SmartRemixScreen extends ConsumerWidget {
@@ -41,40 +43,33 @@ class SmartRemixScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
-          SwitchListTile(
+          // Crossfade moved to Audio settings in Phase 3 (S-3): it is a
+          // first-class playback setting on AudioSettings now, not part of
+          // Smart Remix. This tile links there instead of duplicating the
+          // control. SmartRemixConfig.crossfadeSeconds is removed by the
+          // handler worker (W2); nothing on this screen reads it anymore.
+          ListTile(
             tileColor: BttColors.bgCard,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Enable Continuous Equal-Power Crossfade'),
-            subtitle: Text('Crossfade overlap: ${config.crossfadeSeconds}s'),
-            activeThumbColor: BttColors.accentPink,
-            value: config.enabled,
-            onChanged: (val) => updateConfig(config.copyWith(enabled: val)),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: BttColors.bgCard,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BttColors.borderSubtle),
+              side: const BorderSide(color: BttColors.borderSubtle),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Crossfade Overlap (${config.crossfadeSeconds}s)',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Slider(
-                  min: 2,
-                  max: 14,
-                  divisions: 12,
-                  value: config.crossfadeSeconds.toDouble(),
-                  onChanged: (v) =>
-                      updateConfig(config.copyWith(crossfadeSeconds: v.round())),
-                ),
-              ],
+            leading: const Icon(Icons.tune_rounded, color: BttColors.accentPink),
+            title: const Text('Crossfade'),
+            subtitle: const Text(
+              'Crossfade now lives in Audio settings and works for any queue — no Smart Remix needed.',
             ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: BttColors.textSecondary,
+            ),
+            onTap: () {
+              Navigator.of(context).push(
+                BttPageRoute<void>(
+                  builder: (_) => const AudioSettingsScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 18),
           Text('Mix Mode', style: Theme.of(context).textTheme.titleLarge),
@@ -105,7 +100,9 @@ class SmartRemixScreen extends ConsumerWidget {
             onPressed: plan.isEmpty
                 ? null
                 : () async {
-                    await updateConfig(config.copyWith(enabled: true));
+                    // Phase 3: SmartRemixConfig.enabled was dropped as
+                    // vestigial — the launch action itself is the remix.
+                    // (Previously this persisted config.copyWith(enabled: true).)
                     await handler.setTrackQueueAndPlay(
                       plan.map((e) => e.track).toList(),
                     );

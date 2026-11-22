@@ -33,24 +33,36 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
       final repo = ref.read(libraryRepositoryProvider);
       var importedCount = 0;
+      final skipped = <String>[];
       for (final file in result.files) {
         final path = file.path;
         if (path == null) continue;
         final rawTitle = p.basenameWithoutExtension(file.name);
-        await repo.importFileIntoLibrary(
-          sourceFile: File(path),
-          rawTitle: rawTitle,
-          sourceProvider: 'local_file',
-        );
-        importedCount++;
+        // Per-file catch: since b690ae1 a duplicate throws
+        // DuplicateTrackFailure instead of silently "succeeding", so one
+        // duplicate must not abort the rest of the batch (same pattern as
+        // the Import Center). Skips are reported in the summary snackbar.
+        try {
+          await repo.importFileIntoLibrary(
+            sourceFile: File(path),
+            rawTitle: rawTitle,
+            sourceProvider: 'local_file',
+          );
+          importedCount++;
+        } catch (e) {
+          skipped.add('${file.name}: $e');
+        }
       }
 
       ref.invalidate(libraryTracksProvider);
       ref.invalidate(storageStatsProvider);
 
       if (mounted) {
+        final summary = skipped.isEmpty
+            ? 'Imported $importedCount audio file(s) into library.'
+            : 'Imported $importedCount of ${result.files.length} audio file(s) · ${skipped.length} skipped — ${skipped.first}';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Imported $importedCount audio file(s) into library.')),
+          SnackBar(content: Text(summary)),
         );
       }
     } catch (e) {

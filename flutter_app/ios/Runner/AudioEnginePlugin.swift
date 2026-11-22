@@ -49,6 +49,10 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
   private var limiterEnabled: Bool = true
   private var normalizeVolume: Bool = true
   private var eqPreset: String = "Balanced"
+  /// True once the loaded track has played to completion (and no new track,
+  /// seek, or crossfade has superseded it). Used for the honest processing
+  /// state: a finished track is "completed", not "ready".
+  private var didCompleteCurrentTrack = false
 
   static func register(with registrar: FlutterPluginRegistrar) {
     let methodChannel = FlutterMethodChannel(
@@ -88,6 +92,11 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
       startCrossfade(args: args, result: result)
     case "updateNowPlaying":
       updateNowPlaying(args: args, result: result)
+    case "clearNowPlaying":
+      clearNowPlaying()
+      result(nil)
+    case "getNativePlaybackState":
+      getNativePlaybackState(result: result)
     case "extractMonoPcm":
       extractMonoPcm(args: args, result: result)
     case "extractAudioMetadata":
@@ -193,17 +202,45 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     normalizeVolume = (args["normalizeVolume"] as? Bool) ?? true
     eqPreset = (args["eqPreset"] as? String) ?? "Balanced"
 
-    // 5-band EQ curve gains in dB
+    // 5-band EQ curve gains in dB, bands at 60 / 230 / 910 / 3600 / 14000 Hz
+    // (lowShelf, parametric, parametric, parametric, highShelf).
+    //
+    // CANONICAL PRESET CONTRACT (Phase 3, E-1): these case labels must match
+    // AudioSettings.eqPresets in flutter_app/lib/data/models/audio_settings.dart
+    // exactly — Balanced, Warm Bass, Vocal Clarity, Late Night, Studio Bright.
+    // Every preset except Balanced maps to a distinct, non-flat curve; no
+    // canonical preset may fall through to the default (all-zero) gains.
+    // The default case below is defensive only, for a stale persisted string.
+    // Legacy Swift-only names are retired, not renamed silently:
+    //   "Bass Boost" curve lives on as "Warm Bass",
+    //   "Treble Crisp" curve lives on as "Studio Bright",
+    //   "Acoustic Warmth" has no Dart preset and is dropped.
+    // See flutter_app/test/audio_settings_eq_test.dart, which asserts this
+    // table (names + gains) against the Dart list.
     let gains: [Float]
     switch eqPreset {
-    case "Bass Boost":
+    case "Balanced":
+      gains = [0.0, 0.0, 0.0, 0.0, 0.0]
+    case "Warm Bass":
+      // Former "Bass Boost" curve, unchanged.
       gains = [6.5, 4.0, 0.0, -1.0, 1.0]
     case "Vocal Clarity":
       gains = [-2.5, -1.0, 4.5, 4.0, 1.5]
-    case "Treble Crisp":
+    case "Late Night":
+      // NEW curve, gentle low/high roll-off for quiet late-night listening:
+      //   60 Hz   -1.5 dB — sub-bass trimmed so playback does not boom
+      //                    through walls / disturb others at night.
+      //   230 Hz   0.0 dB — low mids left alone.
+      //   910 Hz  +1.0 dB — mids kept slightly forward so vocals stay
+      //                    intelligible at low volume.
+      //   3600 Hz -1.0 dB — presence tamed, less harshness.
+      //   14000 Hz -3.5 dB — highs rolled off, less hiss / shrillness.
+      // Deliberately NOT a loudness-compensation lift: at night the goal is
+      // restraint at both ends of the spectrum, not more bass.
+      gains = [-1.5, 0.0, 1.0, -1.0, -3.5]
+    case "Studio Bright":
+      // Former "Treble Crisp" curve, unchanged.
       gains = [-1.0, 0.0, 1.5, 4.5, 6.0]
-    case "Acoustic Warmth":
-      gains = [3.5, 2.5, 1.0, 0.5, -1.5]
     default:
       gains = [0.0, 0.0, 0.0, 0.0, 0.0]
     }
@@ -212,14 +249,24 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     }
     eqNode.bypass = (eqPreset == "Balanced")
 
-    // Gain staging + DynamicsProcessor soft-knee ceiling (-1.0 dBFS)
-    let normDb: Double = normalizeVolume ? -1.5 : 0.0
-    let boostDb: Double
+    // Gain staging + DynamicsProcessor soft-knee ceiling (-1.0 dBFS).
+    //
+    // E-2 — the two numbers, stated plainly (both are returned below so the
+    // Dart UI can show them instead of quoting only one):
+    //   raw gain      = 20 * log10(multiplier)            (normalization off)
+    //   effective gain = raw gain + normalization (-1.5 dB when on, the default)
+    // At 300% (multiplier 3.0): raw = +9.54 dB, effective = +8.04 dB with the
+    // default normalization. 300% is +9.5 dB of digital gain, not 3x perceived
+    // loudness. The DynamicsProcessor OverallGain parameter receives the
+    // effective gain clamped to [-40, +12] dB.
+    // Limiter behaviour is UNCHANGED: limiter stays on by default and can only
+    // be switched off explicitly by the user in the UI (limiterEnabled == false
+    // neuters it via threshold 18 dB / headroom 40 dB; the node itself is never
+    // bypassed).
+    let (rawBoostDb, normDb, boostDb, overallGainDb) = currentGainValues()
     if currentGainMultiplier <= 0.0001 {
-      boostDb = -80.0
       engine.mainMixerNode.outputVolume = 0.0
     } else {
-      boostDb = 20.0 * log10(currentGainMultiplier) + normDb
       engine.mainMixerNode.outputVolume = 1.0
     }
 
@@ -229,15 +276,37 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     AudioUnitSetParameter(au, kDynamicsProcessorParam_HeadRoom, kAudioUnitScope_Global, 0, limiterEnabled ? 2.5 : 40.0, 0)
     AudioUnitSetParameter(au, kDynamicsProcessorParam_AttackTime, kAudioUnitScope_Global, 0, 0.002, 0)
     AudioUnitSetParameter(au, kDynamicsProcessorParam_ReleaseTime, kAudioUnitScope_Global, 0, 0.05, 0)
-    AudioUnitSetParameter(au, kDynamicsProcessorParam_OverallGain, kAudioUnitScope_Global, 0, Float(max(-40.0, min(12.0, boostDb))), 0)
+    AudioUnitSetParameter(au, kDynamicsProcessorParam_OverallGain, kAudioUnitScope_Global, 0, Float(overallGainDb), 0)
     dynamicsNode.bypass = false
 
     result([
       "appliedMultiplier": currentGainMultiplier,
       "boostDb": boostDb,
+      "rawBoostDb": rawBoostDb,
+      "normalizationDb": normDb,
+      "overallGainDb": overallGainDb,
       "limiterEnabled": limiterEnabled,
       "eqPreset": eqPreset
     ])
+  }
+
+  /// Gain values for the current multiplier / normalization settings.
+  /// - rawBoostDb: 20 * log10(multiplier), before normalization (-80 dB when muted).
+  /// - normDb: -1.5 dB when normalization is on, else 0 dB.
+  /// - boostDb: raw + norm (the effective gain the user hears).
+  /// - overallGainDb: boostDb clamped to [-40, +12] dB — exactly the value
+  ///   written to the DynamicsProcessor OverallGain parameter.
+  private func currentGainValues() -> (rawDb: Double, normDb: Double, effectiveDb: Double, overallDb: Double) {
+    let normDb: Double = normalizeVolume ? -1.5 : 0.0
+    // Muted (multiplier ~0): -80 dB flat, as before — normalization is not
+    // stacked on top of the mute floor.
+    if currentGainMultiplier <= 0.0001 {
+      return (-80.0, normDb, -80.0, -40.0)
+    }
+    let rawDb: Double = 20.0 * log10(currentGainMultiplier)
+    let effectiveDb = rawDb + normDb
+    let overallDb = max(-40.0, min(12.0, effectiveDb))
+    return (rawDb, normDb, effectiveDb, overallDb)
   }
 
   private func prepareFile(args: [String: Any], result: @escaping FlutterResult) {
@@ -270,6 +339,7 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
 
       playbackGeneration += 1
       let gen = playbackGeneration
+      didCompleteCurrentTrack = false
 
       playerA.stop()
       playerB.stop()
@@ -301,9 +371,23 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
                   self.playbackGeneration == gen,
                   !self.isCrossfading else { return }
             self.isPlayingState = false
+            self.didCompleteCurrentTrack = true
             self.stopPositionTimer()
+            self.emitPositionSnapshot()
             self.channel?.invokeMethod("onNativeCompleted", arguments: ["trackId": trackId ?? ""])
           }
+        }
+      } else {
+        // Nothing left to play (started at/past the end): complete the track
+        // instead of stalling the queue with no callback. Dart's
+        // _handleTrackCompletion decides next / repeat / queue-end from here.
+        didCompleteCurrentTrack = true
+        isPlayingState = false
+        stopPositionTimer()
+        emitPositionSnapshot()
+        let completedTrackId = trackId
+        DispatchQueue.main.async { [weak self] in
+          self?.channel?.invokeMethod("onNativeCompleted", arguments: ["trackId": completedTrackId ?? ""])
         }
       }
 
@@ -318,7 +402,8 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
 
       result([
         "durationSeconds": activeTrackDurationSec,
-        "playing": isPlayingState
+        "playing": isPlayingState,
+        "processingState": nativeProcessingState()
       ])
     } catch {
       result(
@@ -342,6 +427,16 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
   private func resumePlayback(result: @escaping FlutterResult) {
     do {
       try startEngineIfNeeded()
+      // A completed track has no scheduled segment left: replaying it needs
+      // a seek(0) / playFile, not a bare play(). Claiming "playing" here
+      // would show a playing UI over silence (the C-4 failure pattern).
+      if didCompleteCurrentTrack || primaryFile == nil {
+        isPlayingState = false
+        stopPositionTimer()
+        emitPositionSnapshot()
+        result(nil)
+        return
+      }
       activePlayer().play()
       isPlayingState = true
       startPositionTimer()
@@ -359,7 +454,17 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     playerA.stop()
     playerB.stop()
     isPlayingState = false
+    didCompleteCurrentTrack = false
+    primaryFile = nil
+    crossfadeFile = nil
+    activeTrackDurationSec = 0.0
     stopPositionTimer()
+    // C-1: stopping clears the lock-screen metadata — a stopped player must
+    // not leave a stale track on the lock screen. Queue-end clearing is the
+    // Dart side's job (only the handler knows the queue ended vs. advanced):
+    // BttAudioHandler must call the "clearNowPlaying" channel method when
+    // _handleTrackCompletion reaches the end of the queue with repeat off.
+    clearNowPlaying()
     result(nil)
   }
 
@@ -378,6 +483,7 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     playbackGeneration += 1
     let gen = playbackGeneration
     let trackId = activeTrackId
+    didCompleteCurrentTrack = false
 
     let node = activePlayer()
     node.stop()
@@ -396,7 +502,9 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
                 self.playbackGeneration == gen,
                 !self.isCrossfading else { return }
           self.isPlayingState = false
+          self.didCompleteCurrentTrack = true
           self.stopPositionTimer()
+          self.emitPositionSnapshot()
           self.channel?.invokeMethod("onNativeCompleted", arguments: ["trackId": trackId ?? ""])
         }
       }
@@ -404,6 +512,18 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
         node.play()
         isPlayingState = true
         startPositionTimer()
+      }
+    } else {
+      // Seeked to/past the end: complete the track instead of stalling.
+      // No segment is scheduled and nothing plays; firing onNativeCompleted
+      // lets Dart advance the queue (or end it) exactly as a natural
+      // track-end would. Dispatched async so this seekTo call returns first.
+      isPlayingState = false
+      didCompleteCurrentTrack = true
+      stopPositionTimer()
+      let completedTrackId = trackId
+      DispatchQueue.main.async { [weak self] in
+        self?.channel?.invokeMethod("onNativeCompleted", arguments: ["trackId": completedTrackId ?? ""])
       }
     }
     emitPositionSnapshot()
@@ -455,7 +575,9 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
                 self.playbackGeneration == gen,
                 !self.isCrossfading else { return }
           self.isPlayingState = false
+          self.didCompleteCurrentTrack = true
           self.stopPositionTimer()
+          self.emitPositionSnapshot()
           self.channel?.invokeMethod("onNativeCompleted", arguments: ["trackId": nextTrackId ?? ""])
         }
       }
@@ -485,6 +607,7 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
           self.activeTrackDurationSec = nextDuration
           self.activeTrackId = nextTrackId
           self.isCrossfading = false
+          self.didCompleteCurrentTrack = false
           self.isPlayingState = true
           self.startPositionTimer()
         }
@@ -526,7 +649,47 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     channel?.invokeMethod("onNativePosition", arguments: [
       "positionSeconds": currentElapsedSeconds(),
       "durationSeconds": activeTrackDurationSec,
-      "isPlaying": isPlayingState
+      "isPlaying": isPlayingState,
+      // C-1: honest processing state for the Dart side — do NOT report
+      // "ready" when idle (no track / stopped) or completed (track ended).
+      // BttAudioHandler._emitNativePlaybackState must map this onto
+      // AudioProcessingState instead of its current constant
+      // AudioProcessingState.ready (see the getNativePlaybackState docs).
+      "processingState": nativeProcessingState()
+    ])
+  }
+
+  /// Honest native processing state, in audio_service terms.
+  /// - "idle": no track loaded (fresh start, or after stopPlayback).
+  /// - "completed": the loaded track played to the end (natural completion,
+  ///   seek-to-end, or playFile started at/past the end).
+  /// - "ready": a track is loaded and paused or playing.
+  /// There is no async "loading" window to report: loadAndSchedule reads the
+  /// file synchronously on the method-call thread, so between the Dart call
+  /// and its result the state is transiently "loading" only inside that call.
+  private func nativeProcessingState() -> String {
+    if primaryFile == nil { return "idle" }
+    if didCompleteCurrentTrack { return "completed" }
+    return "ready"
+  }
+
+  /// Synchronous snapshot of the native playback state for the Dart side.
+  /// Dart (BttAudioHandler / IosAudioBridge) should call this when it needs
+  /// the state outside the 0.5 s position ticks — e.g. right after
+  /// playFile/prepareFile — and must use "processingState" here instead of
+  /// hard-coding AudioProcessingState.ready.
+  private func getNativePlaybackState(result: @escaping FlutterResult) {
+    let (_, _, boostDb, overallGainDb) = currentGainValues()
+    result([
+      "processingState": nativeProcessingState(),
+      "isPlaying": isPlayingState,
+      "positionSeconds": currentElapsedSeconds(),
+      "durationSeconds": activeTrackDurationSec,
+      "trackId": activeTrackId as Any,
+      "eqPreset": eqPreset,
+      "boostDb": boostDb,
+      "overallGainDb": overallGainDb,
+      "limiterEnabled": limiterEnabled
     ])
   }
 
@@ -673,6 +836,37 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     }
   }
 
+  // MARK: - Now Playing (C-1: single writer)
+  //
+  // OWNERSHIP: this plugin is the single native writer of
+  // MPNowPlayingInfoCenter. Every write in this file goes through
+  // setNowPlayingInfo(_:) and every clear through clearNowPlaying() — no
+  // other method in this file touches nowPlayingInfo directly.
+  // KNOWN DUPLICATE (Dart side, not fixable from Swift): audio_service also
+  // writes the same InfoCenter from the MediaItem (BttAudioHandler._toMediaItem)
+  // and PlaybackState (_emitNativePlaybackState). The handler worker must
+  // neutralise that duplicate (e.g. publish the media item without artwork
+  // and let this plugin own the info, or vice versa) and prove the result on
+  // device (gate G-2); this plugin cannot disable the package's writes.
+  // No MPRemoteCommandCenter code is added here by design — audio_service
+  // owns lock-screen / Control Center commands (brief decision).
+
+  /// The only place in this file that assigns nowPlayingInfo (apart from
+  /// clearNowPlaying, which assigns nil). Pass nil to clear.
+  private func setNowPlayingInfo(_ info: [String: Any]?) {
+    MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+  }
+
+  /// Clears lock-screen / Control Center metadata. Called by stopPlayback
+  /// and exposed as the "clearNowPlaying" channel method so Dart can call it
+  /// on queue-end (only the handler knows the queue ended vs. advanced to
+  /// the next track). Also clears activeTrackId so an in-flight artwork
+  /// fetch for the old track cannot repopulate the info afterwards.
+  private func clearNowPlaying() {
+    activeTrackId = nil
+    setNowPlayingInfo(nil)
+  }
+
   private func updateNowPlaying(args: [String: Any], result: @escaping FlutterResult) {
     guard let trackId = args["id"] as? String else {
       result(nil)
@@ -698,12 +892,12 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
     let cacheKey = trackId as NSString
     if let cachedArtwork = artworkCache.object(forKey: cacheKey) {
       info[MPMediaItemPropertyArtwork] = cachedArtwork
-      MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+      setNowPlayingInfo(info)
       result(nil)
       return
     }
 
-    MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    setNowPlayingInfo(info)
 
     if let artPath = args["artworkPath"] as? String,
        let image = UIImage(contentsOfFile: artPath) {
@@ -711,7 +905,7 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
       artworkCache.setObject(artwork, forKey: cacheKey)
       if activeTrackId == trackId {
         info[MPMediaItemPropertyArtwork] = artwork
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        setNowPlayingInfo(info)
       }
       result(nil)
       return
@@ -730,7 +924,7 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
           guard self.activeTrackId == trackId else { return }
           var current = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? info
           current[MPMediaItemPropertyArtwork] = artwork
-          MPNowPlayingInfoCenter.default().nowPlayingInfo = current
+          self.setNowPlayingInfo(current)
         }
       }.resume()
     }

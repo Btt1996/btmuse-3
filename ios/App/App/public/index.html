@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Btmus by Taboubi Ahmed — Personal Offline Music Player</title>
+    <meta name="description" content="Btmus by Taboubi Ahmed: Personal offline music player for iPhone with btmu identity, Telegram music synchronization, persistent IndexedDB audio storage, and lock-screen audio playback." />
+    <meta property="og:title" content="Btmus by Taboubi Ahmed — Personal Offline Music Player" />
+    <meta property="og:description" content="Btmus by Taboubi Ahmed: Personal offline music player for iPhone with btmu identity, Telegram music synchronization, persistent IndexedDB audio storage, and lock-screen audio playback." />
+    <meta property="og:image" content="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <!-- iOS PWA & Standalone Web App configuration (respecting notch & Dynamic Island) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="btmu" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- System-based theme-color for iOS status bar & Safari chrome (Signature Identity) -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#EEF3F8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#05070B" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Pre-paint theme (Phase 2, Stream C) + WebSocket Error Suppressor.
+         This synchronous inline script runs in <head>, before <body> is
+         parsed and before first paint. It reads localStorage['bttm_theme_mode']
+         (default 'dark' — matching the React default in src/App.tsx, which
+         defaults to dark on first run) and adds/removes the `dark` class on
+         documentElement immediately, so a fresh load never flashes the light
+         theme before React mounts. It only READS the stored value; the
+         Settings toggle (toggleTheme in App.tsx) still owns writing it.
+         The theme-color metas above stay as they are. -->
+    <script>
+      (function() {
+        // Suppress benign WebSocket / Vite HMR disconnection errors in iframe environment
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event && event.reason;
+          var msg = reason && (reason.message || String(reason));
+          if (
+            msg && (
+              msg.indexOf('WebSocket') !== -1 ||
+              msg.indexOf('closed without opened') !== -1 ||
+              msg.indexOf('@vite/client') !== -1
+            )
+          ) {
+            event.preventDefault();
+          }
+        });
+
+        function applyUserTheme() {
+          var stored = null;
+          try {
+            stored = localStorage.getItem('bttm_theme_mode');
+          } catch (e) {
+            stored = null; // storage unavailable: fall through to the dark default
+          }
+          // Default is dark: only an explicit stored 'light' opts out. The OS
+          // preference is deliberately NOT consulted here — the app is
+          // dark-first and React defaults to dark on first run, so following
+          // the OS would flash light and then flip to dark after mount.
+          var isDark = stored ? stored === 'dark' : true;
+          var root = document.documentElement;
+          if (isDark) {
+            root.classList.add('dark');
+            root.classList.remove('light');
+          } else {
+            root.classList.remove('dark');
+            root.classList.add('light');
+          }
+        }
+        applyUserTheme();
+        if (window.matchMedia) {
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+            try {
+              if (!localStorage.getItem('bttm_theme_mode')) applyUserTheme();
+            } catch (e) {
+              // storage unavailable: keep the class already applied
+            }
+          });
+        }
+      })();
+    </script>
+
+    <!-- Official Btt Music App Logo for Apple Home Screen & Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/pwa-512x512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
+    <link rel="icon" type="image/png" href="/app-logo.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Apple SF Pro System Typography, Sora Display & Technical Monospace -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-DA4-MyM1.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-BWaJ3C7D.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-icons-h5NxbAaw.js">
+    <link rel="modulepreload" crossorigin href="/assets/db-TyPbOD66.js">
+    <link rel="modulepreload" crossorigin href="/assets/definitions-C1UMrbAL.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-iE5VvdBI.js">
+    <link rel="modulepreload" crossorigin href="/assets/x2Engine-C-9KH9TV.js">
+    <link rel="modulepreload" crossorigin href="/assets/x1Spotify-Dk14dout.js">
+    <link rel="modulepreload" crossorigin href="/assets/X2BenchmarkModal-C7P9SZEL.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BAPHlN65.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body class="bg-[#EEF3F8] dark:bg-[#05070B] text-[#0A131F] dark:text-[#F0F4FA] antialiased selection:bg-[#F70E42] selection:text-[#05070B] dark:selection:bg-[#F70E42] dark:selection:text-[#05070B] overflow-x-hidden font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','SF_Pro_Text','SF_Pro',system-ui,sans-serif]">
+    <div id="root"></div>
+  </body>
+</html>

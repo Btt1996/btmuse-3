@@ -24,8 +24,11 @@ import 'package:btmu/core/utilities/volume_dsp_math.dart';
 ///   100% ->   0.00 dB      200% ->  +6.02 dB
 ///   125% ->  +1.94 dB      250% ->  +7.96 dB
 ///   150% ->  +3.52 dB      300% ->  +9.54 dB (raw, normalization off)
-/// With the default normalization (-1.5 dB) the 300% effective gain is
-/// +8.04 dB — the number the UI shows (+8.0 dB) and the native OverallGain.
+/// Since v3.0.5 the normalization pad no longer subtracts from an explicit
+/// boost: 300% delivers its full +9.54 dB (see
+/// `VolumeDspMath.effectiveNormalizationOffsetDb`). The pure function
+/// below still honors any offset it is handed — the -1.5 dB case is kept
+/// as a math check, not as the app's behaviour while boosting.
 /// 300% is +9.5 dB of digital gain, not 3x perceived loudness.
 void main() {
   group('BoosterTests port — gain = multiplier, dB = 20 * log10(multiplier)', () {
@@ -79,15 +82,15 @@ void main() {
       expect(res.linearOutput, closeTo(3.0, 0.001));
     });
 
-    test('300% effective gain is +8.04 dB with default -1.5 dB normalization', () {
+    test('pure math: a -1.5 dB offset handed in still yields +8.04 dB at 300%', () {
       final res = VolumeDspMath.evaluateGain(
         multiplier: 3.0,
         limiterEnabled: false,
         normalizationOffsetDb: -1.5,
       );
       expect(res.gainDb, closeTo(8.04, 0.01));
-      // The UI rounds this to "+8.0 dB"; the raw +9.54 dB must not be
-      // shown as the net gain while normalization is on.
+      // The pure function honors the offset it is handed. The app no
+      // longer hands it -1.5 while boosting — see the helper group below.
       expect(res.gainDb, isNot(closeTo(9.54, 0.01)));
     });
 
@@ -190,6 +193,84 @@ void main() {
       final (out1, in1) = VolumeDspMath.equalPowerCrossfade(1.0);
       expect(out1, closeTo(0.0, 0.0001));
       expect(in1, closeTo(1.0, 0.0001));
+    });
+  });
+
+  group('v3.0.5 — normalization never subtracts from an explicit boost', () {
+    test('offset is -1.5 dB at normal volume with normalization on', () {
+      expect(
+        VolumeDspMath.effectiveNormalizationOffsetDb(
+          multiplier: 1.0,
+          normalizeVolume: true,
+        ),
+        -1.5,
+      );
+      expect(
+        VolumeDspMath.effectiveNormalizationOffsetDb(
+          multiplier: 0.5,
+          normalizeVolume: true,
+        ),
+        -1.5,
+      );
+    });
+
+    test('offset is 0 dB while boosting, even with normalization on', () {
+      for (final m in [1.25, 1.5, 2.0, 2.5, 3.0]) {
+        expect(
+          VolumeDspMath.effectiveNormalizationOffsetDb(
+            multiplier: m,
+            normalizeVolume: true,
+          ),
+          0.0,
+          reason: '${m}x must not be taxed by the normalization pad',
+        );
+      }
+    });
+
+    test('offset is 0 dB when normalization is off at any multiplier', () {
+      expect(
+        VolumeDspMath.effectiveNormalizationOffsetDb(
+          multiplier: 1.0,
+          normalizeVolume: false,
+        ),
+        0.0,
+      );
+      expect(
+        VolumeDspMath.effectiveNormalizationOffsetDb(
+          multiplier: 3.0,
+          normalizeVolume: false,
+        ),
+        0.0,
+      );
+    });
+
+    test('300% net gain is the full +9.54 dB with normalization on', () {
+      final offset = VolumeDspMath.effectiveNormalizationOffsetDb(
+        multiplier: 3.0,
+        normalizeVolume: true,
+      );
+      final res = VolumeDspMath.evaluateGain(
+        multiplier: 3.0,
+        limiterEnabled: false,
+        normalizationOffsetDb: offset,
+      );
+      expect(res.gainDb, closeTo(9.54, 0.01));
+    });
+
+    test('limiter still engages at 300% — the boost is real, not unclipped', () {
+      final offset = VolumeDspMath.effectiveNormalizationOffsetDb(
+        multiplier: 3.0,
+        normalizeVolume: true,
+      );
+      final res = VolumeDspMath.evaluateGain(
+        multiplier: 3.0,
+        limiterEnabled: true,
+        normalizationOffsetDb: offset,
+        nominalSignalRms: 0.45,
+      );
+      expect(res.limiterEngaged, isTrue);
+      expect(res.clippingRisk, isFalse);
+      expect(res.linearOutput * 0.45, lessThan(0.89125));
     });
   });
 }

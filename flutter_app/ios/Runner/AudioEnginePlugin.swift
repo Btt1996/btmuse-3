@@ -292,12 +292,20 @@ final class AudioEnginePlugin: NSObject, FlutterPlugin {
 
   /// Gain values for the current multiplier / normalization settings.
   /// - rawBoostDb: 20 * log10(multiplier), before normalization (-80 dB when muted).
-  /// - normDb: -1.5 dB when normalization is on, else 0 dB.
+  /// - normDb: -1.5 dB when normalization is on AND the booster is off
+  ///   (multiplier <= 1.0). When the user explicitly boosts above 100%,
+  ///   the pad no longer subtracts from the boost: 300% delivers its
+  ///   full +9.54 dB of digital gain. Normalization is a loudness-
+  ///   balancing pad for normal playback, not a tax on an explicit boost
+  ///   (v3.0.5 — the user reported 300% feeling small, and the audit
+  ///   found the net was +8.04 dB, not +9.54 dB).
   /// - boostDb: raw + norm (the effective gain the user hears).
   /// - overallGainDb: boostDb clamped to [-40, +12] dB — exactly the value
-  ///   written to the DynamicsProcessor OverallGain parameter.
+  ///   written to the DynamicsProcessor OverallGain parameter. The limiter
+  ///   stays engaged throughout; this change removes the pad, it does not
+  ///   touch the limiter curve.
   private func currentGainValues() -> (rawDb: Double, normDb: Double, effectiveDb: Double, overallDb: Double) {
-    let normDb: Double = normalizeVolume ? -1.5 : 0.0
+    let normDb: Double = (normalizeVolume && currentGainMultiplier <= 1.0) ? -1.5 : 0.0
     // Muted (multiplier ~0): -80 dB flat, as before — normalization is not
     // stacked on top of the mute floor.
     if currentGainMultiplier <= 0.0001 {

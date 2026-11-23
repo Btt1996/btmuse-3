@@ -8,6 +8,7 @@ import 'package:btmu/app/widgets/btt_logo_mark.dart';
 import 'package:btmu/app/widgets/btt_press_scale.dart';
 import 'package:btmu/app/widgets/staggered_entrance.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
+import 'package:btmu/core/services/update_service.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
 import 'package:btmu/features/history/playback_history_screen.dart';
@@ -15,6 +16,8 @@ import 'package:btmu/features/search/search_screen.dart';
 import 'package:btmu/features/settings/settings_screen.dart';
 import 'package:btmu/features/smart_remix/smart_remix_screen.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
+import 'package:btmu/features/x1/x1_screen.dart';
+import 'package:btmu/features/x2/x2_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -59,7 +62,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                             child: Text(
-                              '2.00',
+                              UpdateService.currentVersion,
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: BttColors.accentPink,
                                   ),
@@ -115,7 +118,7 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 176),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               // Primary engine quick access grid (2x2 clean cards)
@@ -127,7 +130,11 @@ class HomeScreen extends ConsumerWidget {
                       subtitle: 'Identify playing audio',
                       icon: Icons.mic_rounded,
                       accent: BttColors.accentPink,
-                      onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x1,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          BttPageRoute<void>(builder: (_) => const X1Screen()),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -137,7 +144,11 @@ class HomeScreen extends ConsumerWidget {
                       subtitle: 'Multi-source search & URL',
                       icon: Icons.travel_explore_rounded,
                       accent: BttColors.accentViolet,
-                      onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x2,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          BttPageRoute<void>(builder: (_) => const X2Screen()),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -190,7 +201,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.add_circle_rounded, color: BttColors.accentPink),
+                      Icon(Icons.add_circle_rounded, color: BttColors.accentPink),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -209,7 +220,7 @@ class HomeScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: BttColors.textMuted),
+                      Icon(Icons.chevron_right_rounded, color: BttColors.textMuted),
                     ],
                   ),
                 ),
@@ -231,7 +242,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
+                      Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -248,7 +259,7 @@ class HomeScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: BttColors.textMuted),
+                      Icon(Icons.chevron_right_rounded, color: BttColors.textMuted),
                     ],
                   ),
                 ),
@@ -296,8 +307,13 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               const SizedBox(width: 10),
                               OutlinedButton.icon(
-                                onPressed: () =>
-                                    ref.read(currentTabIndexProvider.notifier).state = BttTab.x2,
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    BttPageRoute<void>(
+                                      builder: (_) => const X2Screen(),
+                                    ),
+                                  );
+                                },
                                 icon: const Icon(Icons.search_rounded),
                                 label: const Text('Explore X2'),
                               ),

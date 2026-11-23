@@ -70,7 +70,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
       {/* Bottom discreet version indicator */}
       <div className="absolute bottom-8 text-[11px] font-mono tracking-wider text-[#7E8F9E]/60 uppercase">
-        v2.00
+        v3.0.5
       </div>
     </div>
   );

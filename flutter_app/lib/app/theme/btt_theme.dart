@@ -1,9 +1,18 @@
-// ─── Btmus 2.00 theme tokens ────────────────────────────────────────────────
+// ─── Btmus 3.0.5 theme tokens ─────────────────────────────────────────────
 // Phase 2, Stream C — typography / spacing normalization.
 // Redesign (2026-11-22): BT monogram brand — violet → magenta → pink-red
 // gradient sampled from the new logo. The old cyan / gold / green brand
 // accents are retired; green survives only as the functional `success`
 // color (downloaded / synced / complete states), never as brand.
+//
+// THEMES (v3.0.5, item 12): the palette is no longer `const` —
+// [BttColors.applyVariant] swaps these statics at runtime when the user
+// picks Signature / Mono / Aurora in Settings, and every call site reads
+// the current values on its next build. Do NOT re-add `const` to a
+// `BttColors` reference: `const` widgets that used them had their `const`
+// removed in the v3.0.5 pass (the analyzer enforces this). The token sets
+// live in `btt_theme_variant.dart`; `signatureTokens` holds the values
+// below, so the default look is unchanged.
 //
 // FONTS (unchanged — do not change families, colors, layout, or content):
 //   Body    — Plus Jakarta Sans (GoogleFonts.plusJakartaSansTextTheme)
@@ -40,14 +49,19 @@
 // ──────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:btmu/app/theme/btt_theme_variant.dart';
 
 class BttColors {
-  static const Color bgObsidian = Color(0xFF05070B);
-  static const Color bgElevated = Color(0xFF0C111B);
-  static const Color bgCard = Color(0xFF121926);
-  static const Color bgCardHighlight = Color(0xFF182233);
-  static const Color borderSubtle = Color(0x1FFFFFFF);
-  static const Color borderStrong = Color(0x33FFFFFF);
+  // Mutable theme statics (v3.0.5, item 12). Defaults are the Signature
+  // tokens; [applyVariant] swaps them all at once. Call sites read these
+  // on every build, so a theme change takes effect on the next rebuild
+  // without touching any screen.
+  static Color bgObsidian = signatureTokens.bgObsidian;
+  static Color bgElevated = signatureTokens.bgElevated;
+  static Color bgCard = signatureTokens.bgCard;
+  static Color bgCardHighlight = signatureTokens.bgCardHighlight;
+  static Color borderSubtle = signatureTokens.borderSubtle;
+  static Color borderStrong = signatureTokens.borderStrong;
 
   // BT monogram brand — gradient sampled from the new logo pixels:
   // violet #6202E1 → magenta #C4009B → pink-red #F70E42.
@@ -55,31 +69,58 @@ class BttColors {
   // accentMagenta the warm highlight. Use accentGradient wherever the
   // widget supports a gradient (progress bars, play buttons, primary
   // surfaces); otherwise use the single accent that fits the context.
-  static const Color accentViolet = Color(0xFF6202E1);
-  static const Color accentMagenta = Color(0xFFC4009B);
-  static const Color accentPink = Color(0xFFF70E42);
-  static const LinearGradient accentGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [accentViolet, accentMagenta, accentPink],
-  );
+  static Color accentViolet = signatureTokens.accentViolet;
+  static Color accentMagenta = signatureTokens.accentMagenta;
+  static Color accentPink = signatureTokens.accentPink;
+  static LinearGradient accentGradient = signatureTokens.accentGradient;
 
   // Glass surface: white at ~6% over the dark background.
-  static const Color glassSurface = Color(0x0FFFFFFF);
+  static Color glassSurface = signatureTokens.glassSurface;
 
   // Functional state colors — not brand. `success` keeps the old green
   // value for downloaded / synced / complete states only.
-  static const Color success = Color(0xFF34D399);
+  static Color success = signatureTokens.success;
 
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
+  static Color textPrimary = signatureTokens.textPrimary;
+  static Color textSecondary = signatureTokens.textSecondary;
+  static Color textMuted = signatureTokens.textMuted;
 
-  static const Color danger = Color(0xFFEF4444);
-  static const Color warning = Color(0xFFF59E0B);
+  static Color danger = signatureTokens.danger;
+  static Color warning = signatureTokens.warning;
+
+  /// The variant currently applied. [tokens] is its token set.
+  static BttThemeVariant currentVariant = BttThemeVariant.signature;
+
+  static BttThemeTokens get tokens => tokensFor(currentVariant);
+
+  /// Swaps the whole palette to [variant]. Idempotent and cheap; call
+  /// it before the first build and on every theme change, then rebuild
+  /// the app (the MaterialApp watches the theme provider).
+  static void applyVariant(BttThemeVariant variant) {
+    final t = tokensFor(variant);
+    currentVariant = variant;
+    bgObsidian = t.bgObsidian;
+    bgElevated = t.bgElevated;
+    bgCard = t.bgCard;
+    bgCardHighlight = t.bgCardHighlight;
+    borderSubtle = t.borderSubtle;
+    borderStrong = t.borderStrong;
+    accentViolet = t.accentViolet;
+    accentMagenta = t.accentMagenta;
+    accentPink = t.accentPink;
+    accentGradient = t.accentGradient;
+    glassSurface = t.glassSurface;
+    success = t.success;
+    textPrimary = t.textPrimary;
+    textSecondary = t.textSecondary;
+    textMuted = t.textMuted;
+    danger = t.danger;
+    warning = t.warning;
+  }
 
   /// Card depth: black 40%, blur 24, offset (0, 8). Apply to featured /
   /// playing cards and elevated surfaces; keep flat cards border-only.
+  /// Theme-independent, so it stays const.
   static const List<BoxShadow> cardShadow = [
     BoxShadow(
       color: Color(0x66000000),
@@ -104,105 +145,174 @@ class BttSpacing {
 }
 
 class BttTheme {
-  static ThemeData buildDarkTheme() {
-    final baseText = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme);
-    final displayStyle = GoogleFonts.manrope(
-      color: BttColors.textPrimary,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.4,
+  /// Builds the dark theme for [variant] (default Signature).
+  ///
+  /// Layout changes per variant (v3.0.5, item 12) — not just colors:
+  /// card/input corner radius comes from the tokens, list-tile density
+  /// follows the variant, and chips get the variant's radius + selected
+  /// color. Screens that hard-code their own radii keep them; the theme
+  /// slots below are what change format app-wide.
+  ///
+  /// [customFontFamily] is the family name of a user-imported font
+  /// (item 9), already loaded via FontLoader before the app starts.
+  /// When set, body + display text use it instead of Plus Jakarta Sans /
+  /// Manrope; the small JetBrains Mono labels stay Mono by design.
+  static ThemeData buildDarkTheme({
+    BttThemeVariant variant = BttThemeVariant.signature,
+    String? customFontFamily,
+  }) {
+    final base = ThemeData.dark().textTheme;
+    return buildDarkThemeFromTextThemes(
+      variant: variant,
+      bodyTextTheme: customFontFamily != null
+          ? base.apply(fontFamily: customFontFamily)
+          : GoogleFonts.plusJakartaSansTextTheme(base),
+      displayStyle: customFontFamily != null
+          ? TextStyle(
+              fontFamily: customFontFamily,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+            )
+          : GoogleFonts.manrope(
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+            ),
+      monoTextTheme: GoogleFonts.jetBrainsMonoTextTheme(base),
+      customFontFamily: customFontFamily,
+    );
+  }
+
+  /// Pure ThemeData mapping, testable without GoogleFonts: the caller
+  /// supplies the three text themes (production passes the Google fonts,
+  /// tests pass plain `ThemeData.dark().textTheme`). The custom font, when
+  /// given, is applied to body + display only — the mono labels are
+  /// always the [monoTextTheme] labels, untouched.
+  static ThemeData buildDarkThemeFromTextThemes({
+    BttThemeVariant variant = BttThemeVariant.signature,
+    required TextTheme bodyTextTheme,
+    required TextStyle displayStyle,
+    required TextTheme monoTextTheme,
+    String? customFontFamily,
+  }) {
+    final tokens = tokensFor(variant);
+    final baseText = bodyTextTheme;
+    final monoLabel = monoTextTheme.labelSmall?.copyWith(
+      fontSize: 11.5,
+      fontWeight: FontWeight.w500,
     );
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: BttColors.bgObsidian,
-      colorScheme: const ColorScheme.dark(
-        primary: BttColors.accentPink,
-        secondary: BttColors.accentViolet,
-        tertiary: BttColors.accentMagenta,
-        surface: BttColors.bgElevated,
-        error: BttColors.danger,
-        onPrimary: BttColors.bgObsidian,
-        onSecondary: BttColors.bgObsidian,
-        onSurface: BttColors.textPrimary,
+      scaffoldBackgroundColor: tokens.bgObsidian,
+      colorScheme: ColorScheme.dark(
+        primary: tokens.accentPink,
+        secondary: tokens.accentViolet,
+        tertiary: tokens.accentMagenta,
+        surface: tokens.bgElevated,
+        error: tokens.danger,
+        onPrimary: tokens.bgObsidian,
+        onSecondary: tokens.bgObsidian,
+        onSurface: tokens.textPrimary,
       ),
       textTheme: baseText.copyWith(
-        displayLarge: displayStyle.copyWith(fontSize: 32),
-        displayMedium: displayStyle.copyWith(fontSize: 26),
-        headlineMedium: displayStyle.copyWith(fontSize: 22),
-        titleLarge: displayStyle.copyWith(fontSize: 18), // Section-header size — documented exception to the type scale (see header comment); kept as-is, do not restyle.
+        displayLarge: displayStyle.copyWith(fontSize: 32, color: tokens.textPrimary),
+        displayMedium: displayStyle.copyWith(fontSize: 26, color: tokens.textPrimary),
+        headlineMedium: displayStyle.copyWith(fontSize: 22, color: tokens.textPrimary),
+        titleLarge: displayStyle.copyWith(fontSize: 18, color: tokens.textPrimary), // Section-header size — documented exception to the type scale (see header comment); kept as-is, do not restyle.
         titleMedium: baseText.titleMedium?.copyWith(
-          color: BttColors.textPrimary,
+          color: tokens.textPrimary,
           fontWeight: FontWeight.w600,
           fontSize: 16,
         ),
         bodyLarge: baseText.bodyLarge?.copyWith(
-          color: BttColors.textPrimary,
+          color: tokens.textPrimary,
           fontSize: 15,
         ),
         bodyMedium: baseText.bodyMedium?.copyWith(
-          color: BttColors.textSecondary,
+          color: tokens.textSecondary,
           fontSize: 13.5,
         ),
-        labelSmall: GoogleFonts.jetBrainsMono(
-          color: BttColors.textMuted,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w500,
-        ),
+        labelSmall: monoLabel?.copyWith(color: tokens.textMuted),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: BttColors.bgObsidian,
+        backgroundColor: tokens.bgObsidian,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: displayStyle.copyWith(fontSize: 22),
+        titleTextStyle: displayStyle.copyWith(fontSize: 22, color: tokens.textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: BttColors.bgCard,
+        color: tokens.bgCard,
         elevation: 0,
         shadowColor: Colors.black,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: BttColors.borderSubtle, width: 1),
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+          side: BorderSide(color: tokens.borderSubtle, width: 1),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: BttColors.borderSubtle,
+      dividerTheme: DividerThemeData(
+        color: tokens.borderSubtle,
         thickness: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: BttColors.bgElevated,
-        hintStyle: const TextStyle(color: BttColors.textMuted),
+        fillColor: tokens.bgElevated,
+        hintStyle: TextStyle(color: tokens.textMuted),
         contentPadding: const EdgeInsets.symmetric(horizontal: BttSpacing.s16, vertical: BttSpacing.s16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: BttColors.borderSubtle),
+          borderRadius: BorderRadius.circular(tokens.cardRadius * 0.75),
+          borderSide: BorderSide(color: tokens.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: BttColors.borderSubtle),
+          borderRadius: BorderRadius.circular(tokens.cardRadius * 0.75),
+          borderSide: BorderSide(color: tokens.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: BttColors.accentViolet, width: 1.5),
+          borderRadius: BorderRadius.circular(tokens.cardRadius * 0.75),
+          borderSide: BorderSide(color: tokens.accentViolet, width: 1.5),
         ),
       ),
       sliderTheme: SliderThemeData(
         // SliderThemeData has no gradient-track slot: the solid primary
         // accent is used here. Custom progress bars (fullscreen player,
         // mini-player) paint BttColors.accentGradient themselves.
-        activeTrackColor: BttColors.accentPink,
-        inactiveTrackColor: BttColors.borderStrong,
+        activeTrackColor: tokens.accentPink,
+        inactiveTrackColor: tokens.borderStrong,
         thumbColor: Colors.white,
-        overlayColor: BttColors.accentPink.withValues(alpha: 0.18),
+        overlayColor: tokens.accentPink.withValues(alpha: 0.18),
         trackHeight: BttSpacing.s4,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: BttColors.bgCardHighlight,
-        contentTextStyle: const TextStyle(color: BttColors.textPrimary),
+        backgroundColor: tokens.bgCardHighlight,
+        contentTextStyle: TextStyle(color: tokens.textPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
+      ),
+      // Variant layout slots: chips (the segment/filter rows on Library,
+      // Import and X2) and list tiles follow the variant's radius and
+      // density, so a theme changes the format of lists, not just color.
+      chipTheme: ChipThemeData(
+        backgroundColor: tokens.bgCard,
+        selectedColor: tokens.accentPink.withValues(alpha: 0.2),
+        disabledColor: tokens.bgCard,
+        labelStyle: TextStyle(color: tokens.textSecondary, fontSize: 12.5),
+        secondaryLabelStyle: TextStyle(color: tokens.accentPink, fontSize: 12.5),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.cardRadius * 0.75),
+          side: BorderSide(color: tokens.borderSubtle),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        tileColor: tokens.bgCard,
+        dense: tokens.listDensity == VisualDensity.compact,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: tokens.bgElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+        ),
       ),
     );
   }

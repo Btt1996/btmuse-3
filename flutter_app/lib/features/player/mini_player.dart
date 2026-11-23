@@ -7,6 +7,7 @@ import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/player/full_screen_player.dart';
+import 'package:btmu/features/player/sharbon_cursor.dart';
 
 class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
@@ -135,14 +136,14 @@ class MiniPlayer extends ConsumerWidget {
                         Container(
                           width: 40,
                           height: 40,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: BttColors.accentGradient,
                             boxShadow: [
-                              BoxShadow(
-                                color: Color(0x59F70E42),
+                              const BoxShadow(
+                                color: const Color(0x59F70E42),
                                 blurRadius: 12,
-                                offset: Offset(0, 4),
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -166,7 +167,7 @@ class MiniPlayer extends ConsumerWidget {
                         ),
                         IconButton(
                           constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.skip_next_rounded,
                             color: BttColors.textSecondary,
                             size: 26,
@@ -179,25 +180,59 @@ class MiniPlayer extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
+                    // Progress bar with Sharbon (v3.0.5, item 14) sitting
+                    // at its leading edge. The cat is 14 px and rides
+                    // just above the 3 px bar, so the bar itself is
+                    // unchanged.
                     SizedBox(
                       width: double.infinity,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: Stack(
-                          children: [
-                            Container(height: 3, color: BttColors.borderStrong),
-                            FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: progress,
-                              child: Container(
-                                height: 3,
-                                decoration: const BoxDecoration(
-                                  gradient: BttColors.accentGradient,
+                      height: 17,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth;
+                          final catX = (progress * width - 7).clamp(
+                            0.0,
+                            (width - 14).clamp(0.0, double.infinity),
+                          );
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: Stack(
+                                    children: [
+                                      Container(height: 3, color: BttColors.borderStrong),
+                                      FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: progress,
+                                        child: Container(
+                                          height: 3,
+                                          decoration: BoxDecoration(
+                                            gradient: BttColors.accentGradient,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                              Positioned(
+                                left: catX,
+                                top: 0,
+                                child: SharbonCursor(
+                                  size: 14,
+                                  outlineColor:
+                                      Colors.white.withValues(alpha: 0.30),
+                                  eyeColor: Colors.white,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],

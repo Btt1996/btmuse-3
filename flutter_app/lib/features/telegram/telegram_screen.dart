@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/data/repositories/library_repository.dart';
+import 'package:btmu/features/player/mini_player.dart';
 import 'package:btmu/features/telegram/telegram_service.dart';
 
 class TelegramScreen extends ConsumerStatefulWidget {
@@ -19,6 +20,9 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
   List<TelegramAudioEntry> _entries = [];
   bool _loading = false;
   String? _error;
+  // v3.0.5, item 11: import feedback is an inline line, never a
+  // SnackBar overlaying the player.
+  String? _status;
   final Map<String, double> _progressByFileId = {};
   final Map<String, CancelToken> _tokens = {};
 
@@ -92,10 +96,8 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
           _entries = _entries
               .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
               .toList();
+          _status = 'Imported "${track.title}" from Telegram.';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Imported "${track.title}" from Telegram.')),
-        );
       }
     } on DuplicateTrackFailure catch (e) {
       // Pre-download (or post-download hash) duplicate: report it as
@@ -107,17 +109,15 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
           _entries = _entries
               .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
               .toList();
+          _status = e.message;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _progressByFileId.remove(entry.fileId));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Telegram download failed: $e')),
-        );
+        setState(() {
+          _progressByFileId.remove(entry.fileId);
+          _status = 'Telegram download failed: $e';
+        });
       }
     } finally {
       _tokens.remove(entry.fileId);
@@ -137,6 +137,8 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Telegram Bot Sync')),
+      // v3.0.5, item 11: the player stays visible during import flows.
+      bottomNavigationBar: const MiniPlayer(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
@@ -199,7 +201,7 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline_rounded, color: BttColors.accentViolet),
+                Icon(Icons.info_outline_rounded, color: BttColors.accentViolet),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -222,14 +224,23 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: BttColors.danger)),
+            Text(_error!, style: TextStyle(color: BttColors.danger)),
+          ],
+          if (_status != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _status!,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: BttColors.accentPink,
+                  ),
+            ),
           ],
           if (_identity != null) ...[
             const SizedBox(height: 14),
             ListTile(
               tileColor: BttColors.bgCardHighlight,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              leading: const Icon(Icons.verified_user_rounded, color: BttColors.success),
+              leading: Icon(Icons.verified_user_rounded, color: BttColors.success),
               title: Text('@${_identity!.username}'),
               subtitle: Text('${_identity!.firstName} · ${_entries.length} audio file(s) found'),
             ),
@@ -262,17 +273,17 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
                           ),
                         ),
                         if (entry.alreadyInLibrary)
-                          const Icon(Icons.check_circle_rounded, color: BttColors.success)
+                          Icon(Icons.check_circle_rounded, color: BttColors.success)
                         else if (entry.exceedsBotApiLimit)
-                          const Icon(Icons.block_rounded, color: BttColors.danger)
+                          Icon(Icons.block_rounded, color: BttColors.danger)
                         else if (progress == null)
                           IconButton(
-                            icon: const Icon(Icons.download_rounded, color: BttColors.accentPink),
+                            icon: Icon(Icons.download_rounded, color: BttColors.accentPink),
                             onPressed: () => _downloadEntry(entry),
                           )
                         else
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, color: BttColors.warning),
+                            icon: Icon(Icons.close_rounded, color: BttColors.warning),
                             onPressed: () => _tokens[entry.fileId]?.cancel(),
                           ),
                       ],

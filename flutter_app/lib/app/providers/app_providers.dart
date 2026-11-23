@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btmu/app/theme/btt_theme_variant.dart';
 import 'package:btmu/core/config/x2_config.dart';
 import 'package:btmu/core/networking/api_client.dart';
 import 'package:btmu/core/services/btt_audio_handler.dart';
@@ -170,14 +171,27 @@ final smartRemixConfigProvider = StateProvider<SmartRemixConfig>((ref) {
 final pendingX2SearchQueryProvider = StateProvider<String?>((ref) => null);
 
 /// Global bottom-tab indices inside AppShell.
+///
+/// v3.0.5, item 15: only three tabs remain — Home, Library, Import.
+/// X1/X2 are pushed routes from Home / Import Center, and Playlists
+/// lives inside Library, so their tab indices are gone.
 abstract final class BttTab {
   static const int home = 0;
   static const int library = 1;
   static const int importCenter = 2;
-  static const int x2 = 3;
-  static const int x1 = 4;
-  static const int playlists = 5;
 }
 
 /// Global bottom-tab navigation index inside AppShell.
 final currentTabIndexProvider = StateProvider<int>((ref) => BttTab.home);
+
+/// Active theme variant (v3.0.5, item 12). Loaded from preferences in
+/// `main.dart` before the first frame; Settings writes it (and persists
+/// it) when the user picks a theme. `BttMusicApp` watches this and
+/// rebuilds the MaterialApp with the matching theme.
+final themeVariantProvider =
+    StateProvider<BttThemeVariant>((ref) => BttThemeVariant.signature);
+
+/// Loaded custom font family (v3.0.5, item 9): `CustomFontService.familyName`
+/// when a user-imported font loaded at startup, null for the built-in
+/// fonts. `BttMusicApp` passes it to `BttTheme.buildDarkTheme`.
+final customFontFamilyProvider = StateProvider<String?>((ref) => null);

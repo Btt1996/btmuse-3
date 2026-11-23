@@ -8,17 +8,22 @@ import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/features/backup/backup_service.dart';
 
-/// Backup & Restore screen.
+/// Backup & Restore screen — also the Library File for iCloud Drive.
 ///
 /// Flow (mirrors the Swift reference):
-/// * Export — one JSON file with the whole library (metadata + playlist
-///   structure, no audio). Saved through the system save dialog
-///   (`FilePicker.saveFile` — `share_plus` is not a dependency).
-/// * Import — pick a `.json` backup, see a preview (counts, playlist names,
-///   missing-audio warnings) and only then tap an explicit confirm button;
-///   nothing is written before that tap.
+/// * Export — one `.btmu` library file (JSON content: the whole library
+///   as metadata + playlist structure, no audio). Saved through the
+///   system save dialog (`FilePicker.saveFile` — `share_plus` is not a
+///   dependency), so the user can save it to iCloud Drive and open it on
+///   another device. This is a MANUAL file you save/open — there is no
+///   automatic sync and no CloudKit in this unsigned app.
+/// * Import — pick a `.btmu` library file (older `.json` backups still
+///   work), see a preview (counts, playlist names, missing-audio
+///   warnings) and only then tap an explicit confirm button; nothing is
+///   written before that tap.
 /// * After restore, a report shows what was added, what already existed
-///   (untouched) and what came back metadata-only.
+///   (untouched) and what came back metadata-only. Songs re-download
+///   from their sources on the other device — audio is never in the file.
 class BackupScreen extends ConsumerStatefulWidget {
   const BackupScreen({super.key});
 
@@ -66,17 +71,17 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     try {
       final json = await _service().exportLibrary();
       final savedPath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save library backup',
+        dialogTitle: 'Save library file',
         fileName: BackupService.exportFileName(),
         type: FileType.custom,
-        allowedExtensions: const ['json'],
+        allowedExtensions: const ['btmu'],
         bytes: utf8.encode(json),
       );
       if (!mounted) return;
       if (savedPath == null) {
         setState(() => _status = 'Export cancelled — nothing was saved.');
       } else {
-        setState(() => _status = 'Backup saved.');
+        setState(() => _status = 'Library file saved.');
       }
     } catch (e) {
       if (mounted) setState(() => _error = 'Export failed: $e');
@@ -97,7 +102,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
+        // `.btmu` is the current library-file extension; `.json` stays
+        // accepted so older backups (btmu-backup-*.json) still import.
+        allowedExtensions: const ['btmu', 'json'],
         allowMultiple: false,
         withData: true,
       );
@@ -186,7 +193,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'A backup holds track metadata and playlist structure as JSON. '
+                  'A library file holds track metadata and playlist structure as JSON. '
                   'Audio files are never included — tracks whose audio is not on '
                   'this device come back as metadata-only entries.',
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -195,14 +202,42 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _SectionHeader('EXPORT'),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: BttColors.bgCard,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: BttColors.borderSubtle),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Export library file to iCloud Drive',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Save the single .btmu library file to iCloud Drive, then open '
+                  'it on another device to restore your library and playlists. '
+                  'The file holds the library and playlists only — audio is NOT '
+                  'in the file, so songs re-download from their sources on the '
+                  'other device. This is a manual file you save and open yourself: '
+                  'there is no automatic sync and no CloudKit in this app.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const _SectionHeader('EXPORT'),
           const SizedBox(height: 8),
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.file_upload_rounded, color: BttColors.accentPink),
-            title: const Text('Export Library Backup'),
-            subtitle: const Text('Save the whole library as one .json file'),
+            leading: Icon(Icons.file_upload_rounded, color: BttColors.accentPink),
+            title: const Text('Export Library File'),
+            subtitle: const Text('Save the whole library as one .btmu file — put it in iCloud Drive'),
             trailing: _busy
                 ? const SizedBox(
                     width: 20,
@@ -213,14 +248,14 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             onTap: _busy ? null : _export,
           ),
           const SizedBox(height: 16),
-          _SectionHeader('IMPORT'),
+          const _SectionHeader('IMPORT'),
           const SizedBox(height: 8),
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.file_download_rounded, color: BttColors.accentViolet),
-            title: const Text('Import Backup File'),
-            subtitle: const Text('Pick a .json backup to preview before restoring'),
+            leading: Icon(Icons.file_download_rounded, color: BttColors.accentViolet),
+            title: const Text('Import Library File'),
+            subtitle: const Text('Pick a .btmu library file (older .json backups work too) to preview before restoring'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: _busy ? null : _pickBackupFile,
           ),
@@ -258,7 +293,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               ),
               child: Text(
                 _error!,
-                style: const TextStyle(color: BttColors.danger, fontSize: 13),
+                style: TextStyle(color: BttColors.danger, fontSize: 13),
               ),
             ),
           ],
@@ -383,7 +418,7 @@ class _PreviewCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
+                Icon(
                   Icons.warning_amber_rounded,
                   size: 16,
                   color: BttColors.warning,
@@ -395,7 +430,7 @@ class _PreviewCard extends StatelessWidget {
                     '${preview.missingAudioFileCount == 1 ? '' : 's'} '
                     'have no audio file on this device and will be restored '
                     'as metadata-only:',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       color: BttColors.warning,
                     ),
@@ -488,7 +523,7 @@ class _ReportCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.check_circle_rounded,
                 color: BttColors.success,
                 size: 20,

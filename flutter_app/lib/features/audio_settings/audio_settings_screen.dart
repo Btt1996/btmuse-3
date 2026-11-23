@@ -27,8 +27,11 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
   }
 
   /// Raw (pre-normalization) gain of a multiplier, in dB: 20·log10(m).
-  /// At 300% this is +9.54 dB; the net gain the user hears is lower by
-  /// the normalization offset (default −1.5 dB → +8.04 dB net).
+  /// At 300% this is +9.54 dB. Since v3.0.5 the normalization pad no
+  /// longer subtracts from an explicit boost, so at 300% the net gain
+  /// the user hears is the full +9.54 dB (the limiter still caps peaks,
+  /// so loud passages gain less than the number — the honest label below
+  /// says exactly that).
   static double _rawGainDb(double multiplier) {
     if (multiplier <= 0.0001) return -96.0;
     return 20.0 * (math.log(multiplier) / math.ln10);
@@ -82,7 +85,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text(
+              child: Text(
                 'Turn off anyway',
                 style: TextStyle(color: BttColors.danger),
               ),
@@ -102,16 +105,23 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
     final dsp = VolumeDspMath.evaluateGain(
       multiplier: settings.volumeMultiplier,
       limiterEnabled: settings.limiterEnabled,
-      normalizationOffsetDb: settings.normalizeVolume ? -1.5 : 0.0,
+      normalizationOffsetDb: VolumeDspMath.effectiveNormalizationOffsetDb(
+        multiplier: settings.volumeMultiplier,
+        normalizeVolume: settings.normalizeVolume,
+      ),
     );
 
     // E-2 boost honesty: show BOTH the raw multiplier gain and the
-    // effective overall gain after normalization, not just the net number.
+    // effective overall gain, not just the net number. Since v3.0.5 the
+    // normalization pad no longer subtracts from an explicit boost, so
+    // at 300% the net IS +9.5 dB; the pad only shows below 100%.
     final boosterOn = settings.volumeMultiplier > 1.0;
     final rawGainDb = _rawGainDb(settings.volumeMultiplier);
-    final gainBreakdown = settings.normalizeVolume
-        ? '${settings.boostPercent}% · ${_fmtDb(rawGainDb)} gain − 1.5 dB normalization = ${_fmtDb(dsp.gainDb)} net'
-        : '${settings.boostPercent}% · ${_fmtDb(rawGainDb)} gain = ${_fmtDb(dsp.gainDb)} net (normalization off)';
+    final gainBreakdown = boosterOn
+        ? '${settings.boostPercent}% · ${_fmtDb(rawGainDb)} gain = ${_fmtDb(dsp.gainDb)} net (full boost — normalization does not subtract while boosting)'
+        : settings.normalizeVolume
+            ? '${settings.boostPercent}% · ${_fmtDb(rawGainDb)} gain − 1.5 dB normalization = ${_fmtDb(dsp.gainDb)} net'
+            : '${settings.boostPercent}% · ${_fmtDb(rawGainDb)} gain = ${_fmtDb(dsp.gainDb)} net (normalization off)';
 
     // Crossfade (S-3) now lives on AudioSettings — see the crossfade card
     // below. INTEGRATION NOTE (W2): `crossfadeEnabled` (bool, default
@@ -205,7 +215,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   '300% is +9.5 dB of digital gain, not 3× perceived loudness.',
                   style: TextStyle(
                     fontSize: 12.5,
@@ -224,14 +234,14 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: BttColors.warning.withValues(alpha: 0.4)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.hearing_rounded, color: BttColors.warning),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: const Text(
                       'Prolonged high-SPL listening over headphones can cause hearing fatigue. iOS hardware & Headphone Safety limits still govern final speaker/DAC voltage.',
-                      style: TextStyle(fontSize: 12.5),
+                      style: const TextStyle(fontSize: 12.5),
                     ),
                   ),
                 ],
@@ -247,14 +257,14 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: BttColors.danger.withValues(alpha: 0.45)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded, color: BttColors.danger),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: const Text(
                       'Clipping risk detected with peak limiter disabled. Enable the Soft-Knee Peak Limiter below.',
-                      style: TextStyle(fontSize: 12.5),
+                      style: const TextStyle(fontSize: 12.5),
                     ),
                   ),
                 ],
@@ -276,7 +286,11 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: const Text('Volume Normalization'),
-            subtitle: const Text('Balances loudness differences across quiet tracks'),
+            subtitle: const Text(
+              'Balances loudness across quiet tracks at normal volume. '
+              'It never subtracts from an explicit boost — 300% always '
+              'delivers its full +9.5 dB.',
+            ),
             value: settings.normalizeVolume,
             activeThumbColor: BttColors.accentPink,
             onChanged: (val) => _apply(settings.copyWith(normalizeVolume: val)),

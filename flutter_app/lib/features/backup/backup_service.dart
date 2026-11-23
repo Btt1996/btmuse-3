@@ -44,12 +44,16 @@ import 'package:btmu/data/repositories/playlist_repository.dart';
 class BackupService {
   static const int currentVersion = 2;
 
-  /// File name used when the user saves an export.
+  /// File name used when the user saves an export: one `.btmu` library
+  /// file (JSON content — track metadata + playlists, never audio).
+  /// The `.btmu` extension marks it as the single library file the user
+  /// saves to iCloud Drive and opens on another device (v3.0.5, item 16).
+  /// Old `.json` backups (`btmu-backup-*.json`) still import fine.
   static String exportFileName([DateTime? at]) {
     final now = (at ?? DateTime.now()).toUtc();
     String two(int n) => n.toString().padLeft(2, '0');
-    return 'btmu-backup-${now.year}${two(now.month)}${two(now.day)}-'
-        '${two(now.hour)}${two(now.minute)}${two(now.second)}.json';
+    return 'btmu-library-${now.year}${two(now.month)}${two(now.day)}-'
+        '${two(now.hour)}${two(now.minute)}${two(now.second)}.btmu';
   }
 
   final LibraryRepository library;

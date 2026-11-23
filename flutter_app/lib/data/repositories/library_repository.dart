@@ -618,7 +618,7 @@ class LibraryRepository {
     required String keepTrackId,
   }) async {
     if (!group.tracks.any((t) => t.id == keepTrackId)) {
-      throw ValidationFailure('Keeper track is not a member of this duplicate group.');
+      throw const ValidationFailure('Keeper track is not a member of this duplicate group.');
     }
     final losers = group.tracks.where((t) => t.id != keepTrackId).map((t) => t.id).toList();
     return deleteTracksByIds(losers);

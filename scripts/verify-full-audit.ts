@@ -93,7 +93,7 @@ async function run() {
 
   const fullStreamUrl = `${discoveryHost}/v1/tracks/${track.id}/stream?app_name=BttMusic`;
   const dlRes = await fetch(fullStreamUrl, {
-    headers: { 'User-Agent': 'BttMusic/2.00 (iOS)' },
+    headers: { 'User-Agent': 'BttMusic/3.0.5 (iOS)' },
     signal: AbortSignal.timeout(45000),
   });
   assert.ok(dlRes.ok, `Expected HTTP 200 downloading Audius track, got ${dlRes.status}`);

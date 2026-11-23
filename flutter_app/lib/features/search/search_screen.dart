@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
 import 'package:btmu/data/models/x2_result.dart';
+import 'package:btmu/features/x2/x2_screen.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -108,7 +110,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 hintText: 'Search your library & X2 discovery',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward_rounded, color: BttColors.accentPink),
+                  icon: Icon(Icons.arrow_forward_rounded, color: BttColors.accentPink),
                   onPressed: () => _runOnlineSearch(_ctrl.text),
                 ),
               ),
@@ -163,7 +165,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
                 const SizedBox(height: 8),
                 if (_error != null)
-                  Text(_error!, style: const TextStyle(color: BttColors.danger)),
+                  Text(_error!, style: TextStyle(color: BttColors.danger)),
                 if (_providerErrors.isNotEmpty && !_searchingOnline)
                   Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -179,7 +181,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           .map(
                             (e) => Text(
                               '${e.key}: ${e.value.replaceFirst(RegExp(r'^AppFailure\([^)]+\):\s*'), '')}',
-                              style: const TextStyle(color: BttColors.warning, fontSize: 11.5),
+                              style: TextStyle(color: BttColors.warning, fontSize: 11.5),
                             ),
                           )
                           .toList(),
@@ -214,7 +216,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           if (res.downloadAuthorized)
                             IconButton(
                               tooltip: 'Download Offline',
-                              icon: const Icon(Icons.download_rounded, color: BttColors.accentPink),
+                              icon: Icon(Icons.download_rounded, color: BttColors.accentPink),
                               onPressed: () {
                                 ref.read(downloadManagerProvider.notifier).enqueueX2Download(res);
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -225,13 +227,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           else
                             IconButton(
                               tooltip: 'Open in X2 Acquisition',
-                              icon: const Icon(Icons.travel_explore_rounded,
+                              icon: Icon(Icons.travel_explore_rounded,
                                   color: BttColors.textMuted),
                               onPressed: () {
                                 ref.read(pendingX2SearchQueryProvider.notifier).state =
                                     '${res.artist} ${res.title}'.trim();
                                 Navigator.of(context).pop();
-                                ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                                Navigator.of(context).push(
+                                  BttPageRoute<void>(
+                                    builder: (_) => const X2Screen(),
+                                  ),
+                                );
                               },
                             ),
                         ],

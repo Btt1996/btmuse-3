@@ -108,14 +108,14 @@ class SmartRemixScreen extends ConsumerWidget {
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: BttColors.borderSubtle),
+              side: BorderSide(color: BttColors.borderSubtle),
             ),
-            leading: const Icon(Icons.tune_rounded, color: BttColors.accentPink),
+            leading: Icon(Icons.tune_rounded, color: BttColors.accentPink),
             title: const Text('Crossfade'),
             subtitle: const Text(
               'Crossfade now lives in Audio settings and works for any queue — no Smart Remix needed.',
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Icons.chevron_right_rounded,
               color: BttColors.textSecondary,
             ),
@@ -145,7 +145,7 @@ class SmartRemixScreen extends ConsumerWidget {
                 title: Text(_modeLabel(m)),
                 subtitle: Text(_modeDesc(m)),
                 trailing: selected
-                    ? const Icon(Icons.check_circle_rounded, color: BttColors.accentPink)
+                    ? Icon(Icons.check_circle_rounded, color: BttColors.accentPink)
                     : null,
                 onTap: () => updateConfig(config.copyWith(mode: m)),
               ),
@@ -185,7 +185,7 @@ class SmartRemixScreen extends ConsumerWidget {
             onPressed: plan.isEmpty ? null : saveMixAsPlaylist,
             style: OutlinedButton.styleFrom(
               foregroundColor: BttColors.accentPink,
-              side: const BorderSide(color: BttColors.accentPink),
+              side: BorderSide(color: BttColors.accentPink),
               minimumSize: const Size.fromHeight(50),
             ),
             icon: const Icon(Icons.playlist_add_rounded),

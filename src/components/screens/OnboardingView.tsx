@@ -119,7 +119,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onGoToSync, onTr
           />
         </div>
         <span className="absolute -bottom-1 -right-1 px-2.5 py-0.5 rounded-full bg-[var(--btt-accent)] text-black text-[10px] font-extrabold shadow-md font-mono">
-          v2.00
+          v3.0.5
         </span>
       </div>
 

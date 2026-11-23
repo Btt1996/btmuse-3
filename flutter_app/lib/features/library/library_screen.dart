@@ -10,6 +10,7 @@ import 'package:btmu/app/widgets/staggered_entrance.dart';
 import 'package:btmu/app/widgets/track_tile.dart';
 import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/library/metadata_editor_sheet.dart';
+import 'package:btmu/features/playlists/playlists_screen.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -20,11 +21,17 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   String _searchQuery = '';
-  String _segment = 'Tracks'; // Tracks, Favorites, Artists, Albums
+  String _segment = 'Tracks'; // Tracks, Favorites, Artists, Albums, Playlists
   bool _importing = false;
+  // v3.0.5, item 11: import feedback is an inline line, never a
+  // SnackBar overlaying the player.
+  String? _status;
 
   Future<void> _importLocalFiles() async {
-    setState(() => _importing = true);
+    setState(() {
+      _importing = true;
+      _status = null;
+    });
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -63,16 +70,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         final summary = skipped.isEmpty
             ? 'Imported $importedCount audio file(s) into library.'
             : 'Imported $importedCount of ${result.files.length} audio file(s) · ${skipped.length} skipped — ${skipped.first}';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(summary)),
-        );
+        setState(() => _status = summary);
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
-        );
-      }
+      if (mounted) setState(() => _status = 'Import failed: $e');
     } finally {
       if (mounted) setState(() => _importing = false);
     }
@@ -88,7 +89,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_rounded, color: BttColors.accentPink),
+              leading: Icon(Icons.edit_rounded, color: BttColors.accentPink),
               title: const Text('Edit Metadata'),
               onTap: () {
                 Navigator.of(ctx).pop();
@@ -107,14 +108,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.playlist_add_rounded, color: BttColors.accentViolet),
+              leading: Icon(Icons.playlist_add_rounded, color: BttColors.accentViolet),
               title: const Text('Add to Playlist'),
               onTap: () {
                 Navigator.of(ctx).pop();
                 final playlists = playlistsAsync.valueOrNull ?? [];
                 if (playlists.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Create a playlist in the Playlists tab first.')),
+                    const SnackBar(
+                      content: Text(
+                        'Create a playlist in the Playlists section of your Library first.',
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -145,8 +150,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: BttColors.danger),
-              title: const Text('Delete Offline File', style: TextStyle(color: BttColors.danger)),
+              leading: Icon(Icons.delete_outline_rounded, color: BttColors.danger),
+              title: Text('Delete Offline File', style: TextStyle(color: BttColors.danger)),
               onTap: () async {
                 Navigator.of(ctx).pop();
                 await ref.read(libraryRepositoryProvider).deleteTrack(track);
@@ -186,21 +191,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: TextField(
-              onChanged: (v) => setState(() => _searchQuery = v),
-              decoration: const InputDecoration(
-                hintText: 'Filter local tracks, artists, or albums',
-                prefixIcon: Icon(Icons.search_rounded),
+          // The track filter only applies to the track segments — the
+          // Playlists segment has its own list and actions.
+          if (_segment != 'Playlists')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: TextField(
+                onChanged: (v) => setState(() => _searchQuery = v),
+                decoration: const InputDecoration(
+                  hintText: 'Filter local tracks, artists, or albums',
+                  prefixIcon: Icon(Icons.search_rounded),
+                ),
               ),
             ),
-          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
-              children: ['Tracks', 'Favorites', 'Artists', 'Albums'].map((label) {
+              children: ['Tracks', 'Favorites', 'Artists', 'Albums', 'Playlists'].map((label) {
                 final selected = _segment == label;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -218,34 +226,54 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               }).toList(),
             ),
           ),
-          statsAsync.when(
-            data: (stats) {
-              final mb = (stats.totalBytes / (1024 * 1024)).toStringAsFixed(1);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${stats.trackCount} tracks · $mb MB on disk',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                    if (stats.duplicateGroupsCount > 0)
+          if (_segment != 'Playlists')
+            statsAsync.when(
+              data: (stats) {
+                final mb = (stats.totalBytes / (1024 * 1024)).toStringAsFixed(1);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Text(
-                        '${stats.duplicateGroupsCount} duplicate alert(s)',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: BttColors.warning,
-                            ),
+                        '${stats.trackCount} tracks · $mb MB on disk',
+                        style: Theme.of(context).textTheme.labelSmall,
                       ),
-                  ],
+                      if (stats.duplicateGroupsCount > 0)
+                        Text(
+                          '${stats.duplicateGroupsCount} duplicate alert(s)',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: BttColors.warning,
+                              ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          // v3.0.5, item 11: import feedback as an inline line under
+          // the header, never a SnackBar over the player.
+          if (_status != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _status!,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: BttColors.accentPink,
+                      ),
                 ),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
+              ),
+            ),
           Expanded(
-            child: tracksAsync.when(
+            child: _segment == 'Playlists'
+                // v3.0.5, item 15: Playlists lives inside Library now.
+                // 176 bottom padding clears the floating pill + MiniPlayer.
+                ? const PlaylistsBody(bottomPadding: 176)
+                : tracksAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(child: Text('Failed to load library: $err')),
               data: (allTracks) {
@@ -265,7 +293,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.music_off_rounded, size: 48, color: BttColors.textMuted),
+                          Icon(Icons.music_off_rounded, size: 48, color: BttColors.textMuted),
                           const SizedBox(height: 12),
                           Text(
                             allTracks.isEmpty ? 'No offline tracks yet' : 'No matching tracks',
@@ -291,7 +319,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   }
                   final keys = grouped.keys.toList()..sort();
                   return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 176),
                     itemCount: keys.length,
                     itemBuilder: (context, idx) {
                       final name = keys[idx];
@@ -314,7 +342,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 176),
                   itemCount: filtered.length,
                   itemBuilder: (context, idx) {
                     final t = filtered[idx];

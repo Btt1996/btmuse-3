@@ -48,7 +48,7 @@ class BttPageRoute<T> extends PageRouteBuilder<T> {
             // zero while this route is on top and costs nothing then.
             final outgoing = Tween<Offset>(
               begin: Offset.zero,
-              end: Offset(-BttMotion.outgoingPageShift, 0.0),
+              end: const Offset(-BttMotion.outgoingPageShift, 0.0),
             ).animate(
               CurvedAnimation(
                 parent: secondaryAnimation,

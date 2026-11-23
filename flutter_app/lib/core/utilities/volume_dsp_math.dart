@@ -22,6 +22,23 @@ class VolumeDspMath {
   static const double maxMultiplier = 3.0; // 300%
 
   /// Computes soft-knee peak limited linear output for a given input level and multiplier.
+  ///
+  /// Normalization rule (v3.0.5, mirrors `AudioEnginePlugin.currentGainValues`):
+  /// the -1.5 dB pad is a loudness-balancing offset for normal playback. When
+  /// the user explicitly boosts above 100%, the pad must NOT subtract from
+  /// the boost — 300% has to deliver its full +9.54 dB of digital gain.
+  /// [effectiveNormalizationOffsetDb] encodes that rule; call sites must
+  /// pass its result, never a bare `-1.5`, so the Dart telemetry and the
+  /// native engine can never disagree about the net gain.
+  static double effectiveNormalizationOffsetDb({
+    required double multiplier,
+    required bool normalizeVolume,
+  }) {
+    if (!normalizeVolume) return 0.0;
+    if (multiplier > 1.0) return 0.0;
+    return -1.5;
+  }
+
   static VolumeDspResult evaluateGain({
     required double multiplier,
     required bool limiterEnabled,

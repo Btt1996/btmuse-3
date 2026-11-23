@@ -10,7 +10,7 @@ import 'package:dio/dio.dart';
 /// app is an iOS build, not a served PWA. This service asks GitHub for
 /// the latest release of this repo instead:
 ///
-///   GET https://api.github.com/repos/Btt1996/btmuse-3.0/releases/latest
+///   GET https://api.github.com/repos/Btt1996/btmuse-3/releases/latest
 ///
 /// Honest limits, stated where the UI repeats them:
 /// * iOS cannot self-update. There is no install button and never will
@@ -28,18 +28,18 @@ import 'package:dio/dio.dart';
 ///   rate-limited per IP; a 403 therefore surfaces as an error naming
 ///   the rate limit instead of a fake "up to date".
 class UpdateService {
-  /// Display version shown in Settings ("Version 2.00") and in the Home
-  /// header badge. Must stay in step with `pubspec.yaml` (`2.0.0+30`)
+  /// Display version shown in Settings ("Version 3.0.5") and in the Home
+  /// header badge. Must stay in step with `pubspec.yaml` (`3.0.5+31`)
   /// and `settings_screen.dart`.
-  static const String currentVersion = '2.00';
+  static const String currentVersion = '3.0.5';
 
   static const String releasesApiUrl =
-      'https://api.github.com/repos/Btt1996/btmuse-3.0/releases/latest';
+      'https://api.github.com/repos/Btt1996/btmuse-3/releases/latest';
 
   /// Human-facing releases page, shown/copied by the UI when an update
   /// is available. Never fetched by this service.
   static const String releasesPageUrl =
-      'https://github.com/Btt1996/btmuse-3.0/releases';
+      'https://github.com/Btt1996/btmuse-3/releases';
 
   final Dio _dio;
 
@@ -55,7 +55,7 @@ class UpdateService {
     // are applied even when a Dio is injected (tests inject a stubbed
     // Dio and still prove the headers are sent).
     _dio.options.headers['Accept'] = 'application/vnd.github+json';
-    _dio.options.headers['User-Agent'] = 'BttMusic/2.00 (iOS; Flutter)';
+    _dio.options.headers['User-Agent'] = 'BttMusic/3.0.5 (iOS; Flutter)';
   }
 
   /// One update check against the GitHub releases API. Never throws:
@@ -118,7 +118,7 @@ class UpdateService {
         status: UpdateCheckStatus.noReleases,
         currentVersion: currentVersion,
         errorMessage:
-            'No releases have been published for Btt Music 2.00 yet. '
+            'No releases have been published for Btmus 3.0.5 yet. '
             'You are running $currentVersion.',
         checkedAt: DateTime.now(),
       );

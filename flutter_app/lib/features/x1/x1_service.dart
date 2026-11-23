@@ -290,7 +290,7 @@ class X1Service {
             'https://musicbrainz.org/ws/2/recording',
             queryParameters: {'query': trimmed, 'fmt': 'json', 'limit': 5},
             options: Options(
-              headers: const {'User-Agent': 'BttMusic/2.00 (ahmed96btt@gmail.com)'},
+              headers: const {'User-Agent': 'BttMusic/3.0.5 (ahmed96btt@gmail.com)'},
             ),
           ).timeout(catalogProviderTimeout);
           final recs = (res.data?['recordings'] as List<dynamic>?) ?? [];

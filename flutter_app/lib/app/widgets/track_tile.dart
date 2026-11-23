@@ -87,7 +87,7 @@ class TrackTile extends StatelessWidget {
                 if (onMorePressed != null)
                   IconButton(
                     constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_horiz_rounded,
                       color: BttColors.textSecondary,
                     ),

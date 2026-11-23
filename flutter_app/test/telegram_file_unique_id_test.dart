@@ -274,7 +274,7 @@ void main() {
       repo.byFileUniqueId['vu-audio-1'] = existing;
 
       final service = TelegramService(ApiClient(customDio: dio), repo);
-      final entry = TelegramAudioEntry(
+      final entry = const TelegramAudioEntry(
         fileId: 'fid-audio',
         fileUniqueId: 'vu-audio-1',
         title: 'Song A',
@@ -313,7 +313,7 @@ void main() {
       });
 
       final service = TelegramService(ApiClient(customDio: dio), _FakeLibraryRepository());
-      final entry = TelegramAudioEntry(
+      final entry = const TelegramAudioEntry(
         fileId: 'fid-big',
         fileUniqueId: 'vu-big-1',
         title: 'Big',

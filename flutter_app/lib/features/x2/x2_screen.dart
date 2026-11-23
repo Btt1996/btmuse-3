@@ -6,6 +6,7 @@ import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/data/models/x2_result.dart';
+import 'package:btmu/features/player/mini_player.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
 
 class X2Screen extends ConsumerStatefulWidget {
@@ -25,6 +26,9 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
   bool _isUrlLookup = false;
   String _selectedFilter = 'all'; // all, authorized, metadata
   String? _playingPreviewUrl;
+  // v3.0.5, item 11: download feedback is an inline line, never a
+  // SnackBar overlaying the player.
+  String? _status;
 
   Future<void> _executeSearch(String input) async {
     final trimmed = input.trim();
@@ -32,6 +36,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
     setState(() {
       _loading = true;
       _providerErrors = {};
+      _status = null;
     });
     try {
       final response = await ref.read(x2SearchEngineProvider).search(trimmed);
@@ -97,13 +102,17 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
         actions: [
           IconButton(
             tooltip: 'Open Import Center',
-            icon: const Icon(Icons.add_circle_outline_rounded, color: BttColors.accentPink),
-            onPressed: () =>
-                ref.read(currentTabIndexProvider.notifier).state = BttTab.importCenter,
+            icon: Icon(Icons.add_circle_outline_rounded, color: BttColors.accentPink),
+            onPressed: () {
+              // X2 is a pushed route now: reveal the Import Center tab
+              // underneath instead of switching tabs behind this route.
+              ref.read(currentTabIndexProvider.notifier).state = BttTab.importCenter;
+              Navigator.of(context).pop();
+            },
           ),
           IconButton(
             tooltip: 'Telegram Audio Import',
-            icon: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
+            icon: Icon(Icons.send_rounded, color: BttColors.accentMagenta),
             onPressed: () {
               Navigator.of(context).push(
                 BttPageRoute<void>(builder: (_) => const TelegramScreen()),
@@ -112,6 +121,8 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
           ),
         ],
       ),
+      // v3.0.5, item 11: the player stays visible during import flows.
+      bottomNavigationBar: const MiniPlayer(),
       body: Column(
         children: [
           Padding(
@@ -124,7 +135,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                 hintText: 'Song, artist, VK / YouTube / SoundCloud / Audius / RSS URL',
                 prefixIcon: const Icon(Icons.travel_explore_rounded),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.search_rounded, color: BttColors.accentPink),
+                  icon: Icon(Icons.search_rounded, color: BttColors.accentPink),
                   onPressed: () => _executeSearch(_queryCtrl.text),
                 ),
               ),
@@ -148,6 +159,19 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
           ),
           const SizedBox(height: 8),
           if (_loading) const LinearProgressIndicator(minHeight: 2),
+          if (_status != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _status!,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: BttColors.accentPink,
+                      ),
+                ),
+              ),
+            ),
           if (_providerErrors.isNotEmpty && !_loading)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -167,7 +191,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                           padding: const EdgeInsets.only(bottom: 2),
                           child: Text(
                             '${e.key}: ${e.value.replaceFirst(RegExp(r'^AppFailure\([^)]+\):\s*'), '')}',
-                            style: const TextStyle(color: BttColors.warning, fontSize: 11.5),
+                            style: TextStyle(color: BttColors.warning, fontSize: 11.5),
                           ),
                         ),
                       )
@@ -208,7 +232,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
+                              icon: Icon(Icons.send_rounded, color: BttColors.accentMagenta),
                               label: const Text('Import From Telegram Bot'),
                             ),
                           ],
@@ -233,9 +257,7 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                             hasPreviewOnly ? () => _togglePreview(r.audioUrl!) : null,
                         onDownload: () {
                           ref.read(downloadManagerProvider.notifier).enqueueX2Download(r);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Queued "${r.title}" for acquisition.')),
-                          );
+                          setState(() => _status = 'Queued "${r.title}" for acquisition.');
                         },
                         onFindAuthorizedMatch: () {
                           final q = '${r.artist} ${r.title}'.trim();

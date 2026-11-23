@@ -100,7 +100,7 @@ class UpNextSheet extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: queue.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -109,9 +109,9 @@ class UpNextSheet extends ConsumerWidget {
                                 size: 44,
                                 color: BttColors.textMuted,
                               ),
-                              SizedBox(height: 12),
-                              Text('Nothing queued yet'),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 12),
+                              const Text('Nothing queued yet'),
+                              const SizedBox(height: 4),
                               Text(
                                 'Tracks you play will appear here.',
                                 style: TextStyle(
@@ -204,7 +204,7 @@ class UpNextSheet extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
+            child: Text(
               'Clear',
               style: TextStyle(color: BttColors.danger),
             ),
@@ -282,7 +282,7 @@ class _QueueRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isCurrent)
-              const Icon(
+              Icon(
                 Icons.graphic_eq_rounded,
                 color: BttColors.accentPink,
                 size: 18,
@@ -295,7 +295,7 @@ class _QueueRow extends StatelessWidget {
             ),
             ReorderableDragStartListener(
               index: index,
-              child: const Icon(
+              child: Icon(
                 Icons.drag_handle_rounded,
                 color: BttColors.textMuted,
               ),

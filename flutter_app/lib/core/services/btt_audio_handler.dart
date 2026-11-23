@@ -887,7 +887,10 @@ class BttAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
     final dsp = VolumeDspMath.evaluateGain(
       multiplier: settings.volumeMultiplier,
       limiterEnabled: settings.limiterEnabled,
-      normalizationOffsetDb: settings.normalizeVolume ? -1.5 : 0.0,
+      normalizationOffsetDb: VolumeDspMath.effectiveNormalizationOffsetDb(
+        multiplier: settings.volumeMultiplier,
+        normalizeVolume: settings.normalizeVolume,
+      ),
     );
     return dsp.linearOutput.clamp(0.0, 1.0);
   }

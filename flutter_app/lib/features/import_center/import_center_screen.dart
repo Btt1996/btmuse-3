@@ -16,6 +16,8 @@ import 'package:btmu/features/downloads/download_history_screen.dart';
 import 'package:btmu/features/search/search_screen.dart';
 import 'package:btmu/features/settings/settings_screen.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
+import 'package:btmu/features/x1/x1_screen.dart';
+import 'package:btmu/features/x2/x2_screen.dart';
 import 'package:btmu/features/x2/providers/direct_url_provider.dart';
 import 'package:btmu/features/x2/providers/soundcloud_provider.dart';
 import 'package:btmu/features/x2/providers/spotify_metadata_provider.dart';
@@ -88,14 +90,12 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
       final summary = imported == 1 && !allowMultiple
           ? 'Imported "$lastTitle" (${lastDuration}s${hasArtwork ? ' · cover embedded' : ''}).'
           : 'Imported $imported of ${files.length} audio file(s)${failures.isNotEmpty ? ' · ${failures.length} skipped' : ''}.';
+      // v3.0.5, item 11: inline status only — the SnackBar used to
+      // overlay the player.
       setState(() => _lastStatus = failures.isEmpty ? summary : '$summary\n${failures.first}');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(summary)));
     } catch (e) {
       if (mounted) {
         setState(() => _lastStatus = 'File import failed: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
-        );
       }
     } finally {
       if (mounted) setState(() => _busyLocal = false);
@@ -181,7 +181,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 176),
         children: [
           Container(
             padding: const EdgeInsets.all(16),
@@ -224,7 +224,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _SectionHeader('LOCAL IPHONE STORAGE'),
+          const _SectionHeader('LOCAL IPHONE STORAGE'),
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.folder_open_rounded,
@@ -244,7 +244,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             onTap: _busyLocal ? null : () => _importLocal(allowMultiple: true),
           ),
           const SizedBox(height: 18),
-          _SectionHeader('MESSAGING & DIRECT WEB URLS'),
+          const _SectionHeader('MESSAGING & DIRECT WEB URLS'),
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.send_rounded,
@@ -268,7 +268,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             onTap: _openDirectUrlSheet,
           ),
           const SizedBox(height: 18),
-          _SectionHeader('PROVIDER SEARCH & METADATA HANDOFF'),
+          const _SectionHeader('PROVIDER SEARCH & METADATA HANDOFF'),
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.public_rounded,
@@ -306,7 +306,7 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             onTap: _openSpotifySheet,
           ),
           const SizedBox(height: 18),
-          _SectionHeader('X1 & X2 INTELLIGENCE ENGINES'),
+          const _SectionHeader('X1 & X2 INTELLIGENCE ENGINES'),
           const SizedBox(height: 8),
           _ImportOptionTile(
             icon: Icons.mic_rounded,
@@ -314,7 +314,11 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             title: 'Identify Music Using X1',
             subtitle: 'On-device FFT constellation fingerprinting + zero-key public catalog verification',
             trailingLabel: 'X1 Engine',
-            onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x1,
+            onTap: () {
+              Navigator.of(context).push(
+                BttPageRoute<void>(builder: (_) => const X1Screen()),
+              );
+            },
           ),
           const SizedBox(height: 10),
           _ImportOptionTile(
@@ -323,7 +327,11 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             title: 'Obtain Music Using X2',
             subtitle: 'Multi-source search across Audius, Deezer, Apple Open Catalog & authorized downloads',
             trailingLabel: 'X2 Engine',
-            onTap: () => ref.read(currentTabIndexProvider.notifier).state = BttTab.x2,
+            onTap: () {
+              Navigator.of(context).push(
+                BttPageRoute<void>(builder: (_) => const X2Screen()),
+              );
+            },
           ),
         ],
       ),
@@ -414,7 +422,7 @@ class _ImportOptionTile extends StatelessWidget {
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(color: accent),
                   ),
                   const SizedBox(height: 4),
-                  const Icon(Icons.chevron_right_rounded, color: BttColors.textMuted, size: 20),
+                  Icon(Icons.chevron_right_rounded, color: BttColors.textMuted, size: 20),
                 ],
               ),
             ],
@@ -561,7 +569,7 @@ class _VkImportSheetState extends ConsumerState<_VkImportSheet> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: BttColors.warning, fontSize: 12.5)),
+                Text(_error!, style: TextStyle(color: BttColors.warning, fontSize: 12.5)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {
@@ -570,7 +578,9 @@ class _VkImportSheetState extends ConsumerState<_VkImportSheet> {
                     if (q.isNotEmpty) {
                       ref.read(pendingX2SearchQueryProvider.notifier).state = q;
                     }
-                    ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                    Navigator.of(context).push(
+                      BttPageRoute<void>(builder: (_) => const X2Screen()),
+                    );
                   },
                   icon: const Icon(Icons.travel_explore_rounded),
                   label: const Text('Search Open Sources in X2 Instead'),
@@ -801,14 +811,13 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
       ref.invalidate(libraryTracksProvider);
       ref.invalidate(storageStatsProvider);
       if (mounted) {
+        // v3.0.5, item 11: the import result lives in _bridgeStatus
+        // (rendered inline) — no SnackBar over the player.
         setState(() {
           _bridgeStage = 'Imported.';
           _bridgeProgress = 1.0;
           _bridgeStatus = 'Imported "${track.title}" into your library via your bridge.';
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Imported "${track.title}" via your bridge.')),
-        );
       }
     } on AppFailure catch (e) {
       final failed = bridgeResult;
@@ -892,7 +901,7 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: BttColors.warning, fontSize: 12.5)),
+                Text(_error!, style: TextStyle(color: BttColors.warning, fontSize: 12.5)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {
@@ -1008,7 +1017,7 @@ class _YoutubeImportSheetState extends ConsumerState<_YoutubeImportSheet> {
                 const SizedBox(height: 8),
                 Text(
                   _bridgeError!,
-                  style: const TextStyle(color: BttColors.danger, fontSize: 12.5),
+                  style: TextStyle(color: BttColors.danger, fontSize: 12.5),
                 ),
               ],
               ..._results.map((r) => _SheetResultCard(result: r)),
@@ -1127,7 +1136,7 @@ class _SoundCloudImportSheetState extends ConsumerState<_SoundCloudImportSheet> 
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: BttColors.warning, fontSize: 12.5)),
+                Text(_error!, style: TextStyle(color: BttColors.warning, fontSize: 12.5)),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {
@@ -1136,7 +1145,9 @@ class _SoundCloudImportSheetState extends ConsumerState<_SoundCloudImportSheet> 
                     if (q.isNotEmpty) {
                       ref.read(pendingX2SearchQueryProvider.notifier).state = q;
                     }
-                    ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                    Navigator.of(context).push(
+                      BttPageRoute<void>(builder: (_) => const X2Screen()),
+                    );
                   },
                   icon: const Icon(Icons.travel_explore_rounded),
                   label: const Text('Search Open Sources in X2 Instead'),
@@ -1352,14 +1363,14 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
                 if (_userError != null) ...[
                   const SizedBox(height: 12),
                   Text(_userError!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: BttColors.warning, fontSize: 12.5)),
                 ],
               ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(_error!,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: BttColors.warning, fontSize: 12.5)),
               ],
               if (_userPlaylists != null && playlist == null) ...[
@@ -1453,7 +1464,7 @@ class _SpotifyImportSheetState extends ConsumerState<_SpotifyImportSheet> {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            const Icon(Icons.check_circle_rounded,
+                            Icon(Icons.check_circle_rounded,
                                 color: BttColors.success, size: 18),
                             const SizedBox(width: 6),
                             Text(
@@ -1545,7 +1556,7 @@ class _UserPlaylistTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   color: BttColors.textMuted,
                   size: 20,
@@ -1664,7 +1675,7 @@ class _DirectUrlImportSheetState extends ConsumerState<_DirectUrlImportSheet> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: BttColors.danger, fontSize: 12.5)),
+                Text(_error!, style: TextStyle(color: BttColors.danger, fontSize: 12.5)),
               ],
               ..._items.map((r) => _SheetResultCard(result: r)),
             ],
@@ -1740,9 +1751,8 @@ class _SheetResultCard extends ConsumerWidget {
                     onPressed: () {
                       ref.read(downloadManagerProvider.notifier).enqueueX2Download(result);
                       Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Queued "${result.title}" for offline import.')),
-                      );
+                      // v3.0.5, item 11: no SnackBar — the Downloads
+                      // badge on the Import Center / Home counts it.
                     },
                     style: FilledButton.styleFrom(
                       backgroundColor: BttColors.accentPink,
@@ -1756,7 +1766,9 @@ class _SheetResultCard extends ConsumerWidget {
                       Navigator.of(context).pop();
                       ref.read(pendingX2SearchQueryProvider.notifier).state =
                           '${result.artist} ${result.title}'.trim();
-                      ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                      Navigator.of(context).push(
+                        BttPageRoute<void>(builder: (_) => const X2Screen()),
+                      );
                     },
                     icon: const Icon(Icons.travel_explore_rounded, size: 18),
                     label: const Text('Find Authorized Source in X2'),

@@ -13,6 +13,7 @@ import 'package:btmu/data/models/track.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/lyrics/lyrics_service.dart';
 import 'package:btmu/features/lyrics/lyrics_view.dart';
+import 'package:btmu/features/player/sharbon_cursor.dart';
 import 'package:btmu/features/player/up_next_sheet.dart';
 import 'package:btmu/features/smart_remix/smart_remix_screen.dart';
 
@@ -381,7 +382,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                 ),
                               ),
                               const SizedBox(height: 18),
-                              _buildSeekSection(context, handler, position, maxMs, currentMs),
+                              _buildSeekSection(context, handler, position, maxMs, currentMs, playing),
                               const SizedBox(height: 14),
                               _buildTransportRow(handler, playing),
                               const SizedBox(height: 18),
@@ -396,10 +397,10 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
+                                    icon: Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
                                     label: Text(
                                       'Boost ${audioSettings.boostPercent}%',
-                                      style: const TextStyle(color: BttColors.textPrimary),
+                                      style: TextStyle(color: BttColors.textPrimary),
                                     ),
                                   ),
                                   TextButton.icon(
@@ -410,16 +411,16 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.auto_awesome_rounded, color: BttColors.accentPink),
-                                    label: const Text(
+                                    icon: Icon(Icons.auto_awesome_rounded, color: BttColors.accentPink),
+                                    label: Text(
                                       'Smart Remix',
                                       style: TextStyle(color: BttColors.textPrimary),
                                     ),
                                   ),
                                   TextButton.icon(
                                     onPressed: () => showUpNextSheet(context),
-                                    icon: const Icon(Icons.queue_music_rounded, color: BttColors.accentMagenta),
-                                    label: const Text(
+                                    icon: Icon(Icons.queue_music_rounded, color: BttColors.accentMagenta),
+                                    label: Text(
                                       'Up Next',
                                       style: TextStyle(color: BttColors.textPrimary),
                                     ),
@@ -453,7 +454,7 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const SizedBox(height: 14),
-                            _buildSeekSection(context, handler, position, maxMs, currentMs),
+                            _buildSeekSection(context, handler, position, maxMs, currentMs, playing),
                             const SizedBox(height: 14),
                             _buildTransportRow(handler, playing),
                             const SizedBox(height: 10),
@@ -608,14 +609,18 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
     Duration position,
     double maxMs,
     double currentMs,
+    bool playing,
   ) {
     // SliderThemeData has no gradient-track slot, so the gradient fill is
     // painted under a transparent-track Slider: the fill spans exactly the
     // thumb-travel range (inset by the 10 px thumb radius on each side).
     // Seek behavior is unchanged — the Slider still owns the gesture.
+    // The thumb is Sharbon (v3.0.5, item 14); when nothing is playing he
+    // paces along the track above the slider instead.
     final progress = maxMs > 0 ? (currentMs / maxMs).clamp(0.0, 1.0) : 0.0;
     return Column(
       children: [
+        if (!playing) const SharbonIdleAnimation(),
         LayoutBuilder(
           builder: (context, constraints) {
             const thumbRadius = 10.0;
@@ -648,6 +653,8 @@ class _FullScreenPlayerState extends ConsumerState<FullScreenPlayer>
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: Colors.transparent,
                     inactiveTrackColor: Colors.transparent,
+                    thumbShape: const SharbonThumbShape(),
+                    overlayShape: SliderComponentShape.noOverlay,
                   ),
                   child: Slider(
                     value: currentMs,

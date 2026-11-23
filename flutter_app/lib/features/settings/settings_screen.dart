@@ -1,15 +1,20 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
+import 'package:btmu/app/theme/btt_theme_variant.dart';
 import 'package:btmu/app/widgets/btt_logo_mark.dart';
 import 'package:btmu/core/config/x2_config.dart';
 import 'package:btmu/core/services/update_service.dart';
 import 'package:btmu/features/audio_settings/audio_settings_screen.dart';
 import 'package:btmu/features/backup/backup_screen.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
+import 'package:btmu/features/settings/custom_font_service.dart';
 import 'package:btmu/features/storage/storage_dashboard.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
 import 'package:btmu/features/x2/clients/x2_connectivity_tester.dart';
@@ -128,7 +133,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text('Btmus by Taboubi Ahmed', style: Theme.of(context).textTheme.titleLarge),
                       Text(
-                        'Version 2.00 · com.ahmed.btmu',
+                        'Version ${UpdateService.currentVersion} · com.ahmed.btmu',
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       Text(
@@ -149,10 +154,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // fake install button. Nothing else on this screen changed.
           const _UpdateCheckCard(),
           const SizedBox(height: 16),
+          // v3.0.5, item 12 — themes: palette + layout, applied instantly.
+          const _ThemeSection(),
+          const SizedBox(height: 16),
+          // v3.0.5, item 9 — custom font import.
+          const _FontCard(),
+          const SizedBox(height: 16),
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
+            leading: Icon(Icons.graphic_eq_rounded, color: BttColors.accentViolet),
             title: const Text('Audio Engine & Extreme Boost (300%)'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -163,7 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.send_rounded, color: BttColors.accentMagenta),
+            leading: Icon(Icons.send_rounded, color: BttColors.accentMagenta),
             title: const Text('Telegram Bot Sync'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -174,7 +185,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.downloading_rounded, color: BttColors.accentPink),
+            leading: Icon(Icons.downloading_rounded, color: BttColors.accentPink),
             title: const Text('Download Queue & History'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
@@ -185,9 +196,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.backup_rounded, color: BttColors.accentViolet),
+            leading: Icon(Icons.backup_rounded, color: BttColors.accentViolet),
             title: const Text('Backup & Restore'),
             subtitle: const Text('Export your library as JSON or restore from a backup'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              BttPageRoute<void>(builder: (_) => const BackupScreen()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // v3.0.5, item 16 — single library file for iCloud Drive: the
+          // same Backup screen, opened from a tile named for the job —
+          // save one .btmu file to iCloud Drive, open it on another
+          // device. Manual file, no automatic sync, no CloudKit.
+          ListTile(
+            tileColor: BttColors.bgCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            leading: Icon(Icons.cloud_upload_rounded, color: BttColors.accentPink),
+            title: const Text('Library File for iCloud Drive'),
+            subtitle: const Text('Save one .btmu file with your library & playlists — audio not included, songs re-download on the other device'),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () => Navigator.of(context).push(
               BttPageRoute<void>(builder: (_) => const BackupScreen()),
@@ -307,7 +334,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             tileColor: BttColors.bgCard,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            leading: const Icon(Icons.sd_storage_rounded, color: BttColors.textSecondary),
+            leading: Icon(Icons.sd_storage_rounded, color: BttColors.textSecondary),
             title: const Text('Offline Storage Footprint'),
             subtitle: Text(
               '${stats?.trackCount ?? 0} tracks · $mb MB stored in App Documents'
@@ -424,7 +451,7 @@ class _DiagnosticsCard extends StatelessWidget {
         Expanded(
           child: Text(
             '$label: $detail',
-            style: const TextStyle(fontSize: 12, color: BttColors.textSecondary),
+            style: TextStyle(fontSize: 12, color: BttColors.textSecondary),
           ),
         ),
       ],
@@ -493,7 +520,7 @@ class _UpdateCheckCardState extends State<_UpdateCheckCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.system_update_rounded, color: BttColors.accentViolet),
+              Icon(Icons.system_update_rounded, color: BttColors.accentViolet),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -577,7 +604,7 @@ class _UpdateCheckCardState extends State<_UpdateCheckCard> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.check_circle_rounded, size: 18, color: BttColors.success),
+            Icon(Icons.check_circle_rounded, size: 18, color: BttColors.success),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -595,7 +622,7 @@ class _UpdateCheckCardState extends State<_UpdateCheckCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.new_releases_rounded, size: 18, color: BttColors.accentPink),
+                Icon(Icons.new_releases_rounded, size: 18, color: BttColors.accentPink),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -650,7 +677,7 @@ class _UpdateCheckCardState extends State<_UpdateCheckCard> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.info_outline_rounded, size: 18, color: BttColors.warning),
+            Icon(Icons.info_outline_rounded, size: 18, color: BttColors.warning),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -668,5 +695,207 @@ class _UpdateCheckCardState extends State<_UpdateCheckCard> {
     final local = at.toLocal();
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}';
+  }
+}
+
+/// v3.0.5, item 12 — theme picker. Each theme changes the palette AND
+/// the layout (card radius, list density, chip shape) — see
+/// `BttThemeVariant` / `BttThemeTokens`. The choice applies instantly
+/// (the provider rebuilds the app) and is persisted in preferences.
+class _ThemeSection extends ConsumerWidget {
+  const _ThemeSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(themeVariantProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Appearance — Themes', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Each theme changes the colors and the layout of the app — cards, spacing and density — not just the accent color.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+        ),
+        const SizedBox(height: 10),
+        for (final variant in BttThemeVariant.values)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              tileColor: BttColors.bgCard,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              leading: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: tokensFor(variant).accentGradient.colors,
+                  ),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: BttColors.borderSubtle),
+                ),
+              ),
+              title: Text(variant.displayName),
+              subtitle: Text(variant.description),
+              trailing: active == variant
+                  ? Icon(Icons.check_circle_rounded, color: BttColors.accentPink)
+                  : const Icon(Icons.circle_outlined),
+              onTap: () async {
+                ref.read(themeVariantProvider.notifier).state = variant;
+                await ref.read(credentialsStoreProvider).setThemeVariant(variant);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// v3.0.5, item 9 — custom font import. The user picks a `.ttf` / `.otf`
+/// file; it is validated (real font magic bytes, not just the extension),
+/// stored in the app container, and used app-wide for body + display
+/// text. Small labels stay JetBrains Mono by design. Removing the font
+/// restores the built-in Plus Jakarta Sans / Manrope pairing.
+class _FontCard extends ConsumerStatefulWidget {
+  const _FontCard();
+
+  @override
+  ConsumerState<_FontCard> createState() => _FontCardState();
+}
+
+class _FontCardState extends ConsumerState<_FontCard> {
+  String? _currentFile;
+  String? _message;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final name = await ref.read(credentialsStoreProvider).getCustomFontFileName();
+    if (mounted) setState(() => _currentFile = name);
+  }
+
+  Future<void> _importFont() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['ttf', 'otf'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final picked = result.files.single;
+      final bytes = picked.bytes ??
+          (picked.path != null ? await File(picked.path!).readAsBytes() : null);
+      if (bytes == null) {
+        setState(() => _message = 'Could not read that file — try picking it again.');
+        return;
+      }
+      final problem = CustomFontService.validateFontBytes(bytes, fileName: picked.name);
+      if (problem != null) {
+        setState(() => _message = problem);
+        return;
+      }
+      final stored = await CustomFontService.installFont(bytes, picked.name);
+      final family = await CustomFontService.loadInstalledFont(stored);
+      if (family == null) {
+        setState(() => _message = 'That font could not be loaded — try a different file.');
+        return;
+      }
+      await ref.read(credentialsStoreProvider).setCustomFontFileName(stored);
+      ref.read(customFontFamilyProvider.notifier).state = family;
+      setState(() {
+        _currentFile = stored;
+        _message = 'Font "$stored" is now used app-wide.';
+      });
+    } catch (e) {
+      setState(() => _message = 'Font import failed: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _removeFont() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final name = _currentFile;
+      if (name != null) await CustomFontService.removeInstalledFont(name);
+      await ref.read(credentialsStoreProvider).setCustomFontFileName(null);
+      ref.read(customFontFamilyProvider.notifier).state = null;
+      setState(() {
+        _currentFile = null;
+        _message = 'Custom font removed — the built-in fonts are back.';
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: BttColors.bgCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: BttColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.font_download_rounded, color: BttColors.accentMagenta),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Custom Font', style: Theme.of(context).textTheme.titleMedium),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _currentFile == null
+                ? 'Built-in fonts (Plus Jakarta Sans / Manrope). Import a .ttf or .otf file to use it app-wide for body and display text.'
+                : 'Using custom font "$_currentFile" app-wide. Small labels stay in the built-in mono font by design.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _importFont,
+                  icon: const Icon(Icons.file_upload_rounded, size: 18),
+                  label: Text(_currentFile == null ? 'Import Font (.ttf / .otf)' : 'Change Font'),
+                ),
+              ),
+              if (_currentFile != null) ...[
+                const SizedBox(width: 10),
+                OutlinedButton(
+                  onPressed: _busy ? null : _removeFont,
+                  child: const Text('Remove'),
+                ),
+              ],
+            ],
+          ),
+          if (_message != null) ...[
+            const SizedBox(height: 10),
+            Text(_message!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12)),
+          ],
+        ],
+      ),
+    );
   }
 }

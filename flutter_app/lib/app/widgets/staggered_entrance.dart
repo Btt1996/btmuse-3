@@ -55,7 +55,7 @@ class _StaggeredEntranceState extends State<StaggeredEntrance>
       duration: BttMotion.entranceDuration,
     );
     _slide = Tween<Offset>(
-      begin: Offset(0.0, BttMotion.entranceSlideDistance),
+      begin: const Offset(0.0, BttMotion.entranceSlideDistance),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _controller, curve: BttMotion.entranceCurve),

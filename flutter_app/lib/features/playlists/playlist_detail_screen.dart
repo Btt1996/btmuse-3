@@ -97,7 +97,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
           if (tracks.isNotEmpty)
             PopupMenuButton<String>(
               tooltip: 'Export playlist',
-              icon: const Icon(Icons.ios_share_rounded, color: BttColors.accentViolet),
+              icon: Icon(Icons.ios_share_rounded, color: BttColors.accentViolet),
               onSelected: (format) =>
                   _export(context, livePlaylist, tracks, format),
               itemBuilder: (_) => const [
@@ -113,7 +113,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
             ),
           if (tracks.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.play_arrow_rounded, color: BttColors.accentPink),
+              icon: Icon(Icons.play_arrow_rounded, color: BttColors.accentPink),
               onPressed: () => handler.setTrackQueueAndPlay(tracks),
             ),
         ],

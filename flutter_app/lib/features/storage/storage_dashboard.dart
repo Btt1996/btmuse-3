@@ -300,7 +300,7 @@ class _StorageSummaryCard extends StatelessWidget {
           const Divider(height: 24),
           Row(
             children: [
-              const Icon(Icons.sd_storage_rounded, size: 16, color: BttColors.textMuted),
+              Icon(Icons.sd_storage_rounded, size: 16, color: BttColors.textMuted),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -315,7 +315,7 @@ class _StorageSummaryCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, size: 16, color: BttColors.warning),
+                Icon(Icons.warning_amber_rounded, size: 16, color: BttColors.warning),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -421,7 +421,7 @@ class _EmptyDuplicatesCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: BttColors.success),
+          Icon(Icons.check_circle_rounded, color: BttColors.success),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -448,7 +448,7 @@ class _ErrorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: BttColors.borderSubtle),
       ),
-      child: Text(message, style: const TextStyle(color: BttColors.danger, fontSize: 13)),
+      child: Text(message, style: TextStyle(color: BttColors.danger, fontSize: 13)),
     );
   }
 }

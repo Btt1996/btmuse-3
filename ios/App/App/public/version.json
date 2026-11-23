@@ -1,7 +1,7 @@
 {
   "name": "Btmus by Taboubi Ahmed",
-  "version": "2.00",
-  "buildDate": "2026-11-07",
-  "releaseNotes": "btmu 2.00: Milestone release with complete iOS dark liquid redesign; X1 intelligent song identification; X2 music discovery engine; automated Smart Synchro metadata repair and artwork matching; real DSP volume booster with soft-knee limiting; Spotify public playlist & profile discovery; and enhanced background audio stability.",
+  "version": "3.0.5",
+  "buildDate": "2026-11-23",
+  "releaseNotes": "Btmus 3.0.5: Telegram Download All and bot-link import, custom X2 providers, Shazam identification hook, true 300% boost, share-to / Open In, custom fonts, themes, Siri shortcuts, Sharbon player cursor, floating 3-icon bar, and the iCloud Drive library file.",
   "minSupportedVersion": "1.0.0"
 }

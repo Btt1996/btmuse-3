@@ -197,7 +197,7 @@ class _LyricsViewState extends State<LyricsView> {
               color: BttColors.accentPink,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.mic_rounded,
               size: 15,
               color: BttColors.bgObsidian,
@@ -219,7 +219,7 @@ class _LyricsViewState extends State<LyricsView> {
                 color: BttColors.accentPink,
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
+              child: Text(
                 'SYNCED',
                 style: TextStyle(
                   fontSize: 9,
@@ -244,7 +244,7 @@ class _LyricsViewState extends State<LyricsView> {
           ),
           if (widget.onClose != null)
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: BttColors.textMuted),
+              icon: Icon(Icons.close_rounded, color: BttColors.textMuted),
               tooltip: 'Close lyrics',
               onPressed: widget.onClose,
             ),
@@ -259,7 +259,7 @@ class _LyricsViewState extends State<LyricsView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
@@ -406,7 +406,7 @@ class _LyricsViewState extends State<LyricsView> {
     final lyrics = _lyrics!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: BttColors.borderSubtle)),
       ),
       child: Row(
@@ -417,7 +417,7 @@ class _LyricsViewState extends State<LyricsView> {
             style: Theme.of(context).textTheme.labelSmall,
           ),
           if (lyrics.hasSyncedLyrics)
-            const Text(
+            Text(
               'Tap line to jump',
               style: TextStyle(
                 fontSize: 11,

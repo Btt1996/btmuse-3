@@ -37,10 +37,10 @@ ResponseBody _jsonBody(Object body, [int statusCode = 200]) {
 }
 
 Map<String, dynamic> _releaseJson({
-  String tag = 'v2.0.1',
-  String? name = 'Btt Music 2.0.1',
+  String tag = 'v3.0.6',
+  String? name = 'Btmus 3.0.6',
   String? body = 'Fixes and improvements.',
-  String? htmlUrl = 'https://github.com/Btt1996/btmuse-3.0/releases/tag/v2.0.1',
+  String? htmlUrl = 'https://github.com/Btt1996/btmuse-3/releases/tag/v3.0.6',
 }) {
   return {
     'tag_name': tag,
@@ -84,22 +84,22 @@ void main() {
       final result = UpdateCheckResult.fromReleaseJson(_releaseJson());
       expect(result.status, UpdateCheckStatus.updateAvailable);
       expect(result.isUpdateAvailable, isTrue);
-      expect(result.latestTag, 'v2.0.1');
-      expect(result.releaseName, 'Btt Music 2.0.1');
+      expect(result.latestTag, 'v3.0.6');
+      expect(result.releaseName, 'Btmus 3.0.6');
       expect(result.releaseNotes, 'Fixes and improvements.');
       expect(
         result.releaseUrl,
-        'https://github.com/Btt1996/btmuse-3.0/releases/tag/v2.0.1',
+        'https://github.com/Btt1996/btmuse-3/releases/tag/v3.0.6',
       );
       expect(result.currentVersion, UpdateService.currentVersion);
     });
 
     test('same version parses as up to date', () {
       final result =
-          UpdateCheckResult.fromReleaseJson(_releaseJson(tag: 'v2.0.0'));
+          UpdateCheckResult.fromReleaseJson(_releaseJson(tag: 'v3.0.5'));
       expect(result.status, UpdateCheckStatus.upToDate);
       expect(result.isUpdateAvailable, isFalse);
-      expect(result.latestTag, 'v2.0.0');
+      expect(result.latestTag, 'v3.0.5');
     });
 
     test('empty notes and name become null, not empty strings', () {
@@ -124,7 +124,7 @@ void main() {
       final seen = <RequestOptions>[];
       final dio = _dioAnswering((options) {
         seen.add(options);
-        return _jsonBody(_releaseJson(tag: 'v2.0.0'));
+        return _jsonBody(_releaseJson(tag: 'v3.0.5'));
       });
       final result = await UpdateService(dio: dio).checkForUpdates();
       expect(result.status, UpdateCheckStatus.upToDate);
@@ -134,10 +134,10 @@ void main() {
     });
 
     test('newer release is update available', () async {
-      final dio = _dioAnswering((_) => _jsonBody(_releaseJson(tag: 'v2.1.0')));
+      final dio = _dioAnswering((_) => _jsonBody(_releaseJson(tag: 'v3.0.6')));
       final result = await UpdateService(dio: dio).checkForUpdates();
       expect(result.status, UpdateCheckStatus.updateAvailable);
-      expect(result.latestTag, 'v2.1.0');
+      expect(result.latestTag, 'v3.0.6');
     });
 
     test('GitHub 404 means no releases yet — never "up to date"', () async {

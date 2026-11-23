@@ -4,12 +4,15 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/data/models/x1_identification.dart';
+import 'package:btmu/features/player/mini_player.dart';
 import 'package:btmu/features/x1/local_fingerprint_engine.dart';
 import 'package:btmu/features/x1/x1_service.dart';
+import 'package:btmu/features/x2/x2_screen.dart';
 
 class X1Screen extends ConsumerStatefulWidget {
   const X1Screen({super.key});
@@ -284,14 +287,16 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.fingerprint_rounded, color: BttColors.success, size: 18),
+                : Icon(Icons.fingerprint_rounded, color: BttColors.success, size: 18),
             label: Text(
               '$_indexedCount Indexed',
-              style: const TextStyle(color: BttColors.textPrimary),
+              style: TextStyle(color: BttColors.textPrimary),
             ),
           ),
         ],
       ),
+      // v3.0.5, item 11: the player stays visible during import flows.
+      bottomNavigationBar: const MiniPlayer(),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
@@ -315,8 +320,8 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: _recording
-                            ? const [BttColors.accentMagenta, BttColors.danger]
-                            : const [BttColors.accentViolet, BttColors.accentMagenta, BttColors.accentPink],
+                            ? [BttColors.accentMagenta, BttColors.danger]
+                            : [BttColors.accentViolet, BttColors.accentMagenta, BttColors.accentPink],
                       ),
                     ),
                     child: Icon(
@@ -391,7 +396,9 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               onTogglePreview: null,
               onFindInX2: () {
                 ref.read(pendingX2SearchQueryProvider.notifier).state = _localMatch!.x2SearchQuery;
-                ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                Navigator.of(context).push(
+                  BttPageRoute<void>(builder: (_) => const X2Screen()),
+                );
               },
             ),
           ],
@@ -414,7 +421,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               hintText: 'Lyrics phrase, song title, or artist cue',
               prefixIcon: const Icon(Icons.music_note_rounded),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.search_rounded, color: BttColors.accentPink),
+                icon: Icon(Icons.search_rounded, color: BttColors.accentPink),
                 onPressed: _searchOpenCatalogs,
               ),
             ),
@@ -466,7 +473,9 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
                 onTogglePreview: m.previewUrl == null ? null : () => _togglePreview(m.previewUrl!),
                 onFindInX2: () {
                   ref.read(pendingX2SearchQueryProvider.notifier).state = m.x2SearchQuery;
-                  ref.read(currentTabIndexProvider.notifier).state = BttTab.x2;
+                  Navigator.of(context).push(
+                    BttPageRoute<void>(builder: (_) => const X2Screen()),
+                  );
                 },
               ),
             ),

@@ -92,7 +92,7 @@ class DirectUrlProvider implements X2Provider {
         options: Options(
           responseType: ResponseType.bytes,
           followRedirects: true,
-          headers: const {'Range': 'bytes=0-1023', 'User-Agent': 'BttMusic/2.00 (iOS)'},
+          headers: const {'Range': 'bytes=0-1023', 'User-Agent': 'BttMusic/3.0.5 (iOS)'},
           validateStatus: (s) => s != null && s < 500,
         ),
       );

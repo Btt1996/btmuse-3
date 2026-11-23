@@ -164,7 +164,7 @@ async function run() {
     if (firstStreamable?.id) {
       const streamUrl = `https://discoveryprovider.audius.co/v1/tracks/${firstStreamable.id}/stream?app_name=BttMusic`;
       const streamRes = await fetch(streamUrl, {
-        headers: { Range: 'bytes=0-16383', 'User-Agent': 'BttMusic/2.00' },
+        headers: { Range: 'bytes=0-16383', 'User-Agent': 'BttMusic/3.0.5' },
         signal: AbortSignal.timeout(8000),
       });
       const buf = new Uint8Array(await streamRes.arrayBuffer());

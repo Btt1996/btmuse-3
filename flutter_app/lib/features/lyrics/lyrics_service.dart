@@ -274,8 +274,8 @@ int activeLyricLineIndex(List<LyricLine> lines, double currentSeconds) {
 class LyricsService {
   static const String _baseUrl = 'https://lrclib.net/api';
 
-  /// Identifies btmu 2.00 to LRCLIB, as the API's docs request.
-  static const String clientHeader = 'btmu/2.0.0 (https://btt1996.github.io)';
+  /// Identifies Btmus 3.0.5 to LRCLIB, as the API's docs request.
+  static const String clientHeader = 'btmu/3.0.5 (https://btt1996.github.io)';
 
   final Dio _dio;
   final LyricsCacheStore _cache;

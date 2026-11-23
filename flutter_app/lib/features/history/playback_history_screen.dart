@@ -104,7 +104,7 @@ class PlaybackHistoryScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.history_rounded,
                       size: 52,
                       color: BttColors.textMuted,
@@ -208,7 +208,7 @@ class _HistoryRow extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.play_arrow_rounded,
                 color: BttColors.textMuted,
               ),

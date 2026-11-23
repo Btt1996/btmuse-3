@@ -9,14 +9,36 @@ import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/data/repositories/playlist_repository.dart';
 import 'package:btmu/features/playlists/playlist_detail_screen.dart';
 
-class PlaylistsScreen extends ConsumerStatefulWidget {
+/// Pushed Playlists screen (e.g. from a deep link). The tab bar no
+/// longer has a Playlists destination — inside Library, the Playlists
+/// segment renders [PlaylistsBody] directly.
+class PlaylistsScreen extends StatelessWidget {
   const PlaylistsScreen({super.key});
 
   @override
-  ConsumerState<PlaylistsScreen> createState() => _PlaylistsScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Playlists')),
+      body: const PlaylistsBody(bottomPadding: 120),
+    );
+  }
 }
 
-class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
+/// The playlist list + create/import actions, shared by the pushed
+/// [PlaylistsScreen] and the Playlists segment of [LibraryScreen].
+/// Owns the busy/create/import state. [bottomPadding] is 120 as a
+/// pushed screen (MiniPlayer is the bottomNavigationBar there) and
+/// 176 embedded in Library (floating pill + MiniPlayer above it).
+class PlaylistsBody extends ConsumerStatefulWidget {
+  final double bottomPadding;
+
+  const PlaylistsBody({super.key, this.bottomPadding = 176});
+
+  @override
+  ConsumerState<PlaylistsBody> createState() => _PlaylistsBodyState();
+}
+
+class _PlaylistsBodyState extends ConsumerState<PlaylistsBody> {
   bool _busy = false;
 
   Future<void> _showCreateDialog() async {
@@ -147,87 +169,99 @@ class _PlaylistsScreenState extends ConsumerState<PlaylistsScreen> {
   Widget build(BuildContext context) {
     final playlistsAsync = ref.watch(playlistsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Playlists'),
-        actions: [
-          IconButton(
-            tooltip: 'Import playlist (.json or .m3u)',
-            icon: const Icon(Icons.file_download_rounded, color: BttColors.accentViolet),
-            onPressed: _busy ? null : _importPlaylist,
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_rounded, color: BttColors.accentPink),
-            onPressed: _busy ? null : _showCreateDialog,
-          ),
-        ],
-      ),
-      body: playlistsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Error: $err')),
-        data: (playlists) {
-          if (playlists.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.queue_music_rounded, size: 52, color: BttColors.textMuted),
-                  const SizedBox(height: 12),
-                  Text('No playlists yet', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: _busy ? null : _showCreateDialog,
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Create Playlist'),
-                  ),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _busy ? null : _importPlaylist,
-                    icon: const Icon(Icons.file_download_rounded),
-                    label: const Text('Import Playlist'),
-                  ),
-                ],
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _busy ? null : _importPlaylist,
+                  icon: const Icon(Icons.file_download_rounded, size: 18),
+                  label: const Text('Import'),
+                ),
               ),
-            );
-          }
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _showCreateDialog,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('New Playlist'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: playlistsAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, _) => Center(child: Text('Error: $err')),
+            data: (playlists) {
+              if (playlists.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.queue_music_rounded, size: 52, color: BttColors.textMuted),
+                      const SizedBox(height: 12),
+                      Text('No playlists yet', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: _busy ? null : _showCreateDialog,
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('Create Playlist'),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: _busy ? null : _importPlaylist,
+                        icon: const Icon(Icons.file_download_rounded),
+                        label: const Text('Import Playlist'),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-            itemCount: playlists.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, idx) {
-              final pl = playlists[idx];
-              return ListTile(
-                tileColor: BttColors.bgCard,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: BttColors.borderSubtle),
-                ),
-                leading: const CircleAvatar(
-                  backgroundColor: BttColors.bgCardHighlight,
-                  child: Icon(Icons.queue_music_rounded, color: BttColors.accentViolet),
-                ),
-                title: Text(pl.name),
-                subtitle: Text('${pl.trackIds.length} track(s)'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: BttColors.textMuted),
-                  onPressed: () async {
-                    await ref.read(playlistRepositoryProvider).deletePlaylist(pl.id);
-                    ref.invalidate(playlistsProvider);
-                  },
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                    BttPageRoute<void>(
-                      builder: (_) => PlaylistDetailScreen(playlist: pl),
+              return ListView.separated(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, widget.bottomPadding),
+                itemCount: playlists.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, idx) {
+                  final pl = playlists[idx];
+                  return ListTile(
+                    tileColor: BttColors.bgCard,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: BttColors.borderSubtle),
                     ),
+                    leading: CircleAvatar(
+                      backgroundColor: BttColors.bgCardHighlight,
+                      child: Icon(Icons.queue_music_rounded, color: BttColors.accentViolet),
+                    ),
+                    title: Text(pl.name),
+                    subtitle: Text('${pl.trackIds.length} track(s)'),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete_outline_rounded, color: BttColors.textMuted),
+                      onPressed: () async {
+                        await ref.read(playlistRepositoryProvider).deletePlaylist(pl.id);
+                        ref.invalidate(playlistsProvider);
+                      },
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        BttPageRoute<void>(
+                          builder: (_) => PlaylistDetailScreen(playlist: pl),
+                        ),
+                      );
+                    },
                   );
                 },
               );
             },
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

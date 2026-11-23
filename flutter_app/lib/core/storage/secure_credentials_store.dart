@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/x2_config.dart';
+import '../../app/theme/btt_theme_variant.dart';
 import '../../data/models/audio_settings.dart';
 import '../../data/models/smart_remix_config.dart';
 
@@ -30,6 +31,10 @@ class SecureCredentialsStore {
   static const _remixCrossfadeKey = 'btmu_remix_crossfade';
   static const _lastTrackIdKey = 'btmu_last_track_id';
   static const _lastPositionMsKey = 'btmu_last_position_ms';
+  // Theme variant (v3.0.5, item 12) + custom font (item 9): plain
+  // preferences, not secrets — a theme id and a file name, never a key.
+  static const _themeVariantKey = 'btmu_theme_variant';
+  static const _customFontFileKey = 'btmu_custom_font_file';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -255,5 +260,37 @@ class SecureCredentialsStore {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_lastTrackIdKey, trackId);
     await prefs.setInt(_lastPositionMsKey, positionMs);
+  }
+
+  /// Theme variant (v3.0.5, item 12). Stored as the variant id string;
+  /// unknown/missing values fall back to Signature (never crash on a
+  /// stale preference).
+  Future<BttThemeVariant> getThemeVariant() async {
+    final prefs = await SharedPreferences.getInstance();
+    return BttThemeVariant.fromId(prefs.getString(_themeVariantKey));
+  }
+
+  Future<void> setThemeVariant(BttThemeVariant variant) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeVariantKey, variant.id);
+  }
+
+  /// File name of the user-imported custom font (v3.0.5, item 9), relative
+  /// to the app's `btmu_fonts/` documents directory. Null/empty means no
+  /// custom font — the built-in Plus Jakarta Sans / Manrope pairing is used.
+  Future<String?> getCustomFontFileName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString(_customFontFileKey);
+    if (name == null || name.trim().isEmpty) return null;
+    return name.trim();
+  }
+
+  Future<void> setCustomFontFileName(String? fileName) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (fileName == null || fileName.trim().isEmpty) {
+      await prefs.remove(_customFontFileKey);
+    } else {
+      await prefs.setString(_customFontFileKey, fileName.trim());
+    }
   }
 }

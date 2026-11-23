@@ -26,7 +26,7 @@ class PipedClient {
           sendTimeout: timeout,
           receiveTimeout: timeout,
           headers: const {
-            'User-Agent': 'BttMusic/2.00 (HealthCheck)',
+            'User-Agent': 'BttMusic/3.0.5 (HealthCheck)',
             'Accept': 'application/json',
           },
           validateStatus: (s) => s != null && s < 600,

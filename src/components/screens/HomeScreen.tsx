@@ -131,7 +131,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 Btmus by Taboubi Ahmed
               </span>
               <span className="px-1.5 py-0.5 rounded-full bg-[#6202E1]/15 text-[9px] font-bold text-[#F70E42]">
-                v2.00
+                v3.0.5
               </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-[#F0F4FA] tracking-tight mt-0.5 truncate font-display">
@@ -201,7 +201,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   SMART SYNCHRO REPAIR
                 </span>
                 <span className="px-1.5 py-0.5 rounded-full bg-[#F70E42]/15 text-[9px] font-mono font-bold text-[#F70E42]">
-                  v2.00
+                  v3.0.5
                 </span>
               </div>
               <p className="text-[11px] text-[#7E8F9E] truncate mt-0.5">

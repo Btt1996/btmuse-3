@@ -159,7 +159,7 @@ void main() {
         _track(id: 't2', title: 'Midnight', artist: 'Nova', sha256: 'bbb'),
       ];
       final playlists = [
-        Playlist(
+        const Playlist(
           id: 'p1',
           name: 'Chill',
           createdAtMs: 1,
@@ -192,7 +192,7 @@ void main() {
       final svc = service(
         tracks: [existing],
         playlists: [
-          Playlist(id: 'p1', name: 'Chill', createdAtMs: 1, updatedAtMs: 1),
+          const Playlist(id: 'p1', name: 'Chill', createdAtMs: 1, updatedAtMs: 1),
         ],
         inserted: inserted,
       );
@@ -279,7 +279,7 @@ void main() {
       final svc = service(
         tracks: library,
         playlists: [
-          Playlist(id: 'p1', name: 'Chill', createdAtMs: 1, updatedAtMs: 1),
+          const Playlist(id: 'p1', name: 'Chill', createdAtMs: 1, updatedAtMs: 1),
         ],
         inserted: inserted,
       );

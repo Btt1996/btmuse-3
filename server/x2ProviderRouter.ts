@@ -94,7 +94,7 @@ export async function probePipedInstance(
   try {
     const res = await fetch(`${baseUrl}/trending?region=US`, {
       headers: {
-        'User-Agent': 'BttMusic/2.00 (HealthCheck)',
+        'User-Agent': 'BttMusic/3.0.5 (HealthCheck)',
         Accept: 'application/json',
       },
       signal: AbortSignal.timeout(timeoutMs),
@@ -160,7 +160,7 @@ export async function probeInvidiousInstance(
   try {
     const res = await fetch(`${baseUrl}/api/v1/stats`, {
       headers: {
-        'User-Agent': 'BttMusic/2.00 (HealthCheck)',
+        'User-Agent': 'BttMusic/3.0.5 (HealthCheck)',
         Accept: 'application/json',
       },
       signal: AbortSignal.timeout(timeoutMs),
@@ -255,7 +255,7 @@ export async function searchWithFailover(params: {
       const sRes = await fetch(
         `${baseUrl}/search?q=${encodeURIComponent(query)}&filter=music_songs`,
         {
-          headers: { 'User-Agent': 'BttMusic/2.00', Accept: 'application/json' },
+          headers: { 'User-Agent': 'BttMusic/3.0.5', Accept: 'application/json' },
           signal: AbortSignal.timeout(timeoutMs),
         }
       );
@@ -332,7 +332,7 @@ export async function searchWithFailover(params: {
       const iRes = await fetch(
         `${baseUrl}/api/v1/search?q=${encodeURIComponent(query)}&type=video`,
         {
-          headers: { 'User-Agent': 'BttMusic/2.00', Accept: 'application/json' },
+          headers: { 'User-Agent': 'BttMusic/3.0.5', Accept: 'application/json' },
           signal: AbortSignal.timeout(timeoutMs),
         }
       );

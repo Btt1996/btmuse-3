@@ -52,6 +52,17 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
   bool _catalogTimedOut = false;
   Map<String, String> _catalogErrors = const {};
 
+  // Shazam identification (v3.0.5, batch 2, item 3): a SEPARATE option
+  // from the zero-key local matcher. Needs the user's own RapidAPI
+  // Shazam key; with no key the option shows as unavailable, never as
+  // a fake result.
+  final TextEditingController _shazamKeyCtrl = TextEditingController();
+  bool _shazamConfigured = false;
+  bool _shazamListening = false;
+  bool _shazamAnalyzing = false;
+  X1Identification? _shazamMatch;
+  String? _shazamError;
+
   /// Hint threshold for "try a longer sample": a 1s tonal snippet already
   /// yields ~475 landmarks and a 0.25s snippet ~75 (measured with the
   /// recall harness, docs/x1-recall.md), while silence yields 0. Below 100
@@ -71,6 +82,70 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
   void initState() {
     super.initState();
     _refreshIndexCount();
+    _loadShazamKey();
+  }
+
+  Future<void> _loadShazamKey() async {
+    final key = await ref.read(credentialsStoreProvider).getShazamApiKey();
+    if (mounted) {
+      setState(() {
+        _shazamKeyCtrl.text = key;
+        _shazamConfigured = key.isNotEmpty;
+      });
+    }
+  }
+
+  Future<void> _saveShazamKey() async {
+    final key = _shazamKeyCtrl.text.trim();
+    await ref.read(credentialsStoreProvider).setShazamApiKey(key);
+    if (mounted) {
+      setState(() {
+        _shazamConfigured = key.isNotEmpty;
+        _shazamError = key.isEmpty
+            ? 'Shazam key cleared — Shazam identification is unavailable.'
+            : null;
+      });
+    }
+  }
+
+  /// Listens for 8s and identifies the clip through Shazam's external
+  /// API. No key → the button is disabled (see the card below) and this
+  /// never runs. No match → an honest "no match" message, never a guess.
+  Future<void> _listenWithShazam() async {
+    setState(() {
+      _shazamListening = true;
+      _shazamAnalyzing = false;
+      _shazamMatch = null;
+      _shazamError = null;
+    });
+    try {
+      final shazam = ref.read(shazamServiceProvider);
+      final samplePath = await shazam.recordSample();
+      if (!mounted) return;
+      setState(() {
+        _shazamListening = false;
+        _shazamAnalyzing = true;
+      });
+      final match = await shazam.identifyClip(File(samplePath));
+      try {
+        await File(samplePath).delete();
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _shazamAnalyzing = false;
+        _shazamMatch = match;
+        _shazamError =
+            match == null ? 'Shazam found no match for that clip.' : null;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _shazamListening = false;
+          _shazamAnalyzing = false;
+          _shazamError = X1Service.describeError(e);
+        });
+      }
+    }
   }
 
   Future<void> _refreshIndexCount() async {
@@ -269,6 +344,7 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
   void dispose() {
     _timer?.cancel();
     _hintCtrl.dispose();
+    _shazamKeyCtrl.dispose();
     _previewPlayer.dispose();
     super.dispose();
   }
@@ -396,6 +472,104 @@ class _X1ScreenState extends ConsumerState<X1Screen> {
               onTogglePreview: null,
               onFindInX2: () {
                 ref.read(pendingX2SearchQueryProvider.notifier).state = _localMatch!.x2SearchQuery;
+                Navigator.of(context).push(
+                  BttPageRoute<void>(builder: (_) => const X2Screen()),
+                );
+              },
+            ),
+          ],
+          const SizedBox(height: 22),
+          Text(
+            'Shazam Identification (External API)',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _shazamConfigured
+                ? 'Listens for 8s and identifies the song through Shazam. Separate from the on-device matcher above — use it when the local library has no match.'
+                : 'Shazam identification needs your own RapidAPI Shazam key. Add it below to unlock this option — without a key it stays unavailable, and it never guesses a result.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: BttColors.bgCard,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: BttColors.borderSubtle),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'RapidAPI Shazam Key (Stored in iOS Keychain)',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _shazamKeyCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    hintText: 'RapidAPI key for shazam.p.rapidapi.com',
+                    prefixIcon: Icon(Icons.key_rounded),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _saveShazamKey,
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text('Save Shazam Key'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: (_shazamConfigured &&
+                          !_shazamListening &&
+                          !_shazamAnalyzing &&
+                          !_recording &&
+                          !_analyzing)
+                      ? _listenWithShazam
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: BttColors.accentPink,
+                    foregroundColor: BttColors.bgObsidian,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  icon: (_shazamListening || _shazamAnalyzing)
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.music_note_rounded),
+                  label: Text(
+                    _shazamListening
+                        ? 'Listening with Shazam... 8s'
+                        : _shazamAnalyzing
+                            ? 'Asking Shazam...'
+                            : _shazamConfigured
+                                ? 'Listen with Shazam'
+                                : 'Shazam Unavailable — Add Key Above',
+                  ),
+                ),
+                if (_shazamError != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    _shazamError!,
+                    style: TextStyle(color: BttColors.danger, fontSize: 12.5),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_shazamMatch != null) ...[
+            const SizedBox(height: 12),
+            _MatchCard(
+              match: _shazamMatch!,
+              isPreviewPlaying: false,
+              onTogglePreview: null,
+              onFindInX2: () {
+                ref.read(pendingX2SearchQueryProvider.notifier).state =
+                    _shazamMatch!.x2SearchQuery;
                 Navigator.of(context).push(
                   BttPageRoute<void>(builder: (_) => const X2Screen()),
                 );

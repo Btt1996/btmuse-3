@@ -8,6 +8,7 @@ import 'package:btmu/app/widgets/btt_artwork.dart';
 import 'package:btmu/data/models/x2_result.dart';
 import 'package:btmu/features/player/mini_player.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
+import 'package:btmu/features/x2/custom_provider.dart';
 
 class X2Screen extends ConsumerStatefulWidget {
   const X2Screen({super.key});
@@ -29,6 +30,10 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
   // v3.0.5, item 11: download feedback is an inline line, never a
   // SnackBar overlaying the player.
   String? _status;
+  // v3.0.5, batch 2, item 2: user-added providers (name + link).
+  final TextEditingController _customNameCtrl = TextEditingController();
+  final TextEditingController _customUrlCtrl = TextEditingController();
+  String? _customError;
 
   Future<void> _executeSearch(String input) async {
     final trimmed = input.trim();
@@ -72,9 +77,29 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
     }
   }
 
+  Future<void> _addCustomProvider() async {
+    final ok = await ref.read(customProvidersProvider.notifier).addProvider(
+          name: _customNameCtrl.text,
+          baseUrl: _customUrlCtrl.text,
+        );
+    if (mounted) {
+      setState(() {
+        _customError = ok
+            ? null
+            : 'Enter a name and a valid http(s) link for the provider.';
+        if (ok) {
+          _customNameCtrl.clear();
+          _customUrlCtrl.clear();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
     _queryCtrl.dispose();
+    _customNameCtrl.dispose();
+    _customUrlCtrl.dispose();
     _previewPlayer.dispose();
     super.dispose();
   }
@@ -155,6 +180,103 @@ class _X2ScreenState extends ConsumerState<X2Screen> {
                 const SizedBox(width: 8),
                 _filterButton('Metadata / Previews', 'metadata'),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          // v3.0.5, batch 2, item 2: user-added providers. A custom
+          // provider is a name + a source link; its URLs resolve like
+          // any direct audio / RSS source. Keyword search is not
+          // available for custom sources — the card says so.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: BttColors.bgCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: BttColors.borderSubtle),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.add_link_rounded, color: BttColors.accentViolet),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'My Providers',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add your own source — a name and a link. Paste a URL from it above and it resolves here. Custom sources support URL lookup only, not keyword search.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12.5),
+                  ),
+                  ...ref.watch(customProvidersProvider).map((p) {
+                    final custom = p as CustomX2Provider;
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${custom.displayName} — ${custom.config.baseUrl}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Remove provider',
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            icon: Icon(Icons.delete_outline_rounded,
+                                color: BttColors.danger),
+                            onPressed: () => ref
+                                .read(customProvidersProvider.notifier)
+                                .removeProvider(custom.config.id),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _customNameCtrl,
+                    decoration: const InputDecoration(
+                      hintText: 'Provider name (e.g. My MP3 Blog)',
+                      prefixIcon: Icon(Icons.label_outline_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _customUrlCtrl,
+                    decoration: const InputDecoration(
+                      hintText: 'Source link (e.g. https://example.com/feed.xml)',
+                      prefixIcon: Icon(Icons.link_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _addCustomProvider,
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Add Provider'),
+                  ),
+                  if (_customError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _customError!,
+                      style: TextStyle(color: BttColors.danger, fontSize: 12.5),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),

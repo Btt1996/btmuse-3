@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:btmu/app/theme/btt_theme_variant.dart';
 import 'package:btmu/core/config/x2_config.dart';
+import 'package:btmu/core/deep_link.dart';
 import 'package:btmu/core/networking/api_client.dart';
 import 'package:btmu/core/services/btt_audio_handler.dart';
 import 'package:btmu/core/storage/local_database.dart';
@@ -14,13 +15,17 @@ import 'package:btmu/data/repositories/history_repository.dart';
 import 'package:btmu/data/repositories/library_repository.dart';
 import 'package:btmu/data/repositories/playlist_repository.dart';
 import 'package:btmu/features/downloads/download_manager_provider.dart';
+import 'package:btmu/features/telegram/bot_link_service.dart';
 import 'package:btmu/features/telegram/telegram_service.dart';
+import 'package:btmu/features/x1/shazam_service.dart';
 import 'package:btmu/features/x1/x1_service.dart';
 import 'package:btmu/features/x2/clients/x2_connectivity_tester.dart';
+import 'package:btmu/features/x2/custom_provider.dart';
 import 'package:btmu/features/x2/providers/archive_org_provider.dart';
 import 'package:btmu/features/x2/providers/audius_provider.dart';
 import 'package:btmu/features/x2/providers/deezer_provider.dart';
 import 'package:btmu/features/x2/providers/direct_url_provider.dart';
+import 'package:btmu/features/x2/providers/x2_provider.dart';
 import 'package:btmu/features/x2/providers/itunes_metadata_provider.dart';
 import 'package:btmu/features/x2/providers/jamendo_provider.dart';
 import 'package:btmu/features/x2/providers/provider_manager.dart';
@@ -94,6 +99,11 @@ final playlistsProvider = FutureProvider<List<Playlist>>((ref) async {
 
 final providerManagerProvider = Provider<ProviderManager>((ref) {
   final api = ref.watch(apiClientProvider);
+  // User-added providers (v3.0.5, batch 2, item 2) run FIRST: a URL from
+  // a custom host resolves through the custom provider, never through
+  // the generic direct-URL one. The notifier loads them from prefs at
+  // startup and rebuilds this manager on every add/remove.
+  final customs = ref.watch(customProvidersProvider);
   // Jamendo reads its client ID from X2Config at construction and stays
   // in sync via the same ref.listen config-watch pattern ApiClient uses,
   // so saving the ID in Settings takes effect without a restart.
@@ -105,6 +115,7 @@ final providerManagerProvider = Provider<ProviderManager>((ref) {
     jamendo.jamendoClientId = next.jamendoClientId;
   });
   return ProviderManager([
+    ...customs,
     VkProvider(api),
     YoutubeProvider(api),
     SoundCloudProvider(api),
@@ -120,6 +131,16 @@ final providerManagerProvider = Provider<ProviderManager>((ref) {
     jamendo,
     DirectUrlProvider(api),
   ]);
+});
+
+/// User-added X2 providers (batch 2, item 2). Starts empty; the
+/// notifier loads the stored list from SharedPreferences on creation.
+final customProvidersProvider =
+    StateNotifierProvider<CustomProvidersNotifier, List<X2Provider>>((ref) {
+  return CustomProvidersNotifier(
+    CustomProviderStore(),
+    ref.watch(apiClientProvider),
+  );
 });
 
 final x2SearchEngineProvider = Provider<X2SearchEngine>(
@@ -146,6 +167,44 @@ final telegramServiceProvider = Provider<TelegramService>(
     ref.watch(libraryRepositoryProvider),
   ),
 );
+
+/// Bot-link import (batch 2, item 4): sends a media link to the user's
+/// download bot and polls for the files it returns. Separate service
+/// from the sync bot — separate token, separate screen.
+final botLinkServiceProvider = Provider<BotLinkImportService>(
+  (ref) => BotLinkImportService(
+    ref.watch(apiClientProvider),
+    ref.watch(telegramServiceProvider),
+  ),
+);
+
+/// Shazam identification (batch 2, item 3): external Shazam API hook.
+/// Useless without the user's RapidAPI key — the screen shows the
+/// option as unavailable until one is stored.
+final shazamServiceProvider = Provider<ShazamIdentificationService>(
+  (ref) => ShazamIdentificationService(
+    ref.watch(apiClientProvider),
+    ref.watch(credentialsStoreProvider),
+  ),
+);
+
+/// Native bridge to the iOS Runner (`btmu/native_bridge` channel):
+/// deep links in, external URLs and Share Extension inbox out.
+/// Incoming links land in [pendingDeepLinkActionProvider], which
+/// `DeepLinkBootstrap` (lib/app/app.dart) consumes.
+final nativeBridgeProvider = Provider<BttNativeBridge>((ref) {
+  return BttNativeBridge(
+    onLink: (raw) {
+      ref.read(pendingDeepLinkActionProvider.notifier).state =
+          parseBttDeepLink(raw);
+    },
+  );
+});
+
+/// The latest unhandled deep-link action, or null. Set by the native
+/// bridge; cleared by `DeepLinkBootstrap` after handling.
+final pendingDeepLinkActionProvider =
+    StateProvider<BttDeepLinkAction?>((ref) => null);
 
 final downloadManagerProvider =
     StateNotifierProvider<DownloadManagerNotifier, List<DownloadTask>>((ref) {

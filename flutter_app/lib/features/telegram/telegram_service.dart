@@ -72,6 +72,133 @@ class TelegramAudioEntry {
   bool get exceedsBotApiLimit => fileSizeBytes > 20 * 1024 * 1024;
 }
 
+/// Parses raw Telegram Bot API `getUpdates` payloads into audio entries.
+///
+/// Pure function (no network, no database): the same parsing backs the
+/// Telegram import screen AND the bot-link import poller
+/// (`BotLinkImportService`), so a file the bot returns is recognized
+/// exactly like a file the sync bot lists. Entries come back newest-first
+/// (collected chronologically, then reversed — a file posted twice is
+/// represented by its FIRST occurrence, at its original date).
+///
+/// Entries carry `alreadyInLibrary: false` here; the caller annotates
+/// duplicates from the library (see [TelegramService.fetchAccessibleAudioMessages]).
+List<TelegramAudioEntry> parseTelegramAudioEntries(List<dynamic> updates) {
+  final entries = <TelegramAudioEntry>[];
+  final seenFileIds = <String>{};
+
+  for (final raw in updates) {
+    if (raw is! Map) continue;
+    final msg = (raw['message'] ?? raw['channel_post']) as Map?;
+    if (msg == null) continue;
+
+    final chat = msg['chat'] as Map?;
+    final chatTitle = (chat?['title'] as String?) ??
+        (chat?['username'] as String?) ??
+        'Direct Bot Chat';
+    final date = (msg['date'] as int?) ?? 0;
+
+    final audio = msg['audio'] as Map?;
+    final document = msg['document'] as Map?;
+    final voice = msg['voice'] as Map?;
+
+    if (audio != null) {
+      final fileId = audio['file_id'] as String?;
+      if (fileId == null || !seenFileIds.add(fileId)) continue;
+      final fileName = (audio['file_name'] as String?) ?? '${audio['title'] ?? 'track'}.mp3';
+      entries.add(
+        TelegramAudioEntry(
+          fileId: fileId,
+          fileUniqueId: audio['file_unique_id'] as String?,
+          title: (audio['title'] as String?) ??
+              fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
+          performer: (audio['performer'] as String?) ?? 'Telegram Audio',
+          fileName: fileName,
+          durationSeconds: (audio['duration'] as int?) ?? 0,
+          fileSizeBytes: (audio['file_size'] as int?) ?? 0,
+          chatTitle: chatTitle,
+          messageDateEpoch: date,
+        ),
+      );
+    } else if (document != null) {
+      final fileName = (document['file_name'] as String?) ?? '';
+      final ext = p.extension(fileName).toLowerCase().replaceFirst('.', '');
+      final mime = ((document['mime_type'] as String?) ?? '').toLowerCase();
+      final isAudio = AudioValidator.supportedExtensions.contains(ext) || mime.startsWith('audio/');
+      if (!isAudio) continue;
+
+      final fileId = document['file_id'] as String?;
+      if (fileId == null || !seenFileIds.add(fileId)) continue;
+
+      entries.add(
+        TelegramAudioEntry(
+          fileId: fileId,
+          fileUniqueId: document['file_unique_id'] as String?,
+          title: fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
+          performer: 'Telegram Document',
+          fileName: fileName,
+          durationSeconds: 0,
+          fileSizeBytes: (document['file_size'] as int?) ?? 0,
+          chatTitle: chatTitle,
+          messageDateEpoch: date,
+        ),
+      );
+    } else if (voice != null) {
+      final fileId = voice['file_id'] as String?;
+      if (fileId == null || !seenFileIds.add(fileId)) continue;
+      entries.add(
+        TelegramAudioEntry(
+          fileId: fileId,
+          fileUniqueId: voice['file_unique_id'] as String?,
+          title: 'Voice Note $date',
+          performer: 'Telegram Voice',
+          fileName: 'voice_$date.ogg',
+          durationSeconds: (voice['duration'] as int?) ?? 0,
+          fileSizeBytes: (voice['file_size'] as int?) ?? 0,
+          chatTitle: chatTitle,
+          messageDateEpoch: date,
+        ),
+      );
+    }
+  }
+
+  // Newest first: entries were collected chronologically above, so
+  // reverse them for display. Each entry keeps the date of the
+  // message it represents, so the list is newest-first by that date.
+  return entries.reversed.toList();
+}
+
+/// True when [entry] can be downloaded through the Bot API right now:
+/// not already in the library and within the 20 MB Bot API limit.
+/// Backs the "Download All" selection in both Telegram import screens.
+bool isDownloadableTelegramEntry(TelegramAudioEntry entry) =>
+    !entry.alreadyInLibrary && !entry.exceedsBotApiLimit;
+
+/// Counts a finished batch download: [imported] files imported,
+/// [alreadyInLibrary] skipped as duplicates, [failed] with an error.
+/// The screens report the three numbers as one inline status line.
+({int imported, int alreadyInLibrary, int failed}) summarizeTelegramBatch(
+  List<TelegramBatchOutcome> outcomes,
+) {
+  var imported = 0;
+  var alreadyInLibrary = 0;
+  var failed = 0;
+  for (final o in outcomes) {
+    switch (o) {
+      case TelegramBatchOutcome.imported:
+        imported++;
+      case TelegramBatchOutcome.alreadyInLibrary:
+        alreadyInLibrary++;
+      case TelegramBatchOutcome.failed:
+        failed++;
+    }
+  }
+  return (imported: imported, alreadyInLibrary: alreadyInLibrary, failed: failed);
+}
+
+/// Per-file outcome of a batch ("Download All") run.
+enum TelegramBatchOutcome { imported, alreadyInLibrary, failed }
+
 class TelegramService {
   final ApiClient _apiClient;
   final LibraryRepository _libraryRepo;
@@ -125,91 +252,8 @@ class TelegramService {
     }
 
     final updates = (data['result'] as List<dynamic>?) ?? [];
-    final entries = <TelegramAudioEntry>[];
-    final seenFileIds = <String>{};
-
-    // Iterate in Telegram's chronological order, so a file posted twice
-    // is represented by its FIRST occurrence (its original post). The
-    // collected list is reversed below so the screen shows newest first.
-    for (final raw in updates) {
-      if (raw is! Map) continue;
-      final msg = (raw['message'] ?? raw['channel_post']) as Map?;
-      if (msg == null) continue;
-
-      final chat = msg['chat'] as Map?;
-      final chatTitle = (chat?['title'] as String?) ??
-          (chat?['username'] as String?) ??
-          'Direct Bot Chat';
-      final date = (msg['date'] as int?) ?? 0;
-
-      final audio = msg['audio'] as Map?;
-      final document = msg['document'] as Map?;
-      final voice = msg['voice'] as Map?;
-
-      if (audio != null) {
-        final fileId = audio['file_id'] as String?;
-        if (fileId == null || !seenFileIds.add(fileId)) continue;
-        final fileName = (audio['file_name'] as String?) ?? '${audio['title'] ?? 'track'}.mp3';
-        entries.add(
-          TelegramAudioEntry(
-            fileId: fileId,
-            fileUniqueId: audio['file_unique_id'] as String?,
-            title: (audio['title'] as String?) ??
-                fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
-            performer: (audio['performer'] as String?) ?? 'Telegram Audio',
-            fileName: fileName,
-            durationSeconds: (audio['duration'] as int?) ?? 0,
-            fileSizeBytes: (audio['file_size'] as int?) ?? 0,
-            chatTitle: chatTitle,
-            messageDateEpoch: date,
-          ),
-        );
-      } else if (document != null) {
-        final fileName = (document['file_name'] as String?) ?? '';
-        final ext = p.extension(fileName).toLowerCase().replaceFirst('.', '');
-        final mime = ((document['mime_type'] as String?) ?? '').toLowerCase();
-        final isAudio = AudioValidator.supportedExtensions.contains(ext) || mime.startsWith('audio/');
-        if (!isAudio) continue;
-
-        final fileId = document['file_id'] as String?;
-        if (fileId == null || !seenFileIds.add(fileId)) continue;
-
-        entries.add(
-          TelegramAudioEntry(
-            fileId: fileId,
-            fileUniqueId: document['file_unique_id'] as String?,
-            title: fileName.replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), ''),
-            performer: 'Telegram Document',
-            fileName: fileName,
-            durationSeconds: 0,
-            fileSizeBytes: (document['file_size'] as int?) ?? 0,
-            chatTitle: chatTitle,
-            messageDateEpoch: date,
-          ),
-        );
-      } else if (voice != null) {
-        final fileId = voice['file_id'] as String?;
-        if (fileId == null || !seenFileIds.add(fileId)) continue;
-        entries.add(
-          TelegramAudioEntry(
-            fileId: fileId,
-            fileUniqueId: voice['file_unique_id'] as String?,
-            title: 'Voice Note $date',
-            performer: 'Telegram Voice',
-            fileName: 'voice_$date.ogg',
-            durationSeconds: (voice['duration'] as int?) ?? 0,
-            fileSizeBytes: (voice['file_size'] as int?) ?? 0,
-            chatTitle: chatTitle,
-            messageDateEpoch: date,
-          ),
-        );
-      }
-    }
-
-    // Newest first: entries were collected chronologically above, so
-    // reverse them for display. Each entry keeps the date of the
-    // message it represents, so the list is newest-first by that date.
-    final ordered = entries.reversed.toList();
+    // Shared parser (also used by the bot-link import poller).
+    final ordered = parseTelegramAudioEntries(updates);
 
     // Pre-download dedup annotation: flag entries whose exact Telegram
     // file is already in the library, so the screen can show

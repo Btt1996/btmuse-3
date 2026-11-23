@@ -7,6 +7,13 @@ import '../../data/models/smart_remix_config.dart';
 
 class SecureCredentialsStore {
   static const _telegramTokenKey = 'btmu_telegram_bot_token';
+  // Bot-link import (v3.0.5, batch 2, item 4): the DOWNLOAD bot's token.
+  // A separate key from the sync bot's token on purpose — this is a
+  // different bot doing a different job.
+  static const _botLinkTokenKey = 'btmu_telegram_botlink_token';
+  // Shazam identification (v3.0.5, batch 2, item 3): the user's own
+  // RapidAPI Shazam key. A secret, so Keychain like every other key.
+  static const _shazamApiKey = 'btmu_shazam_api_key';
   static const _vkTokenKey = 'btmu_vk_user_token';
   static const _backendTokenKey = 'btmu_backend_auth_token';
   static const _jamendoClientIdKey = 'btmu_jamendo_client_id';
@@ -47,6 +54,33 @@ class SecureCredentialsStore {
       await _secureStorage.delete(key: _telegramTokenKey);
     } else {
       await _secureStorage.write(key: _telegramTokenKey, value: token.trim());
+    }
+  }
+
+  /// The download bot's token for the bot-link import (batch 2, item 4).
+  /// Stored once, in the Keychain, never committed, never in prefs.
+  Future<String?> getBotLinkToken() => _secureStorage.read(key: _botLinkTokenKey);
+
+  Future<void> setBotLinkToken(String? token) async {
+    if (token == null || token.trim().isEmpty) {
+      await _secureStorage.delete(key: _botLinkTokenKey);
+    } else {
+      await _secureStorage.write(key: _botLinkTokenKey, value: token.trim());
+    }
+  }
+
+  /// The user's RapidAPI Shazam key (batch 2, item 3). Empty means
+  /// "not configured" and the Shazam option shows as unavailable.
+  Future<String> getShazamApiKey() async {
+    final stored = await _secureStorage.read(key: _shazamApiKey);
+    return (stored ?? '').trim();
+  }
+
+  Future<void> setShazamApiKey(String? key) async {
+    if (key == null || key.trim().isEmpty) {
+      await _secureStorage.delete(key: _shazamApiKey);
+    } else {
+      await _secureStorage.write(key: _shazamApiKey, value: key.trim());
     }
   }
 

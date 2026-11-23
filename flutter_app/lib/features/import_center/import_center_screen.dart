@@ -15,6 +15,7 @@ import 'package:btmu/data/models/x2_result.dart';
 import 'package:btmu/features/downloads/download_history_screen.dart';
 import 'package:btmu/features/search/search_screen.dart';
 import 'package:btmu/features/settings/settings_screen.dart';
+import 'package:btmu/features/telegram/bot_link_screen.dart';
 import 'package:btmu/features/telegram/telegram_screen.dart';
 import 'package:btmu/features/x1/x1_screen.dart';
 import 'package:btmu/features/x2/x2_screen.dart';
@@ -255,6 +256,19 @@ class _ImportCenterScreenState extends ConsumerState<ImportCenterScreen> {
             onTap: () {
               Navigator.of(context).push(
                 BttPageRoute<void>(builder: (_) => const TelegramScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _ImportOptionTile(
+            icon: Icons.smart_toy_outlined,
+            accent: BttColors.accentViolet,
+            title: 'Import via Download Bot',
+            subtitle: 'Send any media link to your own download bot (token stored once) and import the file it returns',
+            trailingLabel: 'Bot Link',
+            onTap: () {
+              Navigator.of(context).push(
+                BttPageRoute<void>(builder: (_) => const BotLinkImportScreen()),
               );
             },
           ),

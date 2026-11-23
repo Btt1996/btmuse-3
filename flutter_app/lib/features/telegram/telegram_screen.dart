@@ -25,6 +25,11 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
   String? _status;
   final Map<String, double> _progressByFileId = {};
   final Map<String, CancelToken> _tokens = {};
+  // v3.0.5, batch 2, item 1: a "Download All" run in progress.
+  bool _downloadingAll = false;
+
+  int get _downloadableCount =>
+      _entries.where(isDownloadableTelegramEntry).length;
 
   @override
   void initState() {
@@ -71,11 +76,26 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
     }
   }
 
-  Future<void> _downloadEntry(TelegramAudioEntry entry) async {
+  /// Downloads one entry and reports its outcome plus the status line
+  /// for a single download. Shared by the per-file button and the
+  /// "Download All" batch loop (which only uses the outcome).
+  Future<({TelegramBatchOutcome outcome, String status})> _downloadOne(
+    TelegramAudioEntry entry,
+  ) async {
     final token = _tokenCtrl.text.trim();
     final cancelToken = CancelToken();
     _tokens[entry.fileId] = cancelToken;
     setState(() => _progressByFileId[entry.fileId] = 0.02);
+
+    void markImported() {
+      if (!mounted) return;
+      setState(() {
+        _progressByFileId.remove(entry.fileId);
+        _entries = _entries
+            .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
+            .toList();
+      });
+    }
 
     try {
       final track = await ref.read(telegramServiceProvider).downloadAndImportAudio(
@@ -90,37 +110,82 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
           );
       ref.invalidate(libraryTracksProvider);
       ref.invalidate(storageStatsProvider);
-      if (mounted) {
-        setState(() {
-          _progressByFileId.remove(entry.fileId);
-          _entries = _entries
-              .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
-              .toList();
-          _status = 'Imported "${track.title}" from Telegram.';
-        });
-      }
+      markImported();
+      return (
+        outcome: TelegramBatchOutcome.imported,
+        status: 'Imported "${track.title}" from Telegram.',
+      );
     } on DuplicateTrackFailure catch (e) {
       // Pre-download (or post-download hash) duplicate: report it as
       // "already in library", never as a download failure, and mark the
       // entry so the list stops offering a re-download.
-      if (mounted) {
-        setState(() {
-          _progressByFileId.remove(entry.fileId);
-          _entries = _entries
-              .map((e) => e.fileId == entry.fileId ? e.copyWith(alreadyInLibrary: true) : e)
-              .toList();
-          _status = e.message;
-        });
-      }
+      markImported();
+      return (outcome: TelegramBatchOutcome.alreadyInLibrary, status: e.message);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _progressByFileId.remove(entry.fileId);
-          _status = 'Telegram download failed: $e';
-        });
-      }
+      if (mounted) setState(() => _progressByFileId.remove(entry.fileId));
+      return (
+        outcome: TelegramBatchOutcome.failed,
+        status: 'Telegram download failed: $e',
+      );
     } finally {
       _tokens.remove(entry.fileId);
+    }
+  }
+
+  Future<void> _downloadEntry(TelegramAudioEntry entry) async {
+    final result = await _downloadOne(entry);
+    if (mounted) setState(() => _status = result.status);
+  }
+
+  /// "Download All" (batch 2, item 1): downloads every downloadable
+  /// entry — not already in the library, within the 20 MB Bot API limit —
+  /// one after another, then reports one summary line. A file that turns
+  /// out to be a duplicate mid-batch counts as "already in library",
+  /// never as a failure. Cancelling (the button toggles to Cancel) stops
+  /// the loop after the current file; the summary says so.
+  Future<void> _downloadAll() async {
+    if (_downloadingAll) {
+      // Cancel: stop after the current file and cancel its download.
+      setState(() => _downloadingAll = false);
+      for (final c in _tokens.values) {
+        c.cancel();
+      }
+      return;
+    }
+    final targets = _entries.where(isDownloadableTelegramEntry).toList();
+    if (targets.isEmpty) return;
+    setState(() {
+      _downloadingAll = true;
+      _status = 'Downloading all ${targets.length} file(s)...';
+    });
+    final outcomes = <TelegramBatchOutcome>[];
+    var cancelled = false;
+    for (final entry in targets) {
+      if (!mounted || !_downloadingAll) {
+        cancelled = true;
+        break;
+      }
+      final result = await _downloadOne(entry);
+      if (!mounted || !_downloadingAll) {
+        // Cancelled during this file: do not count it, just stop.
+        cancelled = true;
+        break;
+      }
+      outcomes.add(result.outcome);
+      if (mounted) {
+        final s = summarizeTelegramBatch(outcomes);
+        setState(() => _status =
+            'Download All: ${s.imported} imported, ${s.alreadyInLibrary} already in library, ${s.failed} failed (${outcomes.length}/${targets.length}).');
+      }
+    }
+    if (mounted) {
+      final s = summarizeTelegramBatch(outcomes);
+      setState(() {
+        _downloadingAll = false;
+        _status = cancelled
+            ? 'Download All stopped: ${s.imported} imported, ${s.alreadyInLibrary} already in library, ${s.failed} failed.'
+            : 'Download All finished: ${s.imported} imported, ${s.alreadyInLibrary} already in library, ${s.failed} failed.';
+      });
     }
   }
 
@@ -245,60 +310,112 @@ class _TelegramScreenState extends ConsumerState<TelegramScreen> {
               subtitle: Text('${_identity!.firstName} · ${_entries.length} audio file(s) found'),
             ),
           ],
-          const SizedBox(height: 16),
-          ..._entries.map((entry) {
-            final mb = (entry.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
-            final progress = _progressByFileId[entry.fileId];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(entry.title, style: Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${entry.performer} · ${entry.chatTitle} · $mb MB'
-                                '${entry.alreadyInLibrary ? ' · Already in library' : ''}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (entry.alreadyInLibrary)
-                          Icon(Icons.check_circle_rounded, color: BttColors.success)
-                        else if (entry.exceedsBotApiLimit)
-                          Icon(Icons.block_rounded, color: BttColors.danger)
-                        else if (progress == null)
-                          IconButton(
-                            icon: Icon(Icons.download_rounded, color: BttColors.accentPink),
-                            onPressed: () => _downloadEntry(entry),
-                          )
-                        else
-                          IconButton(
-                            icon: Icon(Icons.close_rounded, color: BttColors.warning),
-                            onPressed: () => _tokens[entry.fileId]?.cancel(),
-                          ),
-                      ],
-                    ),
-                    if (progress != null) ...[
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(value: progress),
-                    ],
-                  ],
-                ),
+          if (_entries.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _downloadingAll
+                  ? _downloadAll
+                  : (_downloadableCount == 0 ? null : _downloadAll),
+              style: FilledButton.styleFrom(
+                backgroundColor: BttColors.accentPink,
+                foregroundColor: BttColors.bgObsidian,
+                minimumSize: const Size.fromHeight(48),
               ),
-            );
-          }),
+              icon: Icon(
+                _downloadingAll ? Icons.close_rounded : Icons.download_for_offline_rounded,
+              ),
+              label: Text(
+                _downloadingAll
+                    ? 'Cancel Download All'
+                    : 'Download All ($_downloadableCount)',
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          TelegramAudioEntryList(
+            entries: _entries,
+            progressByFileId: _progressByFileId,
+            onDownload: _downloadEntry,
+            onCancel: (entry) => _tokens[entry.fileId]?.cancel(),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// One audio entry row, shared by the Telegram sync screen and the
+/// bot-link import screen: title / performer / chat / size, an
+/// already-in-library or over-limit badge, a per-file download button,
+/// or a cancel button + progress bar while downloading.
+class TelegramAudioEntryList extends StatelessWidget {
+  final List<TelegramAudioEntry> entries;
+  final Map<String, double> progressByFileId;
+  final void Function(TelegramAudioEntry entry) onDownload;
+  final void Function(TelegramAudioEntry entry) onCancel;
+
+  const TelegramAudioEntryList({
+    super.key,
+    required this.entries,
+    required this.progressByFileId,
+    required this.onDownload,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: entries.map((entry) {
+        final mb = (entry.fileSizeBytes / (1024 * 1024)).toStringAsFixed(1);
+        final progress = progressByFileId[entry.fileId];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(entry.title, style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${entry.performer} · ${entry.chatTitle} · $mb MB'
+                            '${entry.alreadyInLibrary ? ' · Already in library' : ''}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (entry.alreadyInLibrary)
+                      Icon(Icons.check_circle_rounded, color: BttColors.success)
+                    else if (entry.exceedsBotApiLimit)
+                      Icon(Icons.block_rounded, color: BttColors.danger)
+                    else if (progress == null)
+                      IconButton(
+                        icon: Icon(Icons.download_rounded, color: BttColors.accentPink),
+                        onPressed: () => onDownload(entry),
+                      )
+                    else
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: BttColors.warning),
+                        onPressed: () => onCancel(entry),
+                      ),
+                  ],
+                ),
+                if (progress != null) ...[
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: progress),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

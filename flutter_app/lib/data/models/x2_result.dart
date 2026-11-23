@@ -38,6 +38,8 @@ class X2Result {
   });
 
   X2Result copyWith({
+    String? providerId,
+    String? providerLabel,
     double? matchScore,
     bool? audioAvailable,
     bool? downloadAuthorized,
@@ -46,8 +48,8 @@ class X2Result {
   }) {
     return X2Result(
       id: id,
-      providerId: providerId,
-      providerLabel: providerLabel,
+      providerId: providerId ?? this.providerId,
+      providerLabel: providerLabel ?? this.providerLabel,
       title: title,
       artist: artist,
       album: album,

@@ -71,8 +71,8 @@ struct BtmusShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayBtmusPlaylistIntent(),
             phrases: [
-                "Play \(\.$playlistName) on \(.applicationName)",
-                "Play my \(\.$playlistName) playlist on \(.applicationName)",
+                "Play a playlist on \(.applicationName)",
+                "Play my playlist on \(.applicationName)",
             ],
             shortTitle: "Play a Btmus playlist",
             systemImageName: "music.note.list"

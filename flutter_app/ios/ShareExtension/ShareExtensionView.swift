@@ -93,10 +93,57 @@ struct ShareView: View {
         }
     }
 
+    // MARK: - NSItemProvider bridges
+
+    // This SDK only offers the completion-handler forms of these
+    // NSItemProvider APIs (no async overloads), so bridge each one with a
+    // continuation. Each continuation resumes exactly once.
+    private func loadURLObject(_ provider: NSItemProvider) async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadObject(ofClass: URL.self) { object, error in
+                if let url = object as? URL {
+                    continuation.resume(returning: url)
+                } else if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(throwing: CancellationError())
+                }
+            }
+        }
+    }
+
+    private func loadTextObject(_ provider: NSItemProvider) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadObject(ofClass: NSString.self) { object, error in
+                if let string = object as? NSString {
+                    continuation.resume(returning: string as String)
+                } else if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(throwing: CancellationError())
+                }
+            }
+        }
+    }
+
+    private func loadAudioFile(_ provider: NSItemProvider) async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.audio.identifier) { url, error in
+                if let url = url {
+                    continuation.resume(returning: url)
+                } else if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(throwing: CancellationError())
+                }
+            }
+        }
+    }
+
     // MARK: - URLs
 
     private func forwardURL(_ provider: NSItemProvider) async -> Bool {
-        guard let url = try? await provider.loadObject(ofClass: URL.self) as? URL else {
+        guard let url = try? await loadURLObject(provider) else {
             return false
         }
         sharedDetail = url.absoluteString
@@ -105,7 +152,7 @@ struct ShareView: View {
     }
 
     private func forwardPlainText(_ provider: NSItemProvider) async -> Bool {
-        guard let text = try? await provider.loadObject(ofClass: NSString.self) as? String else {
+        guard let text = try? await loadTextObject(provider) else {
             return false
         }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -141,7 +188,7 @@ struct ShareView: View {
     // MARK: - Audio files
 
     private func forwardFileURL(_ provider: NSItemProvider) async -> Bool {
-        guard let url = try? await provider.loadObject(ofClass: URL.self) as? URL else {
+        guard let url = try? await loadURLObject(provider) else {
             return false
         }
         let ext = url.pathExtension.lowercased()
@@ -150,9 +197,7 @@ struct ShareView: View {
     }
 
     private func handOverAudioFile(_ provider: NSItemProvider) async -> Bool {
-        guard let url = try? await provider.loadFileRepresentation(
-            forTypeIdentifier: UTType.audio.identifier
-        ) else {
+        guard let url = try? await loadAudioFile(provider) else {
             return false
         }
         return await handOverFile(at: url, fileName: url.lastPathComponent)

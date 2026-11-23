@@ -52,9 +52,9 @@ struct BtmusShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayBtmusIntent(),
             phrases: [
-                "Play some Btmus",
-                "Btmus me",
-                "Play Btmus",
+                "Play some \(.applicationName)",
+                "\(.applicationName) me",
+                "Play \(.applicationName)",
             ],
             shortTitle: "Play some Btmus",
             systemImageName: "play.fill"
@@ -62,8 +62,8 @@ struct BtmusShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: ShuffleBtmusIntent(),
             phrases: [
-                "Shuffle Btmus",
-                "Shuffle my Btmus",
+                "Shuffle \(.applicationName)",
+                "Shuffle my \(.applicationName)",
             ],
             shortTitle: "Shuffle Btmus",
             systemImageName: "shuffle"
@@ -71,8 +71,8 @@ struct BtmusShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayBtmusPlaylistIntent(),
             phrases: [
-                "Play \(\.$playlistName) on Btmus",
-                "Play my \(\.$playlistName) playlist on Btmus",
+                "Play \(\.$playlistName) on \(.applicationName)",
+                "Play my \(\.$playlistName) playlist on \(.applicationName)",
             ],
             shortTitle: "Play a Btmus playlist",
             systemImageName: "music.note.list"

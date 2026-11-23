@@ -1,10 +1,7 @@
-import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:btmu/app/btt_page_route.dart';
 import 'package:btmu/app/providers/app_providers.dart';
 import 'package:btmu/app/theme/btt_theme.dart';
 import 'package:btmu/core/deep_link.dart';
@@ -13,7 +10,6 @@ import 'package:btmu/features/home/home_screen.dart';
 import 'package:btmu/features/import_center/import_center_screen.dart';
 import 'package:btmu/features/library/library_screen.dart';
 import 'package:btmu/features/player/mini_player.dart';
-import 'package:btmu/features/x2/x2_screen.dart';
 
 class BttMusicApp extends ConsumerWidget {
   const BttMusicApp({super.key});
@@ -40,18 +36,13 @@ class BttMusicApp extends ConsumerWidget {
 }
 
 /// Handles every link that reaches the app from outside (v3.0.5, batch 2,
-/// items 7 + 13): Share Extension / Siri / Open In deep links, and audio
-/// files the Share Extension left in the App Group inbox.
+/// item 13): Siri deep links.
 ///
 /// Deep links arrive through the native bridge as [BttDeepLinkAction]s
 /// (see [parseBttDeepLink]); this widget consumes them one at a time and
-/// performs the side effect — navigation, playback, or import. Unknown
-/// links are ignored. A Siri request for a playlist that does not exist
-/// does nothing: playback is never faked.
-///
-/// The Share Extension inbox is drained on launch and on every resume.
-/// Importing is idempotent (SHA-256 dedup), so a file is never imported
-/// twice even if the drain runs twice.
+/// performs the side effect — navigation or playback. Unknown links are
+/// ignored. A Siri request for a playlist that does not exist does
+/// nothing: playback is never faked.
 class DeepLinkBootstrap extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -61,31 +52,15 @@ class DeepLinkBootstrap extends ConsumerStatefulWidget {
   ConsumerState<DeepLinkBootstrap> createState() => _DeepLinkBootstrapState();
 }
 
-class _DeepLinkBootstrapState extends ConsumerState<DeepLinkBootstrap>
-    with WidgetsBindingObserver {
+class _DeepLinkBootstrapState extends ConsumerState<DeepLinkBootstrap> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     // Instantiate the bridge (registers the onLink handler) and handle
-    // a cold-launch link + any files the Share Extension left behind.
+    // a cold-launch link.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleInitialLink();
-      _drainShareInbox();
     });
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _drainShareInbox();
-    }
   }
 
   Future<void> _handleInitialLink() async {
@@ -94,28 +69,6 @@ class _DeepLinkBootstrapState extends ConsumerState<DeepLinkBootstrap>
       ref.read(pendingDeepLinkActionProvider.notifier).state =
           parseBttDeepLink(raw);
     }
-  }
-
-  Future<void> _drainShareInbox() async {
-    final paths = await ref.read(nativeBridgeProvider).drainShareInbox();
-    final importable = paths.where(isImportableShareFile).toList();
-    if (importable.isEmpty) return;
-    final repo = ref.read(libraryRepositoryProvider);
-    for (final path in importable) {
-      try {
-        await repo.importFileIntoLibrary(
-          sourceFile: File(path),
-          rawTitle: p.basenameWithoutExtension(path),
-          sourceProvider: 'share-extension',
-          deleteSourceAfterCopy: true,
-        );
-      } catch (_) {
-        // A file the extension handed over but the library rejects
-        // (duplicate, corrupt) is skipped, never fatal.
-      }
-    }
-    ref.invalidate(libraryTracksProvider);
-    ref.invalidate(storageStatsProvider);
   }
 
   @override
@@ -132,28 +85,6 @@ class _DeepLinkBootstrapState extends ConsumerState<DeepLinkBootstrap>
 
   Future<void> _handleAction(BttDeepLinkAction action) async {
     switch (action) {
-      case X2SearchDeepLink(:final query):
-        ref.read(pendingX2SearchQueryProvider.notifier).state = query;
-        ref.read(currentTabIndexProvider.notifier).state = BttTab.importCenter;
-        if (mounted) {
-          Navigator.of(context).push(
-            BttPageRoute<void>(builder: (_) => const X2Screen()),
-          );
-        }
-      case ImportFileDeepLink(:final filePath):
-        try {
-          await ref.read(libraryRepositoryProvider).importFileIntoLibrary(
-                sourceFile: File(filePath),
-                rawTitle: p.basenameWithoutExtension(filePath),
-                sourceProvider: 'open-in',
-                deleteSourceAfterCopy: true,
-              );
-          ref.invalidate(libraryTracksProvider);
-          ref.invalidate(storageStatsProvider);
-        } catch (_) {
-          // A file iOS handed over but the library rejects (duplicate,
-          // corrupt) is skipped, never fatal.
-        }
       case SiriPlayDeepLink(:final shuffle):
         await _playSiri(shuffle: shuffle, playlistName: null);
       case SiriPlaylistDeepLink(:final playlistName):

@@ -189,7 +189,7 @@ final shazamServiceProvider = Provider<ShazamIdentificationService>(
 );
 
 /// Native bridge to the iOS Runner (`btmu/native_bridge` channel):
-/// deep links in, external URLs and Share Extension inbox out.
+/// deep links in, external URLs out.
 /// Incoming links land in [pendingDeepLinkActionProvider], which
 /// `DeepLinkBootstrap` (lib/app/app.dart) consumes.
 final nativeBridgeProvider = Provider<BttNativeBridge>((ref) {

@@ -101,7 +101,7 @@ struct ShareView: View {
     private func loadURLObject(_ provider: NSItemProvider) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             _ = provider.loadObject(ofClass: URL.self) { object, error in
-                if let url = object as? URL {
+                if let url = object {
                     continuation.resume(returning: url)
                 } else if let error = error {
                     continuation.resume(throwing: error)

@@ -17,8 +17,8 @@ struct PlayBtmusIntent: AppIntent {
     static var description = IntentDescription("Start playing your Btmus library.")
     static var openAppWhenRun: Bool = true
 
-    func perform() async throws -> some IntentResult {
-        .result(opensIntent: OpenIntent(target: .url(URL(string: "bttmu://siri/play")!)))
+    func perform() async throws -> some IntentResult & OpensIntent {
+        .result(opensIntent: OpenURLIntent(URL(string: "bttmu://siri/play")!))
     }
 }
 
@@ -27,8 +27,8 @@ struct ShuffleBtmusIntent: AppIntent {
     static var description = IntentDescription("Shuffle-play your Btmus library.")
     static var openAppWhenRun: Bool = true
 
-    func perform() async throws -> some IntentResult {
-        .result(opensIntent: OpenIntent(target: .url(URL(string: "bttmu://siri/shuffle")!)))
+    func perform() async throws -> some IntentResult & OpensIntent {
+        .result(opensIntent: OpenURLIntent(URL(string: "bttmu://siri/shuffle")!))
     }
 }
 
@@ -40,10 +40,10 @@ struct PlayBtmusPlaylistIntent: AppIntent {
     @Parameter(title: "Playlist", requestValueDialog: "Which playlist?")
     var playlistName: String
 
-    func perform() async throws -> some IntentResult {
+    func perform() async throws -> some IntentResult & OpensIntent {
         var components = URLComponents(string: "bttmu://siri/playlist")!
         components.queryItems = [URLQueryItem(name: "name", value: playlistName)]
-        return .result(opensIntent: OpenIntent(target: .url(components.url!)))
+        return .result(opensIntent: OpenURLIntent(components.url!))
     }
 }
 
@@ -71,8 +71,8 @@ struct BtmusShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: PlayBtmusPlaylistIntent(),
             phrases: [
-                "Play \(.playlistName) on Btmus",
-                "Play my \(.playlistName) playlist on Btmus",
+                "Play \(\.$playlistName) on Btmus",
+                "Play my \(\.$playlistName) playlist on Btmus",
             ],
             shortTitle: "Play a Btmus playlist",
             systemImageName: "music.note.list"
